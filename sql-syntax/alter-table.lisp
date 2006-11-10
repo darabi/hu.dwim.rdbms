@@ -13,7 +13,7 @@
    (alter-table-action))
   (:documentation "An SQL ALTER TABLE statement."))
 
-(defclass* sql-alter-table-action (sql-expression)
+(defclass* sql-alter-table-action (sql-syntax-node)
   ())
 
 (defclass* sql-alter-table-column-action (sql-alter-table-action)

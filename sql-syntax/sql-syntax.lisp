@@ -10,7 +10,10 @@
 
 (defvar *sql-stream*)
 
-(defclass* sql-expression ()
+(defclass* sql-syntax-node ()
+  ())
+
+(defclass* sql-expression (sql-syntax-node)
   ())
 
 (defun format-sql (expression &key (stream t) (database *database*))
