@@ -50,7 +50,8 @@
    (:file "transaction" :depends-on ("configuration"))
    (:module "sql-syntax"
             :depends-on ("configuration")
-            :components ((:file "sql-syntax")))
+            :components ((:file "sql-syntax")
+                         (:file "alter-table" :depends-on ("sql-syntax"))))
    (:module "backends"
             :depends-on ("database" "transaction")
             :components ((:file "postgresql")

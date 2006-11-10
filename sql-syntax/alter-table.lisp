@@ -36,35 +36,34 @@
                                database
                                (database-underlying-type database)))
 
-(defmethod output-sql ((stmt sql-alter-table) database)
+(defmethod format-sql-syntax-node ((stmt sql-alter-table) database)
   (with-slots (table-name alter-table-action) stmt
     (write-string "ALTER TABLE " *sql-stream*)
-    (output-sql table-name database)
+    (format-sql-syntax-node table-name database)
     (write-char #\Space *sql-stream*)
-    (output-sql alter-table-action database)))
+    (format-sql-syntax-node alter-table-action database)))
 
 ;; TODO: output column constraints
-(defmethod output-sql ((action sql-alter-table-add-column-action) database)
+(defmethod format-sql-syntax-node ((action sql-alter-table-add-column-action) database)
   (with-slots (column-name column-type) action
-    (write-string "ADD (" *sql-stream*)
-    (output-sql column-name database)
+    (write-string "ADD " *sql-stream*)
+    (format-sql-syntax-node column-name database)
     (write-char #\Space *sql-stream*)
-    (write-string (database-column-type column-type database) *sql-stream*)
-    (write-char #\) *sql-stream*)))
+    (format-sql-syntax-node column-type database)))
 
-(defmethod output-sql ((action sql-alter-table-drop-column-action) database)
+(defmethod format-sql-syntax-node ((action sql-alter-table-drop-column-action) database)
   (with-slots (column-name) action
     (write-string "DROP COLUMN " *sql-stream*)
-    (output-sql column-name database)))
+    (format-sql-syntax-node column-name database)))
 
 ;; TODO: output column constraints
-(defmethod output-sql ((action sql-alter-table-alter-column-type-action)
+(defmethod format-sql-syntax-node ((action sql-alter-table-alter-column-type-action)
 		       database)
   (with-slots (column-name column-type) action
     (write-string "ALTER COLUMN " *sql-stream*)
-    (output-sql column-name database)
+    (format-sql-syntax-node column-name database)
     (write-string " TYPE " *sql-stream*)
-    (write-string (database-column-type column-type database) *sql-stream*)))
+    (format-sql-syntax-node column-type database)))
 
 (defun alter-table (table-name
 		    alter-table-column-action
