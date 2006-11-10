@@ -148,7 +148,7 @@ drop or change the type of an existing one."
                                              (second column)
                                              nil
                                              :database database)
-            (sql-database-data-error (e)
+            (sql-database-data-error ()
               (warn "Cannot alter table column type, column will be dropped and recreated")
               (alter-table-drop-column table-name
                                        (column-name-from-arg column-name)
@@ -170,8 +170,7 @@ drop or change the type of an existing one."
 
 (defun column-type-specifier-for-table-column (table-column
 					       &key (database *default-database*))
-  "String representation for a table column's type.
-Parameters are enclosed within braces."
+  "String representation for a table column's type. Parameters are enclosed within braces."
   ;; FIXME: this is postgresql specific (unfortunately we do not get back the type which was used to create the table)
   (let ((type-name (second table-column)))
     (if (eq type-name :bpchar)

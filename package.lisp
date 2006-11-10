@@ -33,6 +33,6 @@
 (in-package :cl-rdbms)
 
 (deflogger log ()
-  :level (or #+debug +dribble+ +warn+)
-  :compile-time-level (or #+debug +dribble+ +warn+)
+  :level #+debug +dribble+ #-debug +warn+
+  :compile-time-level #+debug +dribble+ #-debug +warn+
   :appender (make-instance 'brief-stream-log-appender :stream *debug-io*))

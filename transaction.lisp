@@ -100,6 +100,7 @@
 (defgeneric execute-command (database transaction command &optional visitor)
   #+debug
   (:method :before (database transaction command &optional visitor)
+           (declare (ignore visitor))
            (log.dribble "Executing command ~A in transaction ~A of database ~A"
                         command transaction database)))
 
