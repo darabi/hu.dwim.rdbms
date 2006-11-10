@@ -65,12 +65,13 @@
   (when (transaction-connected-p *transaction*)
     (rollback-transaction *database* *transaction*)))
 
-(defun execute (command)
+(defun execute (command &optional visitor)
   (assert-transaction-in-progress)
-  (execute-command *database* *transaction* command))
+  (execute-command *database* *transaction* command visitor))
 
 (defgeneric begin-transaction (database)
   (:method :around (database)
+           (log.debug "About to BEGIN transaction in database ~A" database)
            (aprog1
                (call-next-method)
              (setf (database-of it) database)
@@ -78,17 +79,17 @@
 
 (defgeneric commit-transaction (database transaction)
   (:method :around (database transaction)
-           (aprog1
-               (call-next-method)
-             (log.dribble "Commit returned ~A" it)
-             (setf (state-of transaction) :committed))))
+           (log.debug "About to COMMIT transaction ~A" transaction)
+           (call-next-method)
+           (setf (state-of transaction) :committed)
+           (values)))
 
 (defgeneric rollback-transaction (database transaction)
   (:method :around (database transaction)
-           (aprog1
-               (call-next-method)
-             (log.dribble "Rollback returned ~A" it)
-             (setf (state-of transaction) :rolled-back))))
+           (log.dribble "About to ROLLBACK transaction ~A" transaction)
+           (call-next-method)
+           (setf (state-of transaction) :rolled-back)
+           (values)))
 
 (defgeneric transaction-connected-p (transaction)
   (:method (tr)
@@ -96,9 +97,9 @@
 
 (defgeneric cleanup-transaction (transaction))
 
-(defgeneric execute-command (database transaction command)
+(defgeneric execute-command (database transaction command &optional visitor)
   #+debug
-  (:method :before (database transaction command)
+  (:method :before (database transaction command &optional visitor)
            (log.dribble "Executing command ~A in transaction ~A of database ~A"
                         command transaction database)))
 

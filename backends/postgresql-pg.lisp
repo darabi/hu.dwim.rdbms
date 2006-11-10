@@ -27,8 +27,10 @@
 (defmethod rollback-transaction ((db postgresql-pg) (tr postgresql-pg-transaction))
   (execute-command db tr "ROLLBACK"))
 
-(defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) command)
-  (pg::pg-exec (connection-of tr) command))
+(defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) command &optional visitor)
+  (if visitor
+      (pg:pg-for-each (connection-of tr) command visitor)
+      (pg::pgresult-tuples (pg:pg-exec (connection-of tr) command))))
 
 (defmethod transaction-connected-p ((tr postgresql-pg-transaction))
   (not (null (slot-value tr 'connection))))
