@@ -9,7 +9,8 @@
 (eval-always
   (import (let ((*package* (find-package :cl-rdbms)))
             (read-from-string "(enable-sharp-boolean-syntax
-                                log.dribble log.debug log.info log.warn log.error)"))))
+                                connection-specification-of *database* *transaction*
+                                log log.dribble log.debug log.info log.warn log.error)"))))
 
 (enable-sharp-boolean-syntax)
 

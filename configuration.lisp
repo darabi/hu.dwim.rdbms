@@ -18,7 +18,7 @@
 (defun inline-declaration ()
   (if *load-with-debug-p*
       (values)
-      '(inline)))
+      '(inline begin commit rollback execute-command)))
 
 (defun file-header ()
   `(progn

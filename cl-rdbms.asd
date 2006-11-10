@@ -14,7 +14,7 @@
 
 (in-package #:cl-rdbms-system)
 
-(defparameter *load-with-debug-p* nil)
+(defparameter *load-with-debug-p* t)
 
 (defun optimize-declaration ()
   (if *load-with-debug-p*
@@ -52,7 +52,7 @@
             :depends-on ("configuration")
             :components ((:file "sql-syntax")))
    (:module "backends"
-            :depends-on ("database")
+            :depends-on ("database" "transaction")
             :components ((:file "postgresql")
                          (:file "postgresql-pg")))))
 

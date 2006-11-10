@@ -8,10 +8,19 @@
 
 #.(file-header)
 
-(defclass* database ()
-  ())
+(defvar *database*)
 
-(defclass* postgresql (database)
-  ())
+(defclass* database ()
+  ((connection-specification
+    :documentation "Backend specific connection data, usually a plist of args passed to the connect function.")))
+
+;; TODO get rid of it?
+#+nil(defgeneric transaction-mixins (database)
+  (:documentation "Returns a list of the transaction mixins that will form the final transaction class.")
+  (:method-combination list)
+  (:method :list ((db database))
+           'transaction))
+
+
 
 

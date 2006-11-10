@@ -11,5 +11,7 @@
 (defclass* postgresql (database)
   ())
 
+(defclass* postgresql-transaction ()
+  ())
 
 

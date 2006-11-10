@@ -11,13 +11,24 @@
   
   (:use :cl :cl-rdbms-system :arnesi :defclass-star)
 
-  (:export)
+  (:export
+   #:database
+   #:postgresql
+   #:postgresql-pg
+   #:transaction
+   #:begin
+   #:commit
+   #:rollback
+   #:execute
+   #:with-transaction)
 
   ;; for debug purposes
   (:export))
 
 (defpackage :cl-rdbms-test
-  (:use :cl :cl-rdbms :arnesi))
+  (:use :cl :cl-rdbms :arnesi)
+  (:shadowing-import-from :cl-rdbms
+                          #:log))
 
 (in-package :cl-rdbms)
 
