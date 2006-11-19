@@ -40,7 +40,7 @@
 	       "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD"
   :description "rdbms lib with sql syntax and sql backend abstractions"
-  :depends-on (:arnesi :defclass-star)
+  :depends-on (:arnesi :defclass-star :pg)
   :default-component-class local-cl-source-file
   :components
   ((:file "package")
@@ -71,9 +71,12 @@
   (operate 'load-op :cl-rdbms)
   (in-package :cl-rdbms-test)
   (operate 'load-op :fiveam)
-  (use-package :5am)
+  (use-package :fiveam)
+  (push :debug *features*)
   (operate 'load-op :cl-rdbms-test)
-  (funcall (read-from-string "5am:run!"))
+  (eval (read-from-string "(progn
+                             (cl-rdbms::enable-sharp-boolean-syntax)
+                             (5am:run!))"))
   (values))
 
 (defmethod operation-done-p ((op test-op) (system (eql (find-system :cl-rdbms))))

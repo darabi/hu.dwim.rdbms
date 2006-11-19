@@ -10,7 +10,7 @@
 
 (defvar *transaction*)
 
-(defcondition* transaction-error (simple-error)
+(defcondition* transaction-error (simple-rdbms-error)
   ())
 
 (defclass* transaction ()
@@ -18,18 +18,19 @@
    (state
     :uninitialized
     :type (member :uninitialized :committed :rolled-back :in-progress)))
-  (:documentation "An object representing a transaction context. The actual backend connection/transaction is lazily created."))
+  (:documentation "An object representing a transaction context. The actual backend connection/transaction is usually lazily created."))
 
 (defmacro with-transaction (&body body)
   `(with-transaction* ()
     ,@body))
 
-(defmacro with-transaction* ((&key (database *database*)) &body body)
+(defmacro with-transaction* ((&key (database '*database*)) &body body)
   (with-unique-names (body-finished-p)
     `(let ((*transaction* nil)
+           (*database* ,database)
            (,body-finished-p #f))
       (unwind-protect
-           (let ((*database* ,database))
+           (progn
              (setf *transaction* (begin))
              (multiple-value-prog1
                  (progn
@@ -57,13 +58,11 @@
 
 (defun commit ()
   (assert-transaction-in-progress)
-  (when (transaction-connected-p *transaction*)
-    (commit-transaction *database* *transaction*)))
+  (commit-transaction *database* *transaction*))
 
 (defun rollback ()
   (assert-transaction-in-progress)
-  (when (transaction-connected-p *transaction*)
-    (rollback-transaction *database* *transaction*)))
+  (rollback-transaction *database* *transaction*))
 
 (defun execute (command &optional visitor)
   (assert-transaction-in-progress)
@@ -80,14 +79,16 @@
 (defgeneric commit-transaction (database transaction)
   (:method :around (database transaction)
            (log.debug "About to COMMIT transaction ~A" transaction)
-           (call-next-method)
+           (when (transaction-connected-p transaction)
+             (call-next-method))
            (setf (state-of transaction) :committed)
            (values)))
 
 (defgeneric rollback-transaction (database transaction)
   (:method :around (database transaction)
            (log.dribble "About to ROLLBACK transaction ~A" transaction)
-           (call-next-method)
+           (when (transaction-connected-p transaction)
+             (call-next-method))
            (setf (state-of transaction) :rolled-back)
            (values)))
 
@@ -101,6 +102,6 @@
   #+debug
   (:method :before (database transaction command &optional visitor)
            (declare (ignore visitor))
-           (log.dribble "Executing command ~A in transaction ~A of database ~A"
+           (log.dribble "Executing command ~S in transaction ~A of database ~A"
                         command transaction database)))
 

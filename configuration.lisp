@@ -18,7 +18,7 @@
 (defun inline-declaration ()
   (if *load-with-debug-p*
       (values)
-      '(inline begin commit rollback execute-command)))
+      '(inline begin commit rollback execute assert-transaction-in-progress in-transaction-p)))
 
 (defun file-header ()
   `(progn
