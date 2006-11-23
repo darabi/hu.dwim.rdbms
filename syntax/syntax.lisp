@@ -31,9 +31,6 @@
 (defgeneric format-sql-syntax-node (node database)
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
 
-  (:method ((s symbol) database)
-           (write-string (symbol-name s) *sql-stream*))
-
   (:method ((s string) database)
            (write-string s *sql-stream*)))
 

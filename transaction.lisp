@@ -102,5 +102,5 @@
   #+debug
   (:method :before (database transaction command &optional visitor)
            (declare (ignore visitor))
-           (log.dribble "Executing command ~S in transaction ~A of database ~A"
+           (log.dribble "*** ~S in transaction ~A of database ~A"
                         command transaction database)))

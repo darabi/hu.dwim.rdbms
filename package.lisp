@@ -20,7 +20,18 @@
    #:commit
    #:rollback
    #:execute
-   #:with-transaction)
+   #:with-transaction
+
+   #:create-table
+   #:drop-table
+   #:alter-table
+   #:add-column
+   #:drop-column
+   #:alter-column-type
+   #:update-table
+   #:list-tables
+   #:list-table-columns
+   #:table-exists-p)
 
   ;; for debug purposes
   (:export))

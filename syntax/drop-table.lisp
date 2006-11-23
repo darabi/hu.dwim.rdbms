@@ -10,7 +10,7 @@
 
 (defclass* sql-drop-table (sql-statement)
   ((name
-    :type symbol))
+    :type string))
   (:documentation "An SQL ALTER TABLE statement."))
 
 (defmethod format-sql-syntax-node ((drop-table sql-drop-table) database)

@@ -48,8 +48,9 @@
    (:file "configuration" :depends-on ("duplicates"))
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("configuration"))
+   (:file "ddl" :depends-on ("configuration"))
    (:module "syntax"
-            :depends-on ("database" "transaction")
+            :depends-on ("database" "transaction" "ddl")
             :components ((:file "syntax")
                          (:file "type" :depends-on ("syntax"))
                          (:file "constraint" :depends-on ("syntax"))
@@ -57,11 +58,12 @@
                          (:file "drop-table" :depends-on ("syntax"))
                          (:file "alter-table" :depends-on ("syntax"))))
    (:module "postgresql"
-            :depends-on ("database" "transaction")
+            :depends-on ("database" "transaction" "syntax")
             :components ((:file "database")
                          (:file "pg")
-                         (:file "syntax")
-                         (:file "type")))))
+                         (:file "syntax" :depends-on ("database"))
+                         (:file "type" :depends-on ("database"))
+                         (:file "ddl" :depends-on ("database"))))))
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."

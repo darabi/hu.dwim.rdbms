@@ -1,0 +1,121 @@
+;;; -*- mode: Lisp; Syntax: Common-Lisp; -*-
+;;;
+;;; Copyright (c) 2006 by the authors.
+;;;
+;;; See LICENCE for details.
+
+(in-package :cl-rdbms)
+
+#.(file-header)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Create, drop and alter table
+
+(defun create-table (name &rest columns)
+  (execute (make-instance 'sql-create-table :name name :columns columns)))
+
+(defun drop-table (name)
+  (execute (make-instance 'sql-drop-table :name name)))
+
+(defun alter-table (name &rest actions)
+  (execute (make-instance 'sql-alter-table :name name :actions actions)))
+
+(defun add-column (name column)
+  (execute (make-instance 'sql-alter-table
+                          :name name
+                          :actions (list (make-instance 'sql-add-column-action
+                                                        :name (name-of column)
+                                                        :type (type-of column))))))
+
+(defun drop-column (name column-name)
+  (execute (make-instance 'sql-alter-table
+                          :name name
+                          :actions (list (make-instance 'sql-drop-column-action :name column-name)))))
+
+(defun alter-column-type (name column)
+  (execute (make-instance 'sql-alter-table
+                          :name name
+                          :actions (list (make-instance 'sql-alter-column-type-action
+                                                        :name (name-of column)
+                                                        :type (type-of column))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Query tables and columns
+
+(defun list-tables ()
+  (database-list-tables *database*))
+
+(defgeneric database-list-tables (database)
+  (:documentation "Returns the list of table names present in the database."))
+
+(defun list-table-columns (name)
+  (database-list-table-columns name *database*))
+
+(defgeneric database-list-table-columns (name database)
+  (:documentation "Returns the list of columns present in the database."))
+
+(defun table-exists-p (name)
+  (not (null (member name (list-tables) :test 'equalp))))
+
+;;;;;;;;;;;;;;;;
+;;; Update table
+
+(defcondition* unconfirmed-lossy-alter-table-error (error)
+  ((table-name
+    :type string)
+   (column-name
+    :type string)))
+
+(defcondition* unconfirmed-lossy-alter-column-type-error (unconfirmed-lossy-alter-table-error)
+  ()
+  (:report (lambda (error stream)
+             (format stream "Changing the type of column ~S in table ~S is a lossy transformation"
+                     (column-name-of error) (table-name-of error)))))
+
+(defcondition* unconfirmed-lossy-drop-column-error (unconfirmed-lossy-alter-table-error)
+  ()
+  (:report (lambda (error stream)
+             (format stream "Dropping the column ~S from table ~S is a lossy transformation"
+                     (column-name-of error) (table-name-of error)))))
+
+(defun update-table (name &rest columns)
+  (if (table-exists-p name)
+      (apply #'update-existing-table name columns)
+      (apply #'create-table name columns)))
+
+(defgeneric rdbms-type-for (type database)
+  (:method (type database)
+           type))
+
+(defgeneric equal-type-p (type-1 type-2 database)
+  (:method (type-1 type-2 database)
+           (error "Cannot match types ~A and ~A" type-1 type-2)))
+
+(defun update-existing-table (name &rest columns)
+  (let ((table-columns (list-table-columns name)))
+    ;; create new columns that are missing from the table
+    (dolist (column columns)
+      (let* ((column-name (name-of column))
+	     (table-column (find column-name table-columns :key #'name-of :test #'equalp)))
+	(if table-column
+            ;; change column type where needed
+            (unless (equal-type-p (type-of table-column) (rdbms-type-for (type-of column) *database*) *database*)
+              (handler-case
+                  (alter-column-type name column)
+                (error (e)
+                       (declare (ignore e))
+                       (with-simple-restart
+                           (continue "Alter the table and let the data go")
+                         (error 'unconfirmed-lossy-alter-column-type-error :table-name name :column-name column-name))
+                       (drop-column name column-name)
+                       (add-column name column))))
+            ;; add missing columns not present in the table
+            (add-column name column))))
+    ;; drop extra columns that are present in the table
+    (dolist (table-column table-columns)
+      (let ((column-name (name-of table-column)))
+	(unless (find column-name columns :key #'name-of :test #'equalp)
+          (with-simple-restart
+              (continue "Alter the table and let the data go")
+            (error 'unconfirmed-lossy-drop-column-error :table-name name :column-name column-name))
+	  (drop-column name column-name))))))

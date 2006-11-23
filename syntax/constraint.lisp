@@ -5,13 +5,13 @@
 (defclass* sql-constraint (sql-syntax-node)
   ((name
     nil
-    :type symbol))
+    :type string))
   (:documentation "An SQL constraint."))
 
 (defclass* sql-constraint-with-tablespace (sql-constraint)
   ((tablespace
     nil
-    :type symbol)))
+    :type string)))
 
 (defclass* sql-primary-key-constraint (sql-constraint-with-tablespace)
   ())
