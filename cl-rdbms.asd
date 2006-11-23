@@ -49,9 +49,13 @@
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("configuration"))
    (:module "sql-syntax"
-            :depends-on ("configuration")
-            :components ((:file "sql-syntax")
-                         (:file "alter-table" :depends-on ("sql-syntax"))))
+            :depends-on ("database" "backends")
+            :components ((:file "syntax")
+                         (:file "type" :depends-on ("syntax"))
+                         (:file "constraint" :depends-on ("syntax"))
+                         (:file "create-table" :depends-on ("syntax"))
+                         (:file "drop-table" :depends-on ("syntax"))
+                         (:file "alter-table" :depends-on ("syntax"))))
    (:module "backends"
             :depends-on ("database" "transaction")
             :components ((:file "postgresql")

@@ -54,19 +54,20 @@
 (defmethod transaction-connected-p ((tr postgresql-pg-transaction))
   (not (null (slot-value tr 'connection))))
 
-(defmethod connection-of ((tr postgresql-pg-transaction))
-  (aif (slot-value tr 'connection)
-       it
-       (let ((db (database-of tr)))
-         (log.debug "Opening connection the first time it was needed using ~S" (connection-specification-of db))
-         (aprog1
-             (setf (connection-of tr) (apply #'pg::pg-connect/v3
-                                             (destructuring-bind (&key (host "localhost") (port 5432) database user-name (password ""))
-                                                 (connection-specification-of db)
-                                               (list database user-name :password password :host host :port port
-                                                     :encoding (native-encoding-of db)))))
-           (log.debug "Succesfully opened connection ~A for transaction ~A in database ~A with encoding ~S"
-                      it tr db (native-encoding-of db))))))
+(defgeneric connection-of (tr)
+  (:method ((tr postgresql-pg-transaction))
+           (aif (slot-value tr 'connection)
+                it
+                (let ((db (database-of tr)))
+                  (log.debug "Opening connection the first time it was needed using ~S" (connection-specification-of db))
+                  (aprog1
+                      (setf (connection-of tr) (apply #'pg::pg-connect/v3
+                                                      (destructuring-bind (&key (host "localhost") (port 5432) database user-name (password ""))
+                                                          (connection-specification-of db)
+                                                        (list database user-name :password password :host host :port port
+                                                              :encoding (native-encoding-of db)))))
+                    (log.debug "Succesfully opened connection ~A for transaction ~A in database ~A with encoding ~S"
+                               it tr db (native-encoding-of db)))))))
 
 (defmethod cleanup-transaction ((tr postgresql-pg-transaction))
   (awhen (slot-value tr 'connection)
