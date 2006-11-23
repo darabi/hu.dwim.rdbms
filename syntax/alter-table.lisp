@@ -44,13 +44,13 @@
     (write-char #\Space *sql-stream*)
     (format-sql-syntax-node alter-table-action database)))
 
-;; TODO: output column constraints
 (defmethod format-sql-syntax-node ((action sql-alter-table-add-column-action) database)
   (with-slots (column-name column-type) action
-    (write-string "ADD " *sql-stream*)
+    (write-string "ADD (" *sql-stream*)
     (format-sql-syntax-node column-name database)
     (write-char #\Space *sql-stream*)
-    (format-sql-syntax-node column-type database)))
+    (format-sql-syntax-node column-type database)
+    (write-char #\) *sql-stream*)))
 
 (defmethod format-sql-syntax-node ((action sql-alter-table-drop-column-action) database)
   (with-slots (column-name) action

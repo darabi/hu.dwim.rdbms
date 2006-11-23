@@ -48,18 +48,20 @@
    (:file "configuration" :depends-on ("duplicates"))
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("configuration"))
-   (:module "sql-syntax"
-            :depends-on ("database" "backends")
+   (:module "syntax"
+            :depends-on ("database")
             :components ((:file "syntax")
                          (:file "type" :depends-on ("syntax"))
                          (:file "constraint" :depends-on ("syntax"))
                          (:file "create-table" :depends-on ("syntax"))
                          (:file "drop-table" :depends-on ("syntax"))
                          (:file "alter-table" :depends-on ("syntax"))))
-   (:module "backends"
+   (:module "postgresql"
             :depends-on ("database" "transaction")
-            :components ((:file "postgresql")
-                         (:file "postgresql-pg")))))
+            :components ((:file "database")
+                         (:file "pg")
+                         (:file "syntax")
+                         (:file "type")))))
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
