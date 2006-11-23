@@ -31,8 +31,11 @@
 (defgeneric format-sql-syntax-node (node database)
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
 
-  (:method ((name symbol) database)
-           (write-string (symbol-name name) *sql-stream*)))
+  (:method ((s symbol) database)
+           (write-string (symbol-name s) *sql-stream*))
+
+  (:method ((s string) database)
+           (write-string s *sql-stream*)))
 
 (defmethod execute-command :around (database transaction (command sql-statement) &optional visitor)
-  (call-next-method database transaction (format-sql-to-string command) visitor))
+  (execute-command database transaction (format-sql-to-string command) visitor))
