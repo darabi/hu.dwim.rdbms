@@ -9,20 +9,20 @@
 #.(file-header)
 
 (defclass* sql-alter-table (sql-statement)
-  ((table-name
+  ((name
     :type symbol)
-   (alter-table-action
-    :type sql-alter-table-action))
+   (actions
+    :type list))
   (:documentation "An SQL ALTER TABLE statement."))
 
 (defclass* sql-alter-table-action (sql-syntax-node)
   ())
 
 (defclass* sql-alter-table-column-action (sql-alter-table-action)
-  ((column-name
+  ((name
     :type symbol)
-   (column-type
-    :type sql-column-type)))
+   (type
+    :type sql-type)))
 
 (defclass* sql-alter-table-add-column-action (sql-alter-table-column-action)
   ((default-value
@@ -37,30 +37,29 @@
   ((constraints
     :type list)))
 
-(defmethod format-sql-syntax-node ((stmt sql-alter-table) database)
-  (with-slots (table-name alter-table-action) stmt
-    (write-string "ALTER TABLE " *sql-stream*)
-    (format-sql-syntax-node table-name database)
-    (write-char #\Space *sql-stream*)
-    (format-sql-syntax-node alter-table-action database)))
+(defmethod format-sql-syntax-node ((alter-table sql-alter-table) database)
+  (write-string "ALTER TABLE " *sql-stream*)
+  (format-sql-syntax-node (name-of alter-table) database)
+  (write-char #\Space *sql-stream*)
+  (loop for i = nil then t
+        for action in (actions-of alter-table)
+        when i
+        do (write-string ", " *sql-stream*)
+        do (format-sql-syntax-node action database)))
 
 (defmethod format-sql-syntax-node ((action sql-alter-table-add-column-action) database)
-  (with-slots (column-name column-type) action
-    (write-string "ADD (" *sql-stream*)
-    (format-sql-syntax-node column-name database)
-    (write-char #\Space *sql-stream*)
-    (format-sql-syntax-node column-type database)
-    (write-char #\) *sql-stream*)))
+  (write-string "ADD (" *sql-stream*)
+  (format-sql-syntax-node (name-of action) database)
+  (write-char #\Space *sql-stream*)
+  (format-sql-syntax-node (type-of action) database)
+  (write-char #\) *sql-stream*))
 
 (defmethod format-sql-syntax-node ((action sql-alter-table-drop-column-action) database)
-  (with-slots (column-name) action
-    (write-string "DROP COLUMN " *sql-stream*)
-    (format-sql-syntax-node column-name database)))
+  (write-string "DROP COLUMN " *sql-stream*)
+  (format-sql-syntax-node (name-of action) database))
 
-(defmethod format-sql-syntax-node ((action sql-alter-table-alter-column-type-action)
-		       database)
-  (with-slots (column-name column-type) action
-    (write-string "ALTER COLUMN " *sql-stream*)
-    (format-sql-syntax-node column-name database)
-    (write-string " TYPE " *sql-stream*)
-    (format-sql-syntax-node column-type database)))
+(defmethod format-sql-syntax-node ((action sql-alter-table-alter-column-type-action) database)
+  (write-string "ALTER COLUMN " *sql-stream*)
+  (format-sql-syntax-node (name-of action) database)
+  (write-string " TYPE " *sql-stream*)
+  (format-sql-syntax-node (type-of action) database))

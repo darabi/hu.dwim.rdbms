@@ -12,11 +12,11 @@
   ()
   (:documentation "Base class for all SQL types."))
 
-(defclass* sql-int-16-type (sql-type)
+(defclass* sql-integer-16-type (sql-type)
   ())
 
-(defclass* sql-int-32-type (sql-type)
+(defclass* sql-integer-32-type (sql-type)
   ())
 
-(defclass* sql-int-64-type (sql-type)
+(defclass* sql-integer-64-type (sql-type)
   ())

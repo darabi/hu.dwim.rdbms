@@ -104,4 +104,3 @@
            (declare (ignore visitor))
            (log.dribble "Executing command ~S in transaction ~A of database ~A"
                         command transaction database)))
-

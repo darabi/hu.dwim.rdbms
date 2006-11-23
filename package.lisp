@@ -7,7 +7,7 @@
 (in-package :cl-user)
 
 (defpackage :cl-rdbms
-  (:shadow #:log)
+  (:shadow #:log #:type-of)
   
   (:use :cl :cl-rdbms-system :arnesi :defclass-star)
 

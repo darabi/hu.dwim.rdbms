@@ -33,3 +33,6 @@
 
   (:method ((name symbol) database)
            (write-string (symbol-name name) *sql-stream*)))
+
+(defmethod execute-command :around (database transaction (command sql-statement) &optional visitor)
+  (call-next-method database transaction (format-sql-to-string command) visitor))

@@ -49,7 +49,7 @@
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("configuration"))
    (:module "syntax"
-            :depends-on ("database")
+            :depends-on ("database" "transaction")
             :components ((:file "syntax")
                          (:file "type" :depends-on ("syntax"))
                          (:file "constraint" :depends-on ("syntax"))
@@ -77,7 +77,7 @@
   (operate 'load-op :cl-rdbms)
   (in-package :cl-rdbms-test)
   (operate 'load-op :fiveam)
-  (use-package :fiveam)
+  (use-package :5am)
   (push :debug *features*)
   (operate 'load-op :cl-rdbms-test)
   (eval (read-from-string "(progn

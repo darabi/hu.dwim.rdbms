@@ -8,11 +8,11 @@
 
 #.(file-header)
 
-(defmethod format-sql-syntax-node ((type sql-int-16-type) (database postgresql))
+(defmethod format-sql-syntax-node ((type sql-integer-16-type) (database postgresql))
   (write-string "INT2" *sql-stream*))
 
-(defmethod format-sql-syntax-node ((type sql-int-32-type) (database postgresql))
+(defmethod format-sql-syntax-node ((type sql-integer-32-type) (database postgresql))
   (write-string "INT4" *sql-stream*))
 
-(defmethod format-sql-syntax-node ((type sql-int-64-type) (database postgresql))
+(defmethod format-sql-syntax-node ((type sql-integer-64-type) (database postgresql))
   (write-string "INT8" *sql-stream*))
