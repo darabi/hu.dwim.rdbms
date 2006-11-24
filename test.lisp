@@ -55,3 +55,28 @@
              (execute "SELECT NAME FROM alma"))
         (ignore-errors
           (execute "DROP TABLE alma"))))))
+
+(defmacro syntax-test (name &body body)
+  `(test (,name)
+    (with-database *test-database*
+      ,@ (loop for (sql string) :on body :by #'cddr
+               collect `(is (equalp
+                             (format-sql-to-string (sql ,sql))
+                             ,string))))))
+
+(syntax-test syntax
+  `(select "bar" table)
+  "SELECT bar FROM table"
+
+  `(select
+    ((foo.col1 "col1_alias") "bar")
+    table)
+  "SELECT foo.col1 AS col1_alias, bar FROM table"
+
+  `(select
+    (foo.column "bar")
+    ,(progn
+      (list (make-instance 'sql-table-alias
+                           :name "alma"
+                           :alias "alma_alias"))))
+  "SELECT foo.column, bar FROM alma AS alma_alias")

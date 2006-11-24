@@ -13,14 +13,14 @@
     :type list)
    (column-aliases
     :type list)
-   (where
+   (where nil
     :type sql-where))
   (:documentation "An SQL SELECT statement."))
 
 (define-syntax-node sql-table-alias (sql-syntax-node)
   ((name
     :type string)
-   (alias
+   (alias nil
     :type string)))
 
 (define-syntax-node sql-column-alias (sql-syntax-node)
@@ -28,7 +28,7 @@
     :type string)
    (column-name
     :type string)
-   (alias
+   (alias nil
     :type string)))
 
 (define-syntax-node sql-where (sql-syntax-node)
@@ -48,19 +48,23 @@
         when i
         do (write-string ", " *sql-stream*)
         do (format-sql-syntax-node table-alias database))
-  (format-sql-syntax-node (where-of select) database))
+  (awhen (where-of select)
+    (format-sql-syntax-node it database)))
 
 (defmethod format-sql-syntax-node ((alias sql-table-alias) database)
-  (format-sql-syntax-node (table-name-of alias) database)
-  (write-string " AS " *sql-stream*)
-  (format-sql-syntax-node (alias-of alias) database))
+  (format-sql-syntax-node (name-of alias) database)
+  (awhen (alias-of alias)
+    (write-string " AS " *sql-stream*)
+    (format-sql-syntax-node it database)))
 
 (defmethod format-sql-syntax-node ((alias sql-column-alias) database)
-  (format-sql-syntax-node (table-name-of alias) database)
-  (write-char #\. *sql-stream*)
+  (awhen (table-name-of alias)
+    (format-sql-syntax-node it database)
+    (write-char #\. *sql-stream*))
   (format-sql-syntax-node (column-name-of alias) database)
-  (write-string " AS " *sql-stream*)
-  (format-sql-syntax-node (alias-of alias) database))
+  (awhen (alias-of alias)
+    (write-string " AS " *sql-stream*)
+    (format-sql-syntax-node it database)))
 
 (defmethod format-sql-syntax-node ((where sql-where) database)
   (write-string " WHERE " *sql-stream*)

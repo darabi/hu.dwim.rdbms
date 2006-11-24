@@ -38,6 +38,12 @@
    #:list-table-columns
    #:table-exists-p
 
+   #:sql
+   #:sql*
+   #:format-sql
+   #:format-sql-to-string
+   #:import-sql-syntax-node-names
+
    #:insert-records
    #:update-records
    #:delete-records
