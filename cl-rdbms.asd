@@ -49,6 +49,7 @@
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("configuration"))
    (:file "ddl" :depends-on ("configuration"))
+   (:file "dml" :depends-on ("configuration"))
    (:module "syntax"
             :depends-on ("database" "transaction" "ddl")
             :components ((:file "syntax")
@@ -56,7 +57,12 @@
                          (:file "constraint" :depends-on ("syntax"))
                          (:file "create-table" :depends-on ("syntax"))
                          (:file "drop-table" :depends-on ("syntax"))
-                         (:file "alter-table" :depends-on ("syntax"))))
+                         (:file "alter-table" :depends-on ("syntax"))
+                         (:file "expression" :depends-on ("syntax"))
+                         (:file "insert" :depends-on ("syntax"))
+                         (:file "select" :depends-on ("syntax"))
+                         (:file "update" :depends-on ("syntax"))
+                         (:file "delete" :depends-on ("syntax"))))
    (:module "postgresql"
             :depends-on ("database" "transaction" "syntax")
             :components ((:file "database")

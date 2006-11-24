@@ -31,7 +31,12 @@
    #:update-table
    #:list-tables
    #:list-table-columns
-   #:table-exists-p)
+   #:table-exists-p
+
+   #:insert-records
+   #:update-records
+   #:delete-records
+   #:select-records)
 
   ;; for debug purposes
   (:export))

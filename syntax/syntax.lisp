@@ -16,7 +16,7 @@
 
 (defclass* sql-statement (sql-syntax-node)
   ()
-  (:documentation "Base class for all top level SQL statements."))
+  (:documentation "Base class for all top level SQL statements which can be executed."))
 
 (defun format-sql (statement &key (stream t) (database *database*))
   (let ((*sql-stream* stream)
@@ -32,7 +32,10 @@
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
 
   (:method ((s string) database)
-           (write-string s *sql-stream*)))
+           (write-string s *sql-stream*))
+
+  (:method ((i integer) database)
+           (write i :stream *sql-stream*)))
 
 (defmethod execute-command :around (database transaction (command sql-statement) &optional visitor)
   (execute-command database transaction (format-sql-to-string command) visitor))
