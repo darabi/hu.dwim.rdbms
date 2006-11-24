@@ -61,7 +61,10 @@
 (defun in-transaction-p ()
   (and (boundp '*transaction*)
        *transaction*
-       (eq (state-of *transaction*) :in-progress)))
+       (transaction-in-progress-p *transaction*)))
+
+(defun transaction-in-progress-p (&optional (transaction *transaction*))
+  (eq (state-of transaction) :in-progress))
 
 (defun assert-transaction-in-progress ()
   (unless (in-transaction-p)

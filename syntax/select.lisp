@@ -65,9 +65,3 @@
 (defmethod format-sql-syntax-node ((where sql-where) database)
   (write-string " WHERE " *sql-stream*)
   (format-sql-syntax-node (expression-of where) database))
-
-#|
-#SQL (select (_x a) (_x b) (_y c)
-             :from (x _x) (y _y) (z _z)
-             :where (= (_x a) (_y _b)))
-|#

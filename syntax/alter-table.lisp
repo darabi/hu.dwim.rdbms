@@ -15,14 +15,14 @@
     :type list))
   (:documentation "An SQL ALTER TABLE statement."))
 
-(defclass* sql-add-column-action (sql-table-column)
+(defclass* sql-add-column-action (sql-column)
   ((default-value
     :type t)))
 
-(defclass* sql-drop-column-action (sql-table-column)
+(defclass* sql-drop-column-action (sql-column)
   ())
 
-(defclass* sql-alter-column-type-action (sql-table-column)
+(defclass* sql-alter-column-type-action (sql-column)
   ())
 
 (defmethod format-sql-syntax-node ((alter-table sql-alter-table) database)

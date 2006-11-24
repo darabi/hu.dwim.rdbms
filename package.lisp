@@ -20,6 +20,8 @@
    #:commit
    #:rollback
    #:execute
+   #:in-transaction-p
+   #:transaction-in-progress-p
    #:with-transaction
 
    #:create-table

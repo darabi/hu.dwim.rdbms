@@ -19,7 +19,7 @@
     :type list))
   (:documentation "An SQL CREATE TABLE statement."))
 
-(defclass* sql-table-column (sql-syntax-node)
+(defclass* sql-column (sql-syntax-node)
   ((name
     :type string)
    (type
@@ -43,7 +43,7 @@
         do (format-sql-syntax-node column database))
   (write-char #\) *sql-stream*))
 
-(defmethod format-sql-syntax-node ((column sql-table-column) database)
+(defmethod format-sql-syntax-node ((column sql-column) database)
   (format-sql-syntax-node (name-of column) database)
   (write-char #\Space *sql-stream*)
   (format-sql-syntax-node (type-of column) database)

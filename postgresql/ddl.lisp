@@ -32,7 +32,7 @@
 (defmethod database-list-table-columns (name (database postgresql))
   (mapcar
    (lambda (column)
-     (make-instance 'sql-table-column
+     (make-instance 'sql-column
                     :name (first column)
                     :type (sql-column-type-for-internal-type (rest column))))
    (execute
