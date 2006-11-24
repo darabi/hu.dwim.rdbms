@@ -94,7 +94,7 @@
                 collect (if (and function-call-allowed-p
                                  (sql-function-call-form-p node))
                             (compile-sql-function-call node)
-                            (process-sql-syntax-node visitor body)))
+                            (process-sql-syntax-node visitor node)))
           (list (process-sql-syntax-node visitor body)))))
 
 (defun process-sql-syntax-node (visitor node)
