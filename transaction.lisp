@@ -40,10 +40,10 @@
   `(with-transaction* ()
     ,@body))
 
-(defmacro with-transaction* ((&key (database '*database*)) &body body)
+(defmacro with-transaction* ((&key database) &body body)
   (with-unique-names (body-finished-p)
     `(let ((*transaction* nil)
-           (*database* ,database)
+           ,@(when database `((*database* ,database)))
            (,body-finished-p #f))
       (unwind-protect
            (progn
