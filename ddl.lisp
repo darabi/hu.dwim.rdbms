@@ -55,7 +55,7 @@
   (:documentation "Returns the list of columns present in the database."))
 
 (defun table-exists-p (name)
-  (not (null (member name (list-tables) :test 'equalp))))
+  (not (null (member (string-downcase name) (list-tables) :test 'equalp))))
 
 ;;;;;;;;;;;;;;;;
 ;;; Update table
@@ -84,6 +84,8 @@
       (apply #'create-table name columns)))
 
 (defgeneric rdbms-type-for (type database)
+  (:documentation "Maps the given type to the smallest matching type.")
+
   (:method (type database)
            type))
 
@@ -96,7 +98,7 @@
     ;; create new columns that are missing from the table
     (dolist (column columns)
       (let* ((column-name (name-of column))
-	     (table-column (find column-name table-columns :key #'name-of :test #'equalp)))
+	     (table-column (find (string-downcase column-name) table-columns :key #'name-of :test #'equalp)))
 	(if table-column
             ;; change column type where needed
             (unless (equal-type-p (type-of table-column) (rdbms-type-for (type-of column) *database*) *database*)
@@ -114,7 +116,7 @@
     ;; drop extra columns that are present in the table
     (dolist (table-column table-columns)
       (let ((column-name (name-of table-column)))
-	(unless (find column-name columns :key #'name-of :test #'equalp)
+	(unless (find column-name columns :key (compose #'string-downcase #'name-of) :test #'equalp)
           (with-simple-restart
               (continue "Alter the table and let the data go")
             (error 'unconfirmed-lossy-drop-column-error :table-name name :column-name column-name))

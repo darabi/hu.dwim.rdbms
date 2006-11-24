@@ -19,6 +19,9 @@
    (command-counter
     (make-instance 'command-counter)
     :type command-counter)
+   (ddl-only
+    #f
+    :type boolean)
    (transaction-begin-executed
     #f
     :type boolean)
@@ -74,8 +77,6 @@
     (error 'transaction-error :format-control "No transaction in progress")))
 
 (defun begin ()
-  (assert (not (in-transaction-p))
-          () "Nested transactions are not yet supported")
   (setf *transaction* (make-transaction *database*)))
 
 (defun commit ()
@@ -91,9 +92,9 @@
   (execute-command *database* *transaction* command visitor))
 
 (defun execute-ddl (command)
-  (when (in-transaction-p)
-    (error 'transaction-error :format-control "Transaction in progress while executing DDL statement"))
-  (execute-command *database* command))
+  (with-transaction
+    (setf (ddl-only-p *transaction*) #t)
+    (execute command)))
 
 (defmethod transaction-class-name list (database)
   'transaction)

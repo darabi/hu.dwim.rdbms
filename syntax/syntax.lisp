@@ -51,6 +51,9 @@
   (:method ((s string) database)
            (write-string s *sql-stream*))
 
+  (:method ((s symbol) database)
+           (write-string (string-downcase s) *sql-stream*))
+  
   (:method ((i integer) database)
            (write i :stream *sql-stream*)))
 
@@ -59,8 +62,9 @@
 
 (defmethod execute-command :before (database transaction (command sql-ddl-statement) &optional visitor)
   (declare (ignore visitor))
-  (error 'transaction-error
-         :format-control "DDL statements are not allowed to be executed within a transaction, because they implicitly commit"))
+  (unless (ddl-only-p *transaction*)
+    (error 'transaction-error
+           :format-control "DDL statements are not allowed to be executed within a transaction, because they implicitly commit")))
 
 (defmacro sql (body)
   "Evaluate BODY and parse the result as an sql sexp."

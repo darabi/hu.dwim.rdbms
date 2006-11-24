@@ -20,6 +20,8 @@
            (make-instance 'sql-integer-type))
           ((equalp type-name "bool")
            (make-instance 'sql-boolean-type))
+          ((equalp type-name "varchar")
+           (make-instance 'sql-varchar-type :size (- (third description) 4)))
           (t
            (error "Unknown type")))))
 

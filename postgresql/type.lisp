@@ -11,6 +11,9 @@
 (defmethod format-sql-syntax-node ((type sql-boolean-type) (database postgresql))
   (write-string "BOOL" *sql-stream*))
 
+(defmethod format-sql-syntax-node ((type sql-number-type) (database postgresql))
+  (write-string "NUMERIC" *sql-stream*))
+
 (defmethod format-sql-syntax-node ((type sql-integer-type) (database postgresql))
   (let ((bit-size (bit-size-of type)))
     (cond ((<= bit-size 16)
@@ -21,3 +24,19 @@
            (write-string "INT8" *sql-stream*))
           (t
            (write-string "NUMERIC" *sql-stream*)))))
+
+(defmethod format-sql-syntax-node ((type sql-varchar-type) (database postgresql))
+  (write-string "VARCHAR" *sql-stream*)
+  (awhen (size-of type)
+    (write-char #\( *sql-stream*)
+    (write it :stream *sql-stream*)
+    (write-char #\) *sql-stream*)))
+
+(defmethod format-sql-syntax-node ((type sql-date-type) (database postgresql))
+  (write-string "DATE" *sql-stream*))
+
+(defmethod format-sql-syntax-node ((type sql-time-type) (database postgresql))
+  (write-string "TIME" *sql-stream*))
+
+(defmethod format-sql-syntax-node ((type sql-timestamp-type) (database postgresql))
+  (write-string "TIMESTAMP" *sql-stream*))
