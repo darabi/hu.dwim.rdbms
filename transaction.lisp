@@ -14,11 +14,27 @@
   ())
 
 (defclass* transaction ()
-  ((database)
+  ((database
+    :type database)
+   (command-counter
+    (make-instance 'command-counter)
+    :type command-counter)
    (state
     :uninitialized
     :type (member :uninitialized :committed :rolled-back :in-progress)))
   (:documentation "An object representing a transaction context. The actual backend connection/transaction is usually lazily created."))
+
+(defclass* command-counter ()
+  ((insert-counter 0 :type integer)
+   (select-counter 0 :type integer)
+   (update-counter 0 :type integer)
+   (delete-counter 0 :type integer)))
+
+(defprint-object (self command-counter)
+  (princ (strcat "insert: " (insert-counter-of self)
+                 " select: " (select-counter-of self)
+                 " update: " (update-counter-of self)
+                 " delete: " (delete-counter-of self))))
 
 (defmacro with-transaction (&body body)
   `(with-transaction* ()
@@ -103,4 +119,16 @@
   (:method :before (database transaction command &optional visitor)
            (declare (ignore visitor))
            (log.dribble "*** ~S in transaction ~A of database ~A"
-                        command transaction database)))
+                        command transaction database))
+
+  (:method :after (database transaction (command string) &optional visitor)
+           (declare (ignore visitor))
+           (let ((command-counter (command-counter-of transaction)))
+             (cond ((starts-with command "INSERT" :test #'equalp)
+                   (incf (insert-counter-of command-counter)))
+                  ((starts-with command "SELECT" :test #'equalp)
+                   (incf (select-counter-of command-counter)))
+                  ((starts-with command "UPDATE" :test #'equalp)
+                   (incf (update-counter-of command-counter)))
+                  ((starts-with command "DELETE" :test #'equalp)
+                   (incf (delete-counter-of command-counter)))))))

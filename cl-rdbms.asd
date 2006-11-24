@@ -47,7 +47,7 @@
    (:file "duplicates" :depends-on ("package"))
    (:file "configuration" :depends-on ("duplicates"))
    (:file "database" :depends-on ("configuration"))
-   (:file "transaction" :depends-on ("configuration"))
+   (:file "transaction" :depends-on ("database"))
    (:file "ddl" :depends-on ("configuration"))
    (:file "dml" :depends-on ("configuration"))
    (:module "syntax"
