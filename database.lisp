@@ -34,3 +34,7 @@
 
 (defgeneric transaction-class-name (database)
   (:method-combination list))
+
+(defmacro with-database (database &body body)
+  `(let ((*database* ,database))
+    ,@body))

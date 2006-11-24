@@ -14,6 +14,7 @@
   (:export
    #:database
    #:*database*
+   #:with-database
    #:postgresql
    #:postgresql-pg
    #:transaction
