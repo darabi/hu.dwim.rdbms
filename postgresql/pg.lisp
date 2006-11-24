@@ -37,8 +37,8 @@
   (princ (if (transaction-connected-p self)
              "#t" "#f")))
 
-(defmethod begin-transaction ((db postgresql-pg))
-  (make-instance 'postgresql-pg-transaction))
+(defmethod transaction-class-name list ((db postgresql-pg))
+  'postgresql-pg-transaction)
 
 (defmethod commit-transaction ((db postgresql-pg) (tr postgresql-pg-transaction))
   (execute-command db tr "COMMIT"))

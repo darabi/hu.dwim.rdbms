@@ -87,13 +87,19 @@
   (assert-transaction-in-progress)
   (execute-command *database* *transaction* command visitor))
 
+(defmethod transaction-class-name list (database)
+  'transaction)
+
 (defgeneric begin-transaction (database)
   (:method :around (database)
            (log.debug "About to BEGIN transaction in database ~A" database)
            (aprog1
                (call-next-method)
              (setf (database-of it) database)
-             (setf (state-of it) :in-progress))))
+             (setf (state-of it) :in-progress)))
+
+  (:method (database)
+           (make-instance (transaction-class-of database))))
 
 (defgeneric commit-transaction (database transaction)
   (:method :around (database transaction)

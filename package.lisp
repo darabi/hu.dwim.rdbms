@@ -13,9 +13,11 @@
 
   (:export
    #:database
+   #:*database*
    #:postgresql
    #:postgresql-pg
    #:transaction
+   #:*transaction*
    #:begin
    #:commit
    #:rollback
