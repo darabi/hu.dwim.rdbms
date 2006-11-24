@@ -7,7 +7,7 @@
 (in-package :cl-user)
 
 (defpackage :cl-rdbms
-  (:shadow #:log #:type-of)
+    (:shadow #:log #:type-of)
   
   (:use :cl :cl-rdbms-system :arnesi :defclass-star)
 
@@ -50,7 +50,12 @@
    #:select-records)
 
   ;; for debug purposes
-  (:export))
+  (:export
+   #:command-counter-of
+   #:insert-counter-of
+   #:select-counter-of
+   #:update-counter-of
+   #:delete-counter-of))
 
 (defpackage :cl-rdbms-test
   (:use :cl :cl-rdbms :arnesi)
