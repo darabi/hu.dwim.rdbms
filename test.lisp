@@ -68,6 +68,9 @@
   `(select "bar" table)
   "SELECT bar FROM table"
 
+  `(select (count *) table)
+  "SELECT count(*) FROM table"
+
   `(select
     ((foo.col1 "col1_alias") "bar")
     table)

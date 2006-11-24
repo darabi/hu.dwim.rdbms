@@ -73,16 +73,29 @@
 (defun sql-compile-error (form &optional error-at-form)
   (error "Error while compiling sql form ~S at form ~S" form error-at-form))
 
+(defun sql-symbol-equal (a b)
+  (and (or (symbolp a) (stringp a))
+       (or (symbolp b) (stringp b))
+       (equalp (string-downcase (string a))
+               (string-downcase (string b)))))
+
 (defun compile-sql (form)
   (cond
-    ((equalp (string (first form)) "select")
+    ((sql-symbol-equal (first form) "select")
      (compile-sql-select (rest form)))
     (t (sql-compile-error form))))
 
-(defun process-sql-syntax-list (visitor body)
-  (if (consp body)
-      (mapcar (curry #'process-sql-syntax-node visitor) body)
-      (list (process-sql-syntax-node visitor body))))
+(defun process-sql-syntax-list (visitor body &key function-call-allowed-p)
+  (if (and function-call-allowed-p
+           (sql-function-call-form-p body))
+      (list (compile-sql-function-call body))
+      (if (consp body)
+          (loop for node :in body
+                collect (if (and function-call-allowed-p
+                                 (sql-function-call-form-p node))
+                            (compile-sql-function-call node)
+                            (process-sql-syntax-node visitor body)))
+          (list (process-sql-syntax-node visitor body)))))
 
 (defun process-sql-syntax-node (visitor node)
   (if (typep node 'sql-syntax-node)
@@ -91,7 +104,8 @@
 
 (defun compile-sql-select (body)
   (make-instance 'sql-select
-                 :column-aliases (process-sql-syntax-list #'compile-sql-column-alias (first body))
+                 :column-aliases (process-sql-syntax-list #'compile-sql-column-alias (first body)
+                                                          :function-call-allowed-p #t)
                  :table-aliases (process-sql-syntax-list #'compile-sql-table-alias (second body))
                  :where (third body)))
 
@@ -100,25 +114,48 @@
       (string-downcase symbol)
       symbol))
 
+(defun sql-function-name-p (thing)
+  (let ((name (cond ((and thing (symbolp thing))
+                     (string-downcase thing))
+                    ((stringp thing)
+                     thing))))
+    ;; TODO
+    (string= name "count")))
+
+(defun sql-function-call-form-p (thing)
+  (and (consp thing)
+       (sql-function-name-p (first thing))))
+
+(defun compile-sql-function-call (body)
+  (make-instance 'sql-function-call
+                 :name (string-downcase (first body))
+                 :arguments (mapcar #'string (rest body))))
+
 (defun compile-sql-column-alias (body)
-  (let ((name)
-        (table-name)
-        (column-name)
-        (alias))
-    (if (consp body)
-        (progn
-          (setf name (first body))
-          (setf alias (second body)))
-        (progn
-          (setf name body)))
-    (setf name (compile-sql-symbol name))
-    (setf alias (compile-sql-symbol alias))
-    (aif (position #\. name)
-         (progn
-           (setf table-name (subseq name 0 it))
-           (setf column-name (subseq name (1+ it))))
-         (setf column-name name))
-    (make-instance 'sql-column-alias :table-name table-name :column-name column-name :alias alias)))
+  (cond ((sql-symbol-equal body "*")
+         (make-instance 'sql-all-columns))
+        ;; TODO this is temporary
+        ((and (consp body)
+              (sql-function-name-p (first body)))
+         (compile-sql-function-call body))
+        (t (let ((name)
+                 (table-name)
+                 (column-name)
+                 (alias))
+             (if (consp body)
+                 (progn
+                   (setf name (first body))
+                   (setf alias (second body)))
+                 (progn
+                   (setf name body)))
+             (setf name (compile-sql-symbol name))
+             (setf alias (compile-sql-symbol alias))
+             (aif (position #\. name)
+                  (progn
+                    (setf table-name (subseq name 0 it))
+                    (setf column-name (subseq name (1+ it))))
+                  (setf column-name name))
+             (make-instance 'sql-column-alias :table-name table-name :column-name column-name :alias alias)))))
 
 (defun compile-sql-table-alias (body)
   (let ((name)

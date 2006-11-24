@@ -12,8 +12,7 @@
   ())
 
 (define-syntax-node sql-operator (sql-expression)
-  ((name
-    :type symbol)))
+  ((name)))
 
 (define-syntax-node sql-binary-operator (sql-operator)
   ((left
@@ -38,3 +37,14 @@
         when i
         do (write-string (name-of operator) *sql-stream*)
         do (format-sql-syntax-node expression database)))
+
+(define-syntax-node sql-function-call (sql-expression)
+  ((name)
+   (arguments nil)))
+
+(defmethod format-sql-syntax-node ((function sql-function-call) database)
+  (write-string (name-of function) *sql-stream*)
+  (write-char #\( *sql-stream*)
+  (dolist (arg (arguments-of function))
+    (format-sql-syntax-node arg database))
+  (write-char #\) *sql-stream*))

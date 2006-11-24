@@ -60,7 +60,7 @@
                          (:file "alter-table" :depends-on ("syntax"))
                          (:file "expression" :depends-on ("syntax"))
                          (:file "insert" :depends-on ("syntax"))
-                         (:file "select" :depends-on ("syntax"))
+                         (:file "select" :depends-on ("syntax" "expression"))
                          (:file "update" :depends-on ("syntax"))
                          (:file "delete" :depends-on ("syntax"))))
    (:module "postgresql"
