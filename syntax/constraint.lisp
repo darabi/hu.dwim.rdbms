@@ -2,27 +2,27 @@
 
 #.(file-header)
 
-(defclass* sql-constraint (sql-syntax-node)
+(define-syntax-node sql-constraint (sql-syntax-node)
   ((name
     nil
     :type string))
   (:documentation "An SQL constraint."))
 
-(defclass* sql-constraint-with-tablespace (sql-constraint)
+(define-syntax-node sql-constraint-with-tablespace (sql-constraint)
   ((tablespace
     nil
     :type string)))
 
-(defclass* sql-primary-key-constraint (sql-constraint-with-tablespace)
+(define-syntax-node sql-primary-key-constraint (sql-constraint-with-tablespace)
   ())
 
-(defclass* sql-null-constraint (sql-constraint)
+(define-syntax-node sql-null-constraint (sql-constraint)
   ())
 
-(defclass* sql-not-null-constraint (sql-constraint)
+(define-syntax-node sql-not-null-constraint (sql-constraint)
   ())
 
-(defclass* sql-unique-constraint (sql-constraint-with-tablespace)
+(define-syntax-node sql-unique-constraint (sql-constraint-with-tablespace)
   ())
 
 (defmethod format-sql-syntax-node :before ((constraint sql-constraint) database)

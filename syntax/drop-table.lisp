@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(defclass* sql-drop-table (sql-statement)
+(define-syntax-node sql-drop-table (sql-statement)
   ((name
     :type string))
   (:documentation "An SQL ALTER TABLE statement."))

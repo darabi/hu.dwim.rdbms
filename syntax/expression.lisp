@@ -8,20 +8,20 @@
 
 #.(file-header)
 
-(defclass* sql-expression (sql-syntax-node)
+(define-syntax-node sql-expression (sql-syntax-node)
   ())
 
-(defclass* sql-operator (sql-expression)
+(define-syntax-node sql-operator (sql-expression)
   ((name
     :type symbol)))
 
-(defclass* sql-binary-operator (sql-operator)
+(define-syntax-node sql-binary-operator (sql-operator)
   ((left
     :type sql-expression)
    (right
     :type sql-expression)))
 
-(defclass* sql-n-ary-operator (sql-operator)
+(define-syntax-node sql-n-ary-operator (sql-operator)
   ((expressions
     :type list)))
 

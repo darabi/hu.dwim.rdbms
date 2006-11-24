@@ -13,7 +13,8 @@
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
                                 with-transaction*
-                                log log.dribble log.debug log.info log.warn log.error)"))))
+                                log log.dribble log.debug log.info log.warn log.error)")))
+  (import-sql-syntax-node-names))
 
 (def-suite :cl-rdbms :description "cl-rdbms tests")
 

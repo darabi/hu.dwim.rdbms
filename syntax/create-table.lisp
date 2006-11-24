@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(defclass* sql-create-table (sql-statement)
+(define-syntax-node sql-create-table (sql-statement)
   ((name
     :type string)
    (temporary
@@ -19,7 +19,7 @@
     :type list))
   (:documentation "An SQL CREATE TABLE statement."))
 
-(defclass* sql-column (sql-syntax-node)
+(define-syntax-node sql-column (sql-syntax-node)
   ((name
     :type string)
    (type

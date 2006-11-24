@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(defclass* sql-select (sql-statement)
+(define-syntax-node sql-select (sql-statement)
   ((table-aliases
     :type list)
    (column-aliases
@@ -17,21 +17,21 @@
     :type sql-where))
   (:documentation "An SQL SELECT statement."))
 
-(defclass* sql-table-alias (sql-syntax-node)
+(define-syntax-node sql-table-alias (sql-syntax-node)
   ((name
     :type string)
    (alias
     :type string)))
 
-(defclass* sql-column-alias (sql-syntax-node)
-  ((table-name
+(define-syntax-node sql-column-alias (sql-syntax-node)
+  ((table-name nil
     :type string)
    (column-name
     :type string)
    (alias
     :type string)))
 
-(defclass* sql-where (sql-syntax-node)
+(define-syntax-node sql-where (sql-syntax-node)
   ((expression
     :type sql-expression)))
 

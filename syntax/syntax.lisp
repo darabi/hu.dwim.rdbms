@@ -8,6 +8,11 @@
 
 #.(file-header)
 
+(defparameter *sql-syntax-node-names* nil)
+
+(defun import-sql-syntax-node-names (&optional (package *package*))
+  (import *sql-syntax-node-names* package))
+
 (defvar *sql-stream*)
 
 (defclass* sql-syntax-node ()
@@ -17,6 +22,12 @@
 (defclass* sql-statement (sql-syntax-node)
   ()
   (:documentation "Base class for all top level SQL statements which can be executed."))
+
+(defmacro define-syntax-node (name supers slots &rest options)
+  `(progn
+    (defclass* ,name ,supers ,slots
+               ,@options)
+    (pushnew ',name *sql-syntax-node-names*)))
 
 (defun format-sql (statement &key (stream t) (database *database*))
   (let ((*sql-stream* stream)
