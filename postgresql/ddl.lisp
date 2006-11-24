@@ -22,6 +22,12 @@
            (make-instance 'sql-boolean-type))
           ((equalp type-name "varchar")
            (make-instance 'sql-varchar-type :size (- (third description) 4)))
+          ((equalp type-name "date")
+           (make-instance 'sql-date-type))
+          ((equalp type-name "time")
+           (make-instance 'sql-time-type))
+          ((equalp type-name "timestamp")
+           (make-instance 'sql-timestamp-type))
           (t
            (error "Unknown type")))))
 

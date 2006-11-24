@@ -12,7 +12,8 @@
   ())
 
 (define-syntax-node sql-operator (sql-expression)
-  ((name)))
+  ((name
+    :type symbol)))
 
 (define-syntax-node sql-binary-operator (sql-operator)
   ((left
@@ -27,7 +28,7 @@
 (defmethod format-sql-syntax-node ((operator sql-binary-operator) database)
   (format-sql-syntax-node (left-of operator) database)
   (write-char #\Space *sql-stream*)
-  (write-string (name-of operator) *sql-stream*)
+  (write-string (string (name-of operator)) *sql-stream*)
   (write-char #\Space *sql-stream*)
   (format-sql-syntax-node (right-of operator) database))
 

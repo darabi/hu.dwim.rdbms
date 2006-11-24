@@ -57,7 +57,9 @@
 
 (defmethod rdbms-type-for ((type sql-bit-sized-type) database)
   (let ((bit-size (bit-size-of type)))
-    (cond ((<= bit-size 16)
+    (cond ((null bit-size)
+           (make-instance (class-of type)))
+          ((<= bit-size 16)
            (make-instance (class-of type) :bit-size 16))
           ((<= bit-size 32)
            (make-instance (class-of type) :bit-size 32))

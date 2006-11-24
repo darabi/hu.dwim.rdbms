@@ -14,6 +14,7 @@
   ((connection-specification
     :documentation "Backend specific connection data, usually a plist of args passed to the connect function.")
    (transaction-mixin
+    nil
     :type symbol)
    (transaction-class
     :type standard-class)
@@ -28,9 +29,12 @@
   ())
 
 (defmethod shared-initialize :after ((database database) slot-names &key &allow-other-keys)
-  (setf (transaction-class-of database)
-        (make-instance 'standard-class
-                       :direct-superclasses (mapcar #'find-class (transaction-class-name database)))))
+  (let ((classes (mapcar #'find-class (transaction-class-name database))))
+    (setf (transaction-class-of database)
+          (make-instance 'standard-class
+                         :direct-superclasses (aif (transaction-mixin-of database)
+                                                   (cons (find-class it) classes)
+                                                   classes)))))
 
 (defgeneric transaction-class-name (database)
   (:method-combination list))

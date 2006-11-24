@@ -16,7 +16,9 @@
 
 (defmethod format-sql-syntax-node ((type sql-integer-type) (database postgresql))
   (let ((bit-size (bit-size-of type)))
-    (cond ((<= bit-size 16)
+    (cond ((null bit-size)
+           (write-string "NUMERIC" *sql-stream*))
+          ((<= bit-size 16)
            (write-string "INT2" *sql-stream*))
           ((<= bit-size 32)
            (write-string "INT4" *sql-stream*))

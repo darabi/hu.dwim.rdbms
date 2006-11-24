@@ -35,6 +35,14 @@
    #:list-tables
    #:list-table-columns
    #:table-exists-p
+   #:unconfirmed-lossy-alter-table-error
+   #:unconfirmed-lossy-alter-column-type-error
+   #:unconfirmed-lossy-drop-column-error
+
+   #:create-sequence
+   #:drop-sequence
+   #:sequence-exists-p
+   #:sequence-next
 
    #:sql
    #:sql*

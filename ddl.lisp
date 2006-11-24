@@ -121,3 +121,22 @@
               (continue "Alter the table and let the data go")
             (error 'unconfirmed-lossy-drop-column-error :table-name name :column-name column-name))
 	  (drop-column name column-name))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Create, drop sequence
+
+(defun create-sequence (name)
+  ;; TODO:
+  )
+
+(defun drop-sequence (name)
+  ;; TODO:
+  )
+
+(defun sequence-exists-p (name)
+  ;; TODO:
+  #t)
+
+(defun sequence-next (name)
+  ;; TODO:
+  (random 100000000))

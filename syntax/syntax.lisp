@@ -29,6 +29,10 @@
 (defclass* sql-dml-statement (sql-statement)
   ())
 
+(defclass* sql-literal (sql-syntax-node)
+  ((value
+    :type (or null boolean number string symbol))))
+
 (defmacro define-syntax-node (name supers slots &rest options)
   `(progn
     (defclass* ,name ,supers ,slots
@@ -48,12 +52,38 @@
 (defgeneric format-sql-syntax-node (node database)
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
 
+  (:method ((literal sql-literal) database)
+           (let ((value (value-of literal)))
+             (etypecase value
+               (null
+                (write-string "NULL" *sql-stream*))
+               ;; TODO: make boolean a special literal to distinguish from nil
+               (boolean
+                (write-string
+                 (if value
+                     "true"
+                     "false")
+                 *sql-stream*))
+               (number
+                (write value :stream *sql-stream*))
+               (string
+                (write-char #\' *sql-stream*)
+                (write-string value *sql-stream*)
+                (write-char #\' *sql-stream*))
+               (symbol
+                (write-string (package-name (symbol-package value)) *sql-stream*)
+                (write-string "::" *sql-stream*)
+                (write-string (symbol-name value) *sql-stream*)))))
+  
+  ;; TODO: drop this and force to use literal syntax nodes
   (:method ((s string) database)
            (write-string s *sql-stream*))
 
+  ;; TODO: drop this and force to use literal syntax nodes
   (:method ((s symbol) database)
            (write-string (string-downcase s) *sql-stream*))
   
+  ;; TODO: drop this and force to use literal syntax nodes
   (:method ((i integer) database)
            (write i :stream *sql-stream*)))
 
@@ -111,7 +141,7 @@
                  :column-aliases (process-sql-syntax-list #'compile-sql-column-alias (first body)
                                                           :function-call-allowed-p #t)
                  :table-aliases (process-sql-syntax-list #'compile-sql-table-alias (second body))
-                 :where (third body)))
+                 :where (make-instance 'sql-where :expression (third body))))
 
 (defun compile-sql-symbol (symbol)
   (if (and symbol (symbolp symbol))
