@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(define-syntax-node sql-create-table (sql-statement)
+(define-syntax-node sql-create-table (sql-ddl-statement)
   ((name
     :type string)
    (temporary

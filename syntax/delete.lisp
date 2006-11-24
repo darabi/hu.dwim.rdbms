@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(define-syntax-node sql-delete (sql-statement)
+(define-syntax-node sql-delete (sql-dml-statement)
   ((table-name
     :type string)
    (where

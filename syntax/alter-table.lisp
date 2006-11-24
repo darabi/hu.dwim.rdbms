@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(defclass* sql-alter-table (sql-statement)
+(defclass* sql-alter-table (sql-ddl-statement)
   ((name
     :type string)
    (actions

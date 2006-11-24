@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(define-syntax-node sql-select (sql-statement)
+(define-syntax-node sql-select (sql-dml-statement)
   ((table-aliases
     :type list)
    (column-aliases

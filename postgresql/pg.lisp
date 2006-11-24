@@ -33,33 +33,24 @@
     :documentation "The pg connection retuned by")))
 
 (defprint-object (self postgresql-pg-transaction)
-  (princ ":connected-p ")
-  (princ (if (transaction-connected-p self)
+  (princ ":begin-executed-p ")
+  (princ (if (transaction-begin-executed-p self)
              "#t" "#f")))
 
 (defmethod transaction-class-name list ((db postgresql-pg))
   'postgresql-pg-transaction)
-
-(defmethod commit-transaction ((db postgresql-pg) (tr postgresql-pg-transaction))
-  (execute-command db tr "COMMIT"))
-
-(defmethod rollback-transaction ((db postgresql-pg) (tr postgresql-pg-transaction))
-  (execute-command db tr "ROLLBACK"))
 
 (defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) command &optional visitor)
   (if visitor
       (pg:pg-for-each (connection-of tr) command visitor)
       (pg::pgresult-tuples (pg:pg-exec (connection-of tr) command))))
 
-(defmethod transaction-connected-p ((tr postgresql-pg-transaction))
-  (not (null (slot-value tr 'connection))))
-
 (defgeneric connection-of (tr)
   (:method ((tr postgresql-pg-transaction))
            (aif (slot-value tr 'connection)
                 it
                 (let ((db (database-of tr)))
-                  (log.debug "Opening connection the first time it was needed using ~S" (connection-specification-of db))
+                  (log.debug "Opening connection the first time it was needed, using ~S" (connection-specification-of db))
                   (aprog1
                       (setf (connection-of tr) (apply #'pg::pg-connect/v3
                                                       (destructuring-bind (&key (host "localhost") (port 5432) database user-name (password ""))

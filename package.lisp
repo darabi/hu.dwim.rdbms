@@ -19,13 +19,11 @@
    #:postgresql-pg
    #:transaction
    #:*transaction*
-   #:begin
-   #:commit
-   #:rollback
    #:execute
+   #:execute-ddl
+   #:with-transaction
    #:in-transaction-p
    #:transaction-in-progress-p
-   #:with-transaction
 
    #:create-table
    #:drop-table
@@ -51,6 +49,10 @@
 
   ;; for debug purposes
   (:export
+   #:begin
+   #:commit
+   #:rollback
+
    #:command-counter-of
    #:insert-counter-of
    #:select-counter-of

@@ -23,6 +23,12 @@
   ()
   (:documentation "Base class for all top level SQL statements which can be executed."))
 
+(defclass* sql-ddl-statement (sql-statement)
+  ())
+
+(defclass* sql-dml-statement (sql-statement)
+  ())
+
 (defmacro define-syntax-node (name supers slots &rest options)
   `(progn
     (defclass* ,name ,supers ,slots
@@ -51,6 +57,10 @@
 (defmethod execute-command :around (database transaction (command sql-statement) &optional visitor)
   (execute-command database transaction (format-sql-to-string command) visitor))
 
+(defmethod execute-command :before (database transaction (command sql-ddl-statement) &optional visitor)
+  (declare (ignore visitor))
+  (error 'transaction-error
+         :format-control "DDL statements are not allowed to be executed within a transaction, because they implicitly commit"))
 
 (defmacro sql (body)
   "Evaluate BODY and parse the result as an sql sexp."

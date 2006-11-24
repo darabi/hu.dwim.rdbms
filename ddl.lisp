@@ -12,32 +12,32 @@
 ;;; Create, drop and alter table
 
 (defun create-table (name &rest columns)
-  (execute (make-instance 'sql-create-table :name name :columns columns)))
+  (execute-ddl (make-instance 'sql-create-table :name name :columns columns)))
 
 (defun drop-table (name)
-  (execute (make-instance 'sql-drop-table :name name)))
+  (execute-ddl (make-instance 'sql-drop-table :name name)))
 
 (defun alter-table (name &rest actions)
-  (execute (make-instance 'sql-alter-table :name name :actions actions)))
+  (execute-ddl (make-instance 'sql-alter-table :name name :actions actions)))
 
 (defun add-column (name column)
-  (execute (make-instance 'sql-alter-table
-                          :name name
-                          :actions (list (make-instance 'sql-add-column-action
-                                                        :name (name-of column)
-                                                        :type (type-of column))))))
+  (execute-ddl (make-instance 'sql-alter-table
+                              :name name
+                              :actions (list (make-instance 'sql-add-column-action
+                                                            :name (name-of column)
+                                                            :type (type-of column))))))
 
 (defun drop-column (name column-name)
-  (execute (make-instance 'sql-alter-table
-                          :name name
-                          :actions (list (make-instance 'sql-drop-column-action :name column-name)))))
+  (execute-ddl (make-instance 'sql-alter-table
+                              :name name
+                              :actions (list (make-instance 'sql-drop-column-action :name column-name)))))
 
 (defun alter-column-type (name column)
-  (execute (make-instance 'sql-alter-table
-                          :name name
-                          :actions (list (make-instance 'sql-alter-column-type-action
-                                                        :name (name-of column)
-                                                        :type (type-of column))))))
+  (execute-ddl (make-instance 'sql-alter-table
+                              :name name
+                              :actions (list (make-instance 'sql-alter-column-type-action
+                                                            :name (name-of column)
+                                                            :type (type-of column))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Query tables and columns

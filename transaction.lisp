@@ -19,6 +19,9 @@
    (command-counter
     (make-instance 'command-counter)
     :type command-counter)
+   (transaction-begin-executed
+    #f
+    :type boolean)
    (state
     :uninitialized
     :type (member :uninitialized :committed :rolled-back :in-progress)))
@@ -42,12 +45,12 @@
 
 (defmacro with-transaction* ((&key database) &body body)
   (with-unique-names (body-finished-p)
-    `(let ((*transaction* nil)
-           ,@(when database `((*database* ,database)))
-           (,body-finished-p #f))
+    `(let* (,@(when database `((*database* ,database)))
+            (*transaction* nil)
+            (,body-finished-p #f))
       (unwind-protect
            (progn
-             (setf *transaction* (begin))
+             (begin)
              (multiple-value-prog1
                  (progn
                    ,@body)
@@ -73,7 +76,7 @@
 (defun begin ()
   (assert (not (in-transaction-p))
           () "Nested transactions are not yet supported")
-  (begin-transaction *database*))
+  (setf *transaction* (make-transaction *database*)))
 
 (defun commit ()
   (assert-transaction-in-progress)
@@ -87,46 +90,55 @@
   (assert-transaction-in-progress)
   (execute-command *database* *transaction* command visitor))
 
+(defun execute-ddl (command)
+  (when (in-transaction-p)
+    (error 'transaction-error :format-control "Transaction in progress while executing DDL statement"))
+  (execute-command *database* command))
+
 (defmethod transaction-class-name list (database)
   'transaction)
-
-(defgeneric begin-transaction (database)
-  (:method :around (database)
-           (log.debug "About to BEGIN transaction in database ~A" database)
-           (aprog1
-               (call-next-method)
-             (setf (database-of it) database)
-             (setf (state-of it) :in-progress)))
+  
+(defgeneric make-transaction (database)
+  (:method :before (database)
+           (log.debug "About to BEGIN transaction in database ~A" database))
 
   (:method (database)
-           (make-instance (transaction-class-of database))))
+           (make-instance (transaction-class-of database) :database database :state :in-progress)))
+
+(defgeneric begin-transaction (database transaction)
+  (:method (database transaction)
+           (execute-command database transaction "BEGIN")))
 
 (defgeneric commit-transaction (database transaction)
   (:method :around (database transaction)
            (log.debug "About to COMMIT transaction ~A" transaction)
-           (when (transaction-connected-p transaction)
+           (when (transaction-begin-executed-p transaction)
              (call-next-method))
            (setf (state-of transaction) :committed)
-           (values)))
+           (values))
+
+  (:method (database transaction)
+           (execute-command database transaction "COMMIT")))
 
 (defgeneric rollback-transaction (database transaction)
   (:method :around (database transaction)
            (log.dribble "About to ROLLBACK transaction ~A" transaction)
-           (when (transaction-connected-p transaction)
+           (when (transaction-begin-executed-p transaction)
              (call-next-method))
            (setf (state-of transaction) :rolled-back)
-           (values)))
-
-(defgeneric transaction-connected-p (transaction)
-  (:method (tr)
-           #t))
+           (values))
+  
+  (:method (database transaction)
+           (execute-command database transaction "ROLLBACK")))
 
 (defgeneric cleanup-transaction (transaction))
 
 (defgeneric execute-command (database transaction command &optional visitor)
-  #+debug
   (:method :before (database transaction command &optional visitor)
            (declare (ignore visitor))
+           (unless (transaction-begin-executed-p transaction)
+             (setf (transaction-begin-executed-p transaction) #t)
+             (begin-transaction database transaction))
            (log.dribble "*** ~S in transaction ~A of database ~A"
                         command transaction database))
 

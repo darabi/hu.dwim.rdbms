@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(define-syntax-node sql-insert (sql-statement)
+(define-syntax-node sql-insert (sql-dml-statement)
   ((table-name
     :type string)
    (columns
