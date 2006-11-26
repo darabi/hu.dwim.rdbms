@@ -60,7 +60,7 @@
 (deftype sql-column-alias* ()
   '(or string symbol sql-column-alias))
 
-(define-syntax-node sql-all-columns (sql-syntax-node)
+(define-syntax-node sql-all-columns (sql-identifier)
   ()
   (:format-sql-identifier
    (format-char "*")))

@@ -51,6 +51,8 @@
             `(defmethod format-sql-syntax-node ((self ,name) database)
               (macrolet ((format-sql-syntax-node (node)
                            `(funcall 'format-sql-syntax-node ,node database))
+                         (format-sql-literal (node)
+                           `(funcall 'format-sql-literal ,node database))
                          (format-sql-identifier (node)
                            `(funcall 'format-sql-identifier ,node database)))
                 (with-slots ,(mapcar #'first slots) self
@@ -59,6 +61,8 @@
             `(defmethod format-sql-identifier ((self ,name) database)
               (macrolet ((format-sql-syntax-node (node)
                            `(funcall 'format-sql-syntax-node ,node database))
+                         (format-sql-literal (node)
+                           `(funcall 'format-sql-literal ,node database))
                          (format-sql-identifier (node)
                            `(funcall 'format-sql-identifier ,node database)))
                 (with-slots ,(mapcar #'first slots) self
@@ -94,19 +98,18 @@
 ;;;;;;;;;;;
 ;;; Literal
 
-(defclass* sql-literal (sql-syntax-node)
+(define-syntax-node sql-literal (sql-syntax-node)
   ((value
     :type (or null boolean number string symbol)))
-  (:documentation "Represents an SQL literal."))
+  (:documentation "Represents an SQL literal.")
+  (:format-sql-syntax-node
+   (format-sql-literal self)))
 
 (deftype sql-literal* ()
   '(or null boolean string symbol number sql-literal))
 
 (defgeneric format-sql-literal (literal database)
   (:documentation "Formats an SQL literal into *sql-stream*.")
-
-  (:method (literal database)
-           (format-sql-syntax-node literal database))
 
   (:method ((literal null) database)
            (format-string "NULL"))
@@ -150,6 +153,11 @@
   '(or string symbol sql-identifier))
 
 (defgeneric format-sql-identifier (identifier database)
+  (:documentation "Formats an SQL identifier into *sql-stream*.")
+
+  (:method (literal database)
+           (format-sql-syntax-node literal database))
+  
   (:method ((identifier string) database)
            (format-string identifier))
 
