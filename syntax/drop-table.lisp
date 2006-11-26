@@ -11,8 +11,7 @@
 (define-syntax-node sql-drop-table (sql-ddl-statement)
   ((name
     :type string))
-  (:documentation "An SQL ALTER TABLE statement."))
-
-(defmethod format-sql-syntax-node ((drop-table sql-drop-table) database)
-  (write-string "DROP TABLE " *sql-stream*)
-  (format-sql-syntax-node (name-of drop-table) database))
+  (:documentation "An SQL ALTER TABLE statement.")
+  (:format-sql-syntax-node
+    (format-string "DROP TABLE ")
+    (format-sql-identifier name)))

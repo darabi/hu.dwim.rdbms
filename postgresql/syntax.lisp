@@ -9,7 +9,7 @@
 #.(file-header)
 
 (defmethod format-sql-syntax-node ((action sql-add-column-action) (database postgresql))
-  (write-string "ADD " *sql-stream*)
-  (format-sql-syntax-node (name-of action) database)
-  (write-char #\Space *sql-stream*)
+  (format-string "ADD ")
+  (format-sql-identifier (name-of action) database)
+  (format-char " ")
   (format-sql-syntax-node (type-of action) database))

@@ -8,42 +8,42 @@
 
 #.(file-header)
 
-(defclass* sql-type (sql-syntax-node)
+(define-syntax-node sql-type (sql-syntax-node)
   ()
   (:documentation "Base class for all SQL types."))
 
-(defclass* sql-simple-type (sql-type)
+(define-syntax-node sql-simple-type (sql-type)
   ())
 
-(defclass* sql-boolean-type (sql-simple-type)
+(define-syntax-node sql-boolean-type (sql-simple-type)
   ())
 
-(defclass* sql-number-type (sql-simple-type)
+(define-syntax-node sql-number-type (sql-simple-type)
   ())
 
-(defclass* sql-bit-sized-type (sql-type)
+(define-syntax-node sql-bit-sized-type (sql-type)
   ((bit-size
     nil
     :type (or null integer))))
 
-(defclass* sql-float-type (sql-bit-sized-type)
+(define-syntax-node sql-float-type (sql-bit-sized-type)
   ())
 
-(defclass* sql-integer-type (sql-bit-sized-type)
+(define-syntax-node sql-integer-type (sql-bit-sized-type)
   ())
 
-(defclass* sql-varchar-type (sql-type)
+(define-syntax-node sql-varchar-type (sql-type)
   ((size
     nil
     :type (or null integer))))
 
-(defclass* sql-date-type (sql-simple-type)
+(define-syntax-node sql-date-type (sql-simple-type)
   ())
 
-(defclass* sql-time-type (sql-simple-type)
+(define-syntax-node sql-time-type (sql-simple-type)
   ())
 
-(defclass* sql-timestamp-type (sql-simple-type)
+(define-syntax-node sql-timestamp-type (sql-simple-type)
   ())
 
 (defmethod equal-type-p ((type-1 sql-simple-type) (type-2 sql-simple-type) database)

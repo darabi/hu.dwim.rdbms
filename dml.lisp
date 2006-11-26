@@ -8,26 +8,26 @@
 
 #.(file-header)
 
-(defun insert-records (table-name columns values)
+(defun insert-records (table columns values)
   (execute (make-instance 'sql-insert
-                          :table-name table-name
+                          :table table
                           :columns columns
                           :values values)))
 
-(defun update-records (table-name columns values where)
+(defun update-records (table columns values where)
   (execute (make-instance 'sql-update
-                          :table-name table-name
+                          :table table
                           :columns columns
                           :values values
                           :where where)))
 
-(defun delete-records (table-name where)
+(defun delete-records (table where)
   (execute (make-instance 'sql-delete
-                          :table-name table-name
+                          :table table
                           :where where)))
 
-(defun select-records (table-aliases column-aliases where)
+(defun select-records (columns tables where)
   (execute (make-instance 'sql-select
-                          :table-aliases table-aliases
-                          :column-aliases column-aliases
+                          :columns columns
+                          :tables tables
                           :where where)))

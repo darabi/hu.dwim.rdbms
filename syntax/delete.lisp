@@ -9,15 +9,13 @@
 #.(file-header)
 
 (define-syntax-node sql-delete (sql-dml-statement)
-  ((table-name
-    :type string)
+  ((table
+    :type sql-identifier*)
    (where
+    nil
     :type sql-expression))
-  (:documentation "An SQL DELETE statement."))
-
-(defmethod format-sql-syntax-node ((delete sql-delete) database)
-  (write-string "DELETE FROM " *sql-stream*)
-  (format-sql-syntax-node (table-name-of delete) database)
-  (awhen (where-of delete)
-    (write-string " WHERE " *sql-stream*)
-    (format-sql-syntax-node it database)))
+  (:documentation "An SQL DELETE statement.")
+  (:format-sql-syntax-node
+   (format-string "DELETE FROM ")
+   (format-sql-identifier table)
+   (format-where where)))

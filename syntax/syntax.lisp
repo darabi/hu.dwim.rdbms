@@ -15,9 +15,152 @@
 
 (defvar *sql-stream*)
 
+;;;;;;;;;;;;;;;
+;;; Syntax node
+
 (defclass* sql-syntax-node ()
   ()
   (:documentation "Base class for all kind of SQL syntax elements."))
+
+(defgeneric format-sql-syntax-node (node database)
+  (:documentation "Formats an SQL syntax node into *sql-stream*.")
+
+  (:method (node database)
+           (format-sql-literal node database)))
+
+(defun format-sql (statement &key (stream t) (database *database*))
+  "Formats the given SQL statement into the stream."
+  (let ((*sql-stream* stream)
+        (*database* database))
+    (format-sql-syntax-node statement database)
+    (values)))
+
+(defun format-sql-to-string (statement &rest args &key &allow-other-keys)
+  "Formats the given SQL statement into a string."
+  (with-output-to-string (stream)
+    (apply #'format-sql statement :stream stream args)))
+
+(defmacro define-syntax-node (name supers slots &rest options)
+  `(progn
+    (defclass* ,name ,supers ,slots
+               ,@(remove-if (lambda (option)
+                              (starts-with (string-downcase (first option)) "format"))
+                            options))
+    (pushnew ',name *sql-syntax-node-names*)
+    ,(awhen (find :format-sql-syntax-node options :key #'first)
+            `(defmethod format-sql-syntax-node ((self ,name) database)
+              (macrolet ((format-sql-syntax-node (node)
+                           `(funcall 'format-sql-syntax-node ,node database))
+                         (format-sql-identifier (node)
+                           `(funcall 'format-sql-identifier ,node database)))
+                (with-slots ,(mapcar #'first slots) self
+                  ,@(rest it)))))
+    ,(awhen (find :format-sql-identifier options :key #'first)
+            `(defmethod format-sql-identifier ((self ,name) database)
+              (macrolet ((format-sql-syntax-node (node)
+                           `(funcall 'format-sql-syntax-node ,node database))
+                         (format-sql-identifier (node)
+                           `(funcall 'format-sql-identifier ,node database)))
+                (with-slots ,(mapcar #'first slots) self
+                  ,@(rest it)))))
+    (find-class ',name)))
+
+(defmacro format-comma-separated-identifiers (nodes)
+  `(format-comma-separated-list ,nodes nil format-sql-identifier))
+
+(defmacro format-comma-separated-list (nodes &optional database (format-fn 'format-sql-syntax-node))
+  `(loop for i = nil then t
+    for node in ,nodes
+    when i
+    do (write-string ", " *sql-stream*)
+    do ,(if database
+            `(,format-fn node ,database)
+            `(,format-fn node))))
+
+(defmacro format-string (string)
+  `(write-string ,string *sql-stream*))
+
+(defmacro format-char (character)
+  `(write-char
+    ,(if (typep character 'string)
+         (progn
+           (assert (= (length character) 1) nil "format-char must be called with a character or a 1 character long string")
+           (elt character 0))
+         character) *sql-stream*))
+
+(defmacro format-number (number)
+  `(write ,number :stream *sql-stream*))
+
+;;;;;;;;;;;
+;;; Literal
+
+(defclass* sql-literal (sql-syntax-node)
+  ((value
+    :type (or null boolean number string symbol)))
+  (:documentation "Represents an SQL literal."))
+
+(deftype sql-literal* ()
+  '(or null boolean string symbol number sql-literal))
+
+(defgeneric format-sql-literal (literal database)
+  (:documentation "Formats an SQL literal into *sql-stream*.")
+
+  (:method (literal database)
+           (format-sql-syntax-node literal database))
+
+  (:method ((literal null) database)
+           (format-string "NULL"))
+
+  (:method ((literal (eql t)) database)
+           (format-string "true"))
+
+  ;; TODO: what about boolean false? how to distinguish from null?
+  #+nil(:method ((literal (eql nil)) database)
+                (format-string "false"))
+
+  (:method ((literal number) database)
+           (format-number literal))
+  
+  (:method ((literal string) database)
+           (format-char "'")
+           (format-string literal)
+           (format-char "'"))
+
+  (:method ((literal symbol) database)
+           (format-char "'")
+           (format-string (package-name (symbol-package literal)))
+           (format-string "::")
+           (format-string (symbol-name literal))
+           (format-char "'"))
+
+  (:method ((literal sql-literal) database)
+           (format-sql-literal (value-of literal) database)))
+
+;;;;;;;;;;;;;;
+;;; Identifier
+
+(define-syntax-node sql-identifier (sql-syntax-node)
+  ((name
+    :type (or string symbol)))
+  (:documentation "Represents an SQL identifier.")
+  (:format-sql-syntax-node
+   (format-sql-identifier self)))
+
+(deftype sql-identifier* ()
+  '(or string symbol sql-identifier))
+
+(defgeneric format-sql-identifier (identifier database)
+  (:method ((identifier string) database)
+           (format-string identifier))
+
+  (:method ((identifier symbol) database)
+           (format-string (string-downcase identifier)))
+
+  (:method ((identifier sql-identifier) database)
+           (format-sql-identifier (name-of identifier) database)))
+
+;;;;;;;;;;;;;
+;;; Statement
 
 (defclass* sql-statement (sql-syntax-node)
   ()
@@ -29,63 +172,15 @@
 (defclass* sql-dml-statement (sql-statement)
   ())
 
-(defclass* sql-literal (sql-syntax-node)
-  ((value
-    :type (or null boolean number string symbol))))
+(defmacro format-where (where &optional database)
+  `(when ,where
+    (format-string " WHERE ")
+    ,(if database
+         `(format-sql-syntax-node ,where ,database)
+         `(format-sql-syntax-node ,where))))
 
-(defmacro define-syntax-node (name supers slots &rest options)
-  `(progn
-    (defclass* ,name ,supers ,slots
-               ,@options)
-    (pushnew ',name *sql-syntax-node-names*)))
-
-(defun format-sql (statement &key (stream t) (database *database*))
-  (let ((*sql-stream* stream)
-        (*database* database))
-    (format-sql-syntax-node statement database)
-    (values)))
-
-(defun format-sql-to-string (statement &rest args &key &allow-other-keys)
-  (with-output-to-string (stream)
-    (apply #'format-sql statement :stream stream args)))
-
-(defgeneric format-sql-syntax-node (node database)
-  (:documentation "Formats an SQL syntax node into *sql-stream*.")
-
-  (:method ((literal sql-literal) database)
-           (let ((value (value-of literal)))
-             (etypecase value
-               (null
-                (write-string "NULL" *sql-stream*))
-               ;; TODO: make boolean a special literal to distinguish from nil
-               (boolean
-                (write-string
-                 (if value
-                     "true"
-                     "false")
-                 *sql-stream*))
-               (number
-                (write value :stream *sql-stream*))
-               (string
-                (write-char #\' *sql-stream*)
-                (write-string value *sql-stream*)
-                (write-char #\' *sql-stream*))
-               (symbol
-                (write-string (package-name (symbol-package value)) *sql-stream*)
-                (write-string "::" *sql-stream*)
-                (write-string (symbol-name value) *sql-stream*)))))
-  
-  ;; TODO: drop this and force to use literal syntax nodes
-  (:method ((s string) database)
-           (write-string s *sql-stream*))
-
-  ;; TODO: drop this and force to use literal syntax nodes
-  (:method ((s symbol) database)
-           (write-string (string-downcase s) *sql-stream*))
-  
-  ;; TODO: drop this and force to use literal syntax nodes
-  (:method ((i integer) database)
-           (write i :stream *sql-stream*)))
+;;;;;;;;;;;
+;;; Execute
 
 (defmethod execute-command :around (database transaction (command sql-statement) &optional visitor)
   (execute-command database transaction (format-sql-to-string command) visitor))
@@ -95,117 +190,3 @@
   (unless (ddl-only-p *transaction*)
     (error 'transaction-error
            :format-control "DDL statements are not allowed to be executed within a transaction, because they implicitly commit")))
-
-(defmacro sql (body)
-  "Evaluate BODY and parse the result as an sql sexp."
-  `(compile-sql ,body))
-
-(defmacro sql* (body)
-  "Same as SQL, but does not evaluate BODY."
-  `(compile-sql ',body))
-
-(defun sql-compile-error (form &optional error-at-form)
-  (error "Error while compiling sql form ~S at form ~S" form error-at-form))
-
-(defun sql-symbol-equal (a b)
-  (and (or (symbolp a) (stringp a))
-       (or (symbolp b) (stringp b))
-       (equalp (string-downcase (string a))
-               (string-downcase (string b)))))
-
-(defun compile-sql (form)
-  (cond
-    ((sql-symbol-equal (first form) "select")
-     (compile-sql-select (rest form)))
-    (t (sql-compile-error form))))
-
-(defun process-sql-syntax-list (visitor body &key function-call-allowed-p)
-  (if (and function-call-allowed-p
-           (sql-function-call-form-p body))
-      (list (compile-sql-function-call body))
-      (if (consp body)
-          (loop for node :in body
-                collect (if (and function-call-allowed-p
-                                 (sql-function-call-form-p node))
-                            (compile-sql-function-call node)
-                            (process-sql-syntax-node visitor node)))
-          (list (process-sql-syntax-node visitor body)))))
-
-(defun process-sql-syntax-node (visitor node)
-  (if (typep node 'sql-syntax-node)
-      node
-      (funcall visitor node)))
-
-(defun compile-sql-select (body)
-  (make-instance 'sql-select
-                 :column-aliases (process-sql-syntax-list #'compile-sql-column-alias (first body)
-                                                          :function-call-allowed-p #t)
-                 :table-aliases (process-sql-syntax-list #'compile-sql-table-alias (second body))
-                 :where (third body)))
-
-(defun compile-sql-symbol (symbol)
-  (if (and symbol (symbolp symbol))
-      (string-downcase symbol)
-      symbol))
-
-(defun sql-function-name-p (thing)
-  (let ((name (cond ((and thing (symbolp thing))
-                     (string-downcase thing))
-                    ((stringp thing)
-                     thing))))
-    ;; TODO
-    (string= name "count")))
-
-(defun sql-function-call-form-p (thing)
-  (and (consp thing)
-       (sql-function-name-p (first thing))))
-
-(defun compile-sql-function-call (body)
-  (make-instance 'sql-function-call
-                 :name (string-downcase (first body))
-                 :arguments (mapcar #'string (rest body))))
-
-(defun compile-sql-column-alias (body)
-  (cond ((sql-symbol-equal body "*")
-         (make-instance 'sql-all-columns))
-        ;; TODO this is temporary
-        ((and (consp body)
-              (sql-function-name-p (first body)))
-         (compile-sql-function-call body))
-        (t (let ((name)
-                 (table-name)
-                 (column-name)
-                 (alias))
-             (if (consp body)
-                 (progn
-                   (setf name (first body))
-                   (setf alias (second body)))
-                 (progn
-                   (setf name body)))
-             (setf name (compile-sql-symbol name))
-             (setf alias (compile-sql-symbol alias))
-             (aif (position #\. name)
-                  (progn
-                    (setf table-name (subseq name 0 it))
-                    (setf column-name (subseq name (1+ it))))
-                  (setf column-name name))
-             (make-instance 'sql-column-alias :table-name table-name :column-name column-name :alias alias)))))
-
-(defun compile-sql-table-alias (body)
-  (let ((name)
-        (alias))
-    (if (consp body)
-        (progn
-          (setf name (first body))
-          (setf alias (second body)))
-        (progn
-          (setf name body)))
-    (setf name (compile-sql-symbol name))
-    (setf alias (compile-sql-symbol alias))
-    (make-instance 'sql-table-alias :name name :alias alias)))
-
-
-
-
-
-

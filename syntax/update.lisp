@@ -9,30 +9,27 @@
 #.(file-header)
 
 (define-syntax-node sql-update (sql-dml-statement)
-  ((table-name
-    :type string)
-   (column-names
-    :type list)
+  ((table
+       :type sql-identifier*)
+   (columns
+    :type (list sql-identifier*))
    (values
-    :type list)
+    :type (list sql-literal*))
    (where
     nil
     :type sql-expression))
-  (:documentation "An SQL UPDATE statement."))
-
-(defmethod format-sql-syntax-node ((update sql-update) database)
-  (write-string "UPDATE  " *sql-stream*)
-  (format-sql-syntax-node (table-name-of update) database)
-  (write-string " SET " *sql-stream*)
-  (loop for i = nil then t
-        for column-name in (column-names-of update)
-        for value in (values-of update)
-        when i
-        do (write-string ", " *sql-stream*)
-        do
-        (format-sql-syntax-node column-name database)
-        (write-string " = " *sql-stream*)
-        (format-sql-syntax-node value database))
-  (awhen (where-of update)
-    (write-string " WHERE " *sql-stream*)
-    (format-sql-syntax-node it database)))
+  (:documentation "An SQL UPDATE statement.")
+  (:format-sql-syntax-node
+   (format-string "UPDATE ")
+   (format-sql-identifier table)
+   (format-string " SET ")
+   (loop for i = nil then t
+         for column in columns
+         for value in values
+         when i
+         do (format-string ", ")
+         do
+         (format-sql-identifier column)
+         (format-string " = ")
+         (format-sql-syntax-node value))
+   (format-where where)))

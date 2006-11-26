@@ -14,31 +14,31 @@
     :type string)))
 
 (define-syntax-node sql-primary-key-constraint (sql-constraint-with-tablespace)
-  ())
+  ()
+  (:format-sql-syntax-node
+   (format-string " PRIMARY KEY")))
 
 (define-syntax-node sql-null-constraint (sql-constraint)
-  ())
+  ()
+  (:format-sql-syntax-node
+   (format-string " NULL")))
 
 (define-syntax-node sql-not-null-constraint (sql-constraint)
-  ())
+  ()
+  (:format-sql-syntax-node
+   (format-string " NOT NULL")))
 
 (define-syntax-node sql-unique-constraint (sql-constraint-with-tablespace)
-  ())
+  ()
+  (:format-sql-syntax-node
+   (format-string " UNIQUE")))
 
 (defmethod format-sql-syntax-node :before ((constraint sql-constraint) database)
   (awhen (name-of constraint)
-    (write-string " CONSTRAINT" *sql-stream*)
-    (write-char #\Space *sql-stream*)
+    (format-string " CONSTRAINT")
+    (format-char " ")
     (format-sql-syntax-node it database)))
 
-(defmethod format-sql-syntax-node ((constraint sql-primary-key-constraint) database)
-  (write-string " PRIMARY KEY" *sql-stream*))
 
-(defmethod format-sql-syntax-node ((constraint sql-null-constraint) database)
-  (write-string " NULL" *sql-stream*))
 
-(defmethod format-sql-syntax-node ((constraint sql-not-null-constraint) database)
-  (write-string " NOT NULL" *sql-stream*))
 
-(defmethod format-sql-syntax-node ((constraint sql-unique-constraint) database)
-  (write-string " UNIQUE" *sql-stream*))

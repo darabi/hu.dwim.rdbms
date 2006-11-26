@@ -56,15 +56,116 @@
         (ignore-errors
           (execute "DROP TABLE alma"))))))
 
-(defmacro syntax-test (name &body body)
+(defmacro syntax-test (name sexp-p &body body)
   `(test (,name)
     (with-database *test-database*
       ,@ (loop for (sql string) :on body :by #'cddr
                collect `(is (equalp
-                             (format-sql-to-string (sql ,sql))
+                             (format-sql-to-string ,(if sexp-p
+                                                        `(sql ,sql)
+                                                        sql))
                              ,string))))))
 
-(syntax-test syntax
+(syntax-test identifier-syntax #f
+  (make-instance 'sql-identifier :name "a")
+  "a"
+
+  (make-instance 'sql-identifier :name 'a)
+  "a")
+
+(syntax-test create-table-syntax #f
+  (make-instance 'sql-create-table
+                 :name "a"
+                 :columns (list (make-instance 'sql-column :name "a" :type (make-instance 'sql-integer-type))))
+  "CREATE TABLE a (a NUMERIC)")
+
+(syntax-test alter-table-syntax #f
+  (make-instance 'sql-alter-table
+                 :name "a"
+                 :actions (list (make-instance 'sql-add-column-action :name "a" :type (make-instance 'sql-integer-type))))
+  "ALTER TABLE a ADD a NUMERIC"
+
+  (make-instance 'sql-alter-table
+                 :name "a"
+                 :actions (list (make-instance 'sql-alter-column-type-action :name "a" :type (make-instance 'sql-integer-type))))
+  "ALTER TABLE a ALTER COLUMN a TYPE NUMERIC"
+
+  (make-instance 'sql-alter-table
+                 :name "a"
+                 :actions (list (make-instance 'sql-drop-column-action :name "a")))
+  "ALTER TABLE a DROP COLUMN a")
+
+(syntax-test drop-table-syntax #f
+  (make-instance 'sql-drop-table
+                 :name "a")
+  "DROP TABLE a")
+
+(syntax-test insert-syntax #f
+  (make-instance 'sql-insert
+                 :table "a"
+                 :columns (list "a")
+                 :values (list "a"))
+  "INSERT INTO a (a) VALUES ('a')"
+  
+  (make-instance 'sql-insert
+                 :table (make-instance 'sql-identifier :name "a")
+                 :columns (list (make-instance 'sql-identifier :name "a"))
+                 :values (list "a"))
+  "INSERT INTO a (a) VALUES ('a')")
+
+(syntax-test select-syntax #f
+  (make-instance 'sql-select
+                 :columns (list "a")
+                 :tables (list "a"))
+  "SELECT a FROM a"
+  
+  (make-instance 'sql-select
+                 :columns (list (make-instance 'sql-all-columns))
+                 :tables (list "a"))
+  "SELECT * FROM a"
+  
+  (make-instance 'sql-select
+                 :columns (list "a")
+                 :tables (list "a")
+                 :where (make-instance 'sql-binary-operator
+                                       :name '=
+                                       :left (make-instance 'sql-identifier :name "a")
+                                       :right (make-instance 'sql-identifier :name "b")))
+  "SELECT a FROM a WHERE a = b"
+  
+  (make-instance 'sql-select
+                 :columns (list (make-instance 'sql-identifier :name "a"))
+                 :tables (list (make-instance 'sql-identifier :name "a")))
+  "SELECT a FROM a"
+  
+  (make-instance 'sql-select
+                 :columns (list (make-instance 'sql-column-alias :column "a" :table "b" :alias "c"))
+                 :tables (list (make-instance 'sql-table-alias :name "a" :alias "b")))
+  "SELECT b.a AS c FROM a b")
+  
+(syntax-test update-syntax #f
+  (make-instance 'sql-update
+                 :table "a"
+                 :columns (list "a")
+                 :values (list "a"))
+  "UPDATE a SET a = 'a'"
+  
+  (make-instance 'sql-update
+                 :table (make-instance 'sql-identifier :name "a")
+                 :columns (list (make-instance 'sql-identifier :name "a"))
+                 :values (list "a"))
+  "UPDATE a SET a = 'a'")
+  
+(syntax-test delete-syntax #f
+  (make-instance 'sql-delete
+                 :table "a")
+  "DELETE from a"
+
+  (make-instance 'sql-delete
+                 :table (make-instance 'sql-identifier :name "a"))
+  "DELETE from a")
+
+(syntax-test sexp-syntax #t
   `(select "bar" table)
   "SELECT bar FROM table"
 
@@ -82,4 +183,4 @@
       (list (make-instance 'sql-table-alias
                            :name "alma"
                            :alias "alma_alias"))))
-  "SELECT foo.column, bar FROM alma AS alma_alias")
+  "SELECT foo.column, bar FROM alma alma_alias")

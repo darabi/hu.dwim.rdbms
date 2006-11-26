@@ -53,6 +53,7 @@
    (:module "syntax"
             :depends-on ("database" "transaction" "ddl")
             :components ((:file "syntax")
+                         (:file "sexp" :depends-on ("syntax"))
                          (:file "type" :depends-on ("syntax"))
                          (:file "constraint" :depends-on ("syntax"))
                          (:file "create-table" :depends-on ("syntax"))
