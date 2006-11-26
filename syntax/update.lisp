@@ -17,7 +17,7 @@
     :type list)
    (where
     nil
-    :type sql-where))
+    :type sql-expression))
   (:documentation "An SQL UPDATE statement."))
 
 (defmethod format-sql-syntax-node ((update sql-update) database)
@@ -33,4 +33,6 @@
         (format-sql-syntax-node column-name database)
         (write-string " = " *sql-stream*)
         (format-sql-syntax-node value database))
-  (format-sql-syntax-node (where-of update) database))
+  (awhen (where-of update)
+    (write-string " WHERE " *sql-stream*)
+    (format-sql-syntax-node it database)))

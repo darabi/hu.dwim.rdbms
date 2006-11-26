@@ -141,7 +141,7 @@
                  :column-aliases (process-sql-syntax-list #'compile-sql-column-alias (first body)
                                                           :function-call-allowed-p #t)
                  :table-aliases (process-sql-syntax-list #'compile-sql-table-alias (second body))
-                 :where (make-instance 'sql-where :expression (third body))))
+                 :where (third body)))
 
 (defun compile-sql-symbol (symbol)
   (if (and symbol (symbolp symbol))
