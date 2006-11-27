@@ -50,7 +50,7 @@
            (aif (slot-value tr 'connection)
                 it
                 (let ((db (database-of tr)))
-                  (log.debug "Opening connection the first time it was needed, using ~S" (connection-specification-of db))
+                  (log.debug "Opening connection the first time it was needed, using ~S" (remove-keywords (connection-specification-of db) :password))
                   (aprog1
                       (setf (connection-of tr) (apply #'pg::pg-connect/v3
                                                       (destructuring-bind (&key (host "localhost") (port 5432) database user-name (password ""))
