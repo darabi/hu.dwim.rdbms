@@ -40,7 +40,7 @@
 (defmethod transaction-class-name list ((db postgresql-pg))
   'postgresql-pg-transaction)
 
-(defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) command &optional visitor)
+(defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) command &key visitor bindings &allow-other-keys)
   (if visitor
       (pg:pg-for-each (connection-of tr) command visitor)
       (pg::pgresult-tuples (pg:pg-exec (connection-of tr) command))))

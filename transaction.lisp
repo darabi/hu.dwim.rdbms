@@ -87,9 +87,10 @@
   (assert-transaction-in-progress)
   (rollback-transaction *database* *transaction*))
 
-(defun execute (command &optional visitor)
+(defun execute (command &rest args &key visitor bindings &allow-other-keys)
+  (declare (ignore visitor bindings)) ; for slime to bring up the arguments
   (assert-transaction-in-progress)
-  (execute-command *database* *transaction* command visitor))
+  (apply 'execute-command *database* *transaction* command args))
 
 (defun execute-ddl (command)
   (with-transaction
@@ -134,17 +135,15 @@
 
 (defgeneric cleanup-transaction (transaction))
 
-(defgeneric execute-command (database transaction command &optional visitor)
-  (:method :before (database transaction command &optional visitor)
-           (declare (ignore visitor))
+(defgeneric execute-command (database transaction command &key visitor bindings &allow-other-keys)
+  (:method :before (database transaction command &key &allow-other-keys)
            (unless (transaction-begin-executed-p transaction)
              (setf (transaction-begin-executed-p transaction) #t)
              (begin-transaction database transaction))
            (log.dribble "*** ~S in transaction ~A of database ~A"
                         command transaction database))
 
-  (:method :after (database transaction (command string) &optional visitor)
-           (declare (ignore visitor))
+  (:method :after (database transaction (command string) &key &allow-other-keys)
            (let ((command-counter (command-counter-of transaction)))
              (cond ((starts-with command "INSERT" :test #'equalp)
                    (incf (insert-counter-of command-counter)))

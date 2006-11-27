@@ -190,11 +190,10 @@
 ;;;;;;;;;;;
 ;;; Execute
 
-(defmethod execute-command :around (database transaction (command sql-statement) &optional visitor)
-  (execute-command database transaction (format-sql-to-string command) visitor))
+(defmethod execute-command :around (database transaction (command sql-statement) &rest args &key &allow-other-keys)
+  (apply 'execute-command database transaction (format-sql-to-string command) args))
 
-(defmethod execute-command :before (database transaction (command sql-ddl-statement) &optional visitor)
-  (declare (ignore visitor))
+(defmethod execute-command :before (database transaction (command sql-ddl-statement) &key &allow-other-keys)
   (unless (ddl-only-p *transaction*)
     (error 'transaction-error
            :format-control "DDL statements are not allowed to be executed within a transaction, because they implicitly commit")))
