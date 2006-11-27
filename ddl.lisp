@@ -70,10 +70,10 @@
     :type string)))
 
 (defcondition* unconfirmed-lossy-alter-column-type-error (unconfirmed-lossy-alter-table-error)
-  ()
+  ((new-type))
   (:report (lambda (error stream)
-             (format stream "Changing the type of column ~S in table ~S is a lossy transformation"
-                     (column-name-of error) (table-name-of error)))))
+             (format stream "Changing the type of column ~S to ~S in table ~S is a lossy transformation"
+                     (column-name-of error) (new-type-of error) (table-name-of error)))))
 
 (defcondition* unconfirmed-lossy-drop-column-error (unconfirmed-lossy-alter-table-error)
   ()
@@ -111,7 +111,8 @@
                        (declare (ignore e))
                        (with-simple-restart
                            (continue "Alter the table and let the data go")
-                         (error 'unconfirmed-lossy-alter-column-type-error :table-name name :column-name column-name))
+                         (error 'unconfirmed-lossy-alter-column-type-error :table-name name :column-name column-name
+                                :new-type (cl-rdbms::type-of column)))
                        (drop-column name column-name)
                        (add-column name column))))
             ;; add missing columns not present in the table
