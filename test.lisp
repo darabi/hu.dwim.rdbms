@@ -56,7 +56,7 @@
         (ignore-errors
           (execute "DROP TABLE alma"))))))
 
-(defmacro syntax-test (name sexp-p &body body)
+(defmacro syntax-test* (name sexp-p &body body)
   `(test (,name)
     (with-database *test-database*
       ,@ (loop for (sql string) :on body :by #'cddr
@@ -66,20 +66,32 @@
                                                         sql))
                              ,string))))))
 
-(syntax-test identifier-syntax #f
+(defmacro syntax-test (name &body body)
+  `(syntax-test* ,name #t ,@body))
+
+(defmacro ast-test (name &body body)
+  `(syntax-test* ,name #f ,@body))
+
+(ast-test identifier-syntax
   (make-instance 'sql-identifier :name "a")
   "a"
 
   (make-instance 'sql-identifier :name 'a)
   "a")
 
-(syntax-test create-table-syntax #f
+(ast-test create-table-syntax
   (make-instance 'sql-create-table
                  :name "a"
                  :columns (list (make-instance 'sql-column :name "a" :type (make-instance 'sql-integer-type))))
-  "CREATE TABLE a (a NUMERIC)")
+  "CREATE TABLE a (a NUMERIC)"
 
-(syntax-test alter-table-syntax #f
+  (make-instance 'sql-create-table
+                 :temporary :drop
+                 :name "a"
+                 :columns (list (make-instance 'sql-column :name "a" :type (make-instance 'sql-integer-type))))
+  "CREATE TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")
+
+(ast-test alter-table-syntax
   (make-instance 'sql-alter-table
                  :name "a"
                  :actions (list (make-instance 'sql-add-column-action :name "a" :type (make-instance 'sql-integer-type))))
@@ -95,12 +107,12 @@
                  :actions (list (make-instance 'sql-drop-column-action :name "a")))
   "ALTER TABLE a DROP COLUMN a")
 
-(syntax-test drop-table-syntax #f
+(ast-test drop-table-syntax
   (make-instance 'sql-drop-table
                  :name "a")
   "DROP TABLE a")
 
-(syntax-test insert-syntax #f
+(ast-test insert-syntax
   (make-instance 'sql-insert
                  :table "a"
                  :columns (list "a")
@@ -113,7 +125,7 @@
                  :values (list "a"))
   "INSERT INTO a (a) VALUES ('a')")
 
-(syntax-test select-syntax #f
+(ast-test select-syntax
   (make-instance 'sql-select
                  :columns (list "a")
                  :tables (list "a"))
@@ -143,7 +155,7 @@
                  :tables (list (make-instance 'sql-table-alias :name "a" :alias "b")))
   "SELECT b.a AS c FROM a b")
   
-(syntax-test update-syntax #f
+(ast-test update-syntax
   (make-instance 'sql-update
                  :table "a"
                  :columns (list "a")
@@ -156,7 +168,7 @@
                  :values (list "a"))
   "UPDATE a SET a = 'a'")
   
-(syntax-test delete-syntax #f
+(ast-test delete-syntax
   (make-instance 'sql-delete
                  :table "a")
   "DELETE from a"
@@ -165,7 +177,7 @@
                  :table (make-instance 'sql-identifier :name "a"))
   "DELETE from a")
 
-(syntax-test sexp-syntax #t
+(syntax-test sexp-syntax
   `(select "bar" table)
   "SELECT bar FROM table"
 
@@ -183,4 +195,10 @@
       (list (make-instance 'sql-table-alias
                            :name "alma"
                            :alias "alma_alias"))))
-  "SELECT foo.column, bar FROM alma alma_alias")
+  "SELECT foo.column, bar FROM alma alma_alias"
+
+  `(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
+  "CREATE TEMPORARY TABLE alma (col1 VARCHAR, col2 INT4) ON COMMIT DROP"
+
+  `(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
+  "CREATE TEMPORARY TABLE alma (col2 INT4) ON COMMIT DELETE ROWS")
