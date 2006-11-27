@@ -16,6 +16,12 @@
            (make-instance 'sql-integer-type :bit-size 32))
           ((equalp type-name "int8")
            (make-instance 'sql-integer-type :bit-size 64))
+
+          ((equalp type-name "float4")
+           (make-instance 'sql-float-type :bit-size 32))
+          ((equalp type-name "float8")
+           (make-instance 'sql-float-type :bit-size 64))
+
           ((equalp type-name "numeric")
            (make-instance 'sql-integer-type))
           ((equalp type-name "bool")
