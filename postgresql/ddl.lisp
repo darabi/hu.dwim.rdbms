@@ -8,35 +8,6 @@
 
 #.(file-header)
 
-(defun sql-column-type-for-internal-type (description)
-  (let ((type-name (first description)))
-    (cond ((equalp type-name "int2")
-           (make-instance 'sql-integer-type :bit-size 16))
-          ((equalp type-name "int4")
-           (make-instance 'sql-integer-type :bit-size 32))
-          ((equalp type-name "int8")
-           (make-instance 'sql-integer-type :bit-size 64))
-
-          ((equalp type-name "float4")
-           (make-instance 'sql-float-type :bit-size 32))
-          ((equalp type-name "float8")
-           (make-instance 'sql-float-type :bit-size 64))
-
-          ((equalp type-name "numeric")
-           (make-instance 'sql-integer-type))
-          ((equalp type-name "bool")
-           (make-instance 'sql-boolean-type))
-          ((equalp type-name "varchar")
-           (make-instance 'sql-varchar-type :size (- (third description) 4)))
-          ((equalp type-name "date")
-           (make-instance 'sql-date-type))
-          ((equalp type-name "time")
-           (make-instance 'sql-time-type))
-          ((equalp type-name "timestamp")
-           (make-instance 'sql-timestamp-type))
-          (t
-           (error "Unknown type")))))
-
 (defun list-objects (type)
   (mapcar #'car (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
 
