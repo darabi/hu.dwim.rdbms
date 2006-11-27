@@ -25,10 +25,14 @@
        (equalp (string a) (string b))))
 
 (defun compile-sql (form)
-  (let* ((sql-compiler-function-name (concatenate-symbol "compile-sql-" (first form) (find-package :cl-rdbms))))
-    (if (fboundp sql-compiler-function-name)
-        (apply sql-compiler-function-name (rest form))
-        (sql-compile-error form))))
+  (let ((sql-compiler-function-name (concatenate 'string
+                                                 (symbol-name '#:compile-sql-)
+                                                 (when (symbolp (first form))
+                                                   (symbol-name (first form))))))
+    (awhen (find-symbol sql-compiler-function-name (find-package :cl-rdbms))
+      (if (fboundp it)
+          (apply it (rest form))
+          (sql-compile-error form)))))
 
 (defun process-sql-syntax-list (visitor body &key function-call-allowed-p)
   (if (and function-call-allowed-p
