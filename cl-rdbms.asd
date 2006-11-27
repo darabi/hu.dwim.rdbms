@@ -50,6 +50,7 @@
    (:file "transaction" :depends-on ("database"))
    (:file "ddl" :depends-on ("configuration"))
    (:file "dml" :depends-on ("configuration"))
+   (:file "type" :depends-on ("syntax"))
    (:module "syntax"
             :depends-on ("database" "transaction" "ddl")
             :components ((:file "syntax")
