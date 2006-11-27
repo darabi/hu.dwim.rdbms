@@ -78,7 +78,12 @@
 (defun compile-sql-function-call (body)
   (make-instance 'sql-function-call
                  :name (string-downcase (first body))
-                 :arguments (mapcar #'string (rest body))))
+                 :arguments (mapcar #'compile-sql-function-call-argument (rest body))))
+
+(defun compile-sql-function-call-argument (body)
+  (if (sql-symbol-equal body "*")
+      (make-instance 'sql-all-columns)
+      (make-instance 'sql-identifier :name (string body))))
 
 (defun compile-sql-column-alias (body)
   (cond ((sql-symbol-equal body "*")
