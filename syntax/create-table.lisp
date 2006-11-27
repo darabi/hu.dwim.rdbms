@@ -12,8 +12,8 @@
   ((name
     :type string)
    (temporary
-    #f
-    :type boolean)
+    nil
+    :type (or null (member (:drop :preserve-rows :delete-rows))))
    (columns
     nil
     :type list))
@@ -26,7 +26,13 @@
    (format-sql-identifier name)
    (format-string " (")
    (format-comma-separated-list columns)
-   (format-char ")")))
+   (format-char ")")
+   (when temporary
+     (format-string " ON COMMIT ")
+     (format-string (ecase temporary
+                      (:drop "DROP")
+                      (:preserve-rows "PRESERVE ROWS")
+                      (:delete-rows "DELETE ROWS"))))))
 
 (define-syntax-node sql-column (sql-syntax-node)
   ((name

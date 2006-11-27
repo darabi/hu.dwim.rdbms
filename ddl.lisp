@@ -11,7 +11,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop and alter table
 
-(defun create-table (name &rest columns)
+(defun create-table (name columns &key temporary)
+  (execute-ddl (make-instance 'sql-create-table :temporary temporary :name name :columns columns)))
+
+(defun create-temporary-table (name &rest columns)
   (execute-ddl (make-instance 'sql-create-table :name name :columns columns)))
 
 (defun drop-table (name)
@@ -78,10 +81,10 @@
              (format stream "Dropping the column ~S from table ~S is a lossy transformation"
                      (column-name-of error) (table-name-of error)))))
 
-(defun update-table (name &rest columns)
+(defun update-table (name columns)
   (if (table-exists-p name)
-      (apply #'update-existing-table name columns)
-      (apply #'create-table name columns)))
+      (update-existing-table name columns)
+      (create-table name columns)))
 
 (defgeneric rdbms-type-for (type database)
   (:documentation "Maps the given type to the smallest matching type.")
@@ -93,7 +96,7 @@
   (:method (type-1 type-2 database)
            (error "Cannot match types ~A and ~A" type-1 type-2)))
 
-(defun update-existing-table (name &rest columns)
+(defun update-existing-table (name columns)
   (let ((table-columns (list-table-columns name)))
     ;; create new columns that are missing from the table
     (dolist (column columns)
