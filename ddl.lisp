@@ -139,10 +139,10 @@
   (not (null (member (string-downcase name) (list-sequences) :test 'equalp))))
 
 (defun list-sequences ()
-  (database-list-tables *database*))
+  (database-list-sequences *database*))
 
 (defgeneric database-list-sequences (database)
   (:documentation "Returns the list of sequence names present in the database."))
 
 (defun sequence-next (name)
-  (execute (make-instance 'sql-select :columns (list (make-instance 'sql-sequence-nextval-column :nam name)))))
+  (caar (execute (make-instance 'sql-select :columns (list (make-instance 'sql-sequence-nextval-column :name name))))))
