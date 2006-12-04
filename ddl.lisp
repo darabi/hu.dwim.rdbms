@@ -63,22 +63,22 @@
 ;;;;;;;;;;;;;;;;
 ;;; Update table
 
-(defcondition* unconfirmed-lossy-alter-table-error (error)
+(defcondition* unconfirmed-destructive-alter-table-error (error)
   ((table-name
     :type string)
    (column-name
     :type string)))
 
-(defcondition* unconfirmed-lossy-alter-column-type-error (unconfirmed-lossy-alter-table-error)
+(defcondition* unconfirmed-destructive-alter-column-type-error (unconfirmed-destructive-alter-table-error)
   ((new-type))
   (:report (lambda (error stream)
-             (format stream "Changing the type of column ~S to ~S in table ~S is a lossy transformation"
+             (format stream "Changing the type of column ~S to ~S in table ~S is a destructive transformation"
                      (column-name-of error) (new-type-of error) (table-name-of error)))))
 
-(defcondition* unconfirmed-lossy-drop-column-error (unconfirmed-lossy-alter-table-error)
+(defcondition* unconfirmed-destructive-drop-column-error (unconfirmed-destructive-alter-table-error)
   ()
   (:report (lambda (error stream)
-             (format stream "Dropping the column ~S from table ~S is a lossy transformation"
+             (format stream "Dropping the column ~S from table ~S is a destructive transformation"
                      (column-name-of error) (table-name-of error)))))
 
 (defun update-table (name columns)
@@ -111,7 +111,7 @@
                        (declare (ignore e))
                        (with-simple-restart
                            (continue "Alter the table and let the data go")
-                         (error 'unconfirmed-lossy-alter-column-type-error :table-name name :column-name column-name
+                         (error 'unconfirmed-destructive-alter-column-type-error :table-name name :column-name column-name
                                 :new-type (cl-rdbms::type-of column)))
                        (drop-column name column-name)
                        (add-column name column))))
@@ -123,7 +123,7 @@
 	(unless (find column-name columns :key (compose #'string-downcase #'name-of) :test #'equalp)
           (with-simple-restart
               (continue "Alter the table and let the data go")
-            (error 'unconfirmed-lossy-drop-column-error :table-name name :column-name column-name))
+            (error 'unconfirmed-destructive-drop-column-error :table-name name :column-name column-name))
 	  (drop-column name column-name))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;

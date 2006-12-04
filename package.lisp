@@ -35,9 +35,9 @@
    #:list-tables
    #:list-table-columns
    #:table-exists-p
-   #:unconfirmed-lossy-alter-table-error
-   #:unconfirmed-lossy-alter-column-type-error
-   #:unconfirmed-lossy-drop-column-error
+   #:unconfirmed-destructive-alter-table-error
+   #:unconfirmed-destructive-alter-column-type-error
+   #:unconfirmed-destructive-drop-column-error
 
    #:create-sequence
    #:drop-sequence
