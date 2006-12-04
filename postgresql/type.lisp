@@ -35,3 +35,20 @@
                      ("timestamp" (make-instance 'sql-timestamp-type)))
       (error "Unknown type"))))
 
+(defmethod binding-type-for-sql-type ((type sql-integer-type) (database postgresql-pg))
+  (let ((bit-size (bit-size-of type)))
+    (cond ((null bit-size)
+           (error "NUMERIC is not yet supported for bindings"))
+          ((<= bit-size 16)
+           :int16)
+          ((<= bit-size 32)
+           :int32)
+          ((<= bit-size 64)
+           (error "integer with bit-size 64 is not yet supported for bindings"))
+          (t
+           (error "NUMERIC is not yet supported for bindings")))))
+
+(defmethod binding-type-for-sql-type ((type sql-varchar-type) (database postgresql-pg))
+  :string)
+
+

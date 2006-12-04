@@ -50,6 +50,11 @@
    #:format-sql-to-string
    #:import-sql-syntax-node-names
 
+   #:+the-sql-varchar-type+
+   #:+the-sql-integer-16-type+
+   #:+the-sql-integer-32-type+
+   #:+the-sql-integer-64-type+
+   
    #:mark-transaction-for-commit-only
    #:mark-transaction-for-rollback-only
 

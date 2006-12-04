@@ -40,11 +40,55 @@
 (defmethod transaction-class-name list ((db postgresql-pg))
   'postgresql-pg-transaction)
 
-(defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) command &key visitor bindings &allow-other-keys)
-  ;; TODO: handle bindings
-  (if visitor
-      (pg:pg-for-each (connection-of tr) command visitor)
-      (pg::pgresult-tuples (pg:pg-exec (connection-of tr) command))))
+(defparameter *unique-counter* 0)
+
+(defun generate-unique-postgresql-name (base)
+  (strcat base (incf *unique-counter*)))
+
+(defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) (command string) &key visitor bindings &allow-other-keys)
+  (assert (not (and visitor bindings)) (visitor bindings) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
+  (let ((connection (connection-of tr))
+        (portal-name nil))
+    (setf command
+          (loop with result = (make-array (+ (length command) 16) :element-type 'character :adjustable #t :fill-pointer 0)
+                with counter = 0
+                for char :across command
+                do (if (char= char #\?)
+                       (progn
+                         (vector-push-extend #\$ result)
+                         (loop for char :across (princ-to-string (incf counter)) do
+                               (vector-push-extend char result)))
+                       (vector-push-extend char result))
+                finally (return result)))
+    (unwind-protect
+         (progn
+           (when bindings
+             (let ((statement-name (generate-unique-postgresql-name "statement")))
+               (multiple-value-bind (binding-types bindings)
+                   (loop for (type value) :on bindings :by #'cddr
+                         ;; TODO this is hackish here: we subseq to drop any type parameters starting with #\(
+                         collect (let ((str (format-sql-to-string type :database db)))
+                                   (aif (position #\( str :test #'char=)
+                                        (subseq str 0 it)
+                                        str)) :into binding-types
+                         collect (list (binding-type-for-sql-type type db) value) :into bindings
+                         finally (return (values binding-types bindings)))
+                 (setf portal-name (generate-unique-postgresql-name "portal"))
+                 (pg:pg-prepare connection statement-name command binding-types)
+                 (pg:pg-bind connection portal-name statement-name bindings))))
+           (if visitor
+               (let ((cursor-name (generate-unique-postgresql-name "cursor")))
+                 (pg:pg-exec connection "DECLARE " cursor-name " CURSOR FOR " command)
+                 (unwind-protect
+                      (loop :for result = (pg:pg-result (pg:pg-exec connection "FETCH 1 FROM " cursor-name) :tuples)
+                            :until (zerop (length result))
+                            :do (funcall visitor (first result)))
+                   (pg:pg-exec connection "CLOSE " cursor-name)))
+               (pg::pgresult-tuples (if portal-name
+                                        (pg:pg-execute connection portal-name)
+                                        (pg:pg-exec connection command)))))
+      (when portal-name
+        (pg:pg-close-portal connection portal-name)))))
 
 (defgeneric connection-of (tr)
   (:method ((tr postgresql-pg-transaction))

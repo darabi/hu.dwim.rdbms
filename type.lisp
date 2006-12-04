@@ -9,45 +9,54 @@
 #.(file-header)
 
 (defmethod format-sql-syntax-node ((type sql-boolean-type) database)
-  (format-string "BOOL"))
+  (format-string "bool"))
 
 (defmethod format-sql-syntax-node ((type sql-number-type) database)
-  (format-string "NUMERIC"))
+  (format-string "numeric"))
 
 (defmethod format-sql-syntax-node ((type sql-integer-type) database)
   (let ((bit-size (bit-size-of type)))
     (cond ((null bit-size)
-           (format-string "NUMERIC"))
+           (format-string "numeric"))
           ((<= bit-size 16)
-           (format-string "INT2"))
+           (format-string "int2"))
           ((<= bit-size 32)
-           (format-string "INT4"))
+           (format-string "int4"))
           ((<= bit-size 64)
-           (format-string "INT8"))
+           (format-string "int8"))
           (t
-           (format-string "NUMERIC")))))
+           (format-string "numeric")))))
 
 (defmethod format-sql-syntax-node ((type sql-float-type) database)
   (let ((bit-size (bit-size-of type)))
     (assert (and bit-size
                  (<= 32 bit-size 64)))
     (cond ((<= bit-size 32)
-           (format-string "FLOAT4"))
+           (format-string "float4"))
           ((<= bit-size 64)
-           (format-string "FLOAT8")))))
+           (format-string "float8")))))
 
 (defmethod format-sql-syntax-node ((type sql-varchar-type) database)
-  (format-string "VARCHAR")
+  (format-string "varchar")
   (awhen (size-of type)
     (format-char "(")
     (format-number it)
     (format-char ")")))
 
 (defmethod format-sql-syntax-node ((type sql-date-type) database)
-  (format-string "DATE"))
+  (format-string "date"))
 
 (defmethod format-sql-syntax-node ((type sql-time-type) database)
-  (format-string "TIME"))
+  (format-string "time"))
 
 (defmethod format-sql-syntax-node ((type sql-timestamp-type) database)
-  (format-string "TIMESTAMP"))
+  (format-string "timestamp"))
+
+;; TODO this may or may not be a generic enough protocol. for now it's postgresql only...
+(defgeneric binding-type-for-sql-type (sql-type database))
+
+(defparameter +the-sql-integer-16-type+ (make-instance 'sql-integer-type :bit-size 16))
+(defparameter +the-sql-integer-32-type+ (make-instance 'sql-integer-type :bit-size 32))
+(defparameter +the-sql-integer-64-type+ (make-instance 'sql-integer-type :bit-size 64))
+
+(defparameter +the-sql-varchar-type+ (make-instance 'sql-varchar-type))

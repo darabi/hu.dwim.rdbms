@@ -12,7 +12,7 @@
   (import (let ((*package* (find-package :cl-rdbms)))
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
-                                with-transaction*
+                                with-transaction* process-sql-syntax-list compile-sql-column
                                 log log.dribble log.debug log.info log.warn log.error)")))
   (import-sql-syntax-node-names))
 
@@ -54,6 +54,40 @@
            (execute-ddl "CREATE TABLE alma (name varchar(40))")
            (execute (format nil "INSERT INTO alma VALUES ('~A')" unicode-text))
            (is (string= (first (first (execute "SELECT name FROM alma"))) unicode-text)))
+      (ignore-errors
+        (execute-ddl "DROP TABLE alma")))))
+
+(test* simple-binding
+  (let ((unicode-text "éáúóüőű"))
+    (unwind-protect
+         (with-transaction
+           (execute-ddl (sql `(create table alma ((name (varchar 50))))))
+           (execute "INSERT INTO alma VALUES (?)"
+                    :bindings `(,+the-sql-varchar-type+ ,unicode-text))
+           (is (string= (first (first (execute "SELECT * FROM alma"))) unicode-text)))
+      (ignore-errors
+        (execute-ddl "DROP TABLE alma")))))
+
+(test* binding
+  (let ((bindings (list "éáúóüőű" 42))
+        (columns (process-sql-syntax-list #'compile-sql-column
+                                          `((name (varchar 50)) (x (integer 32))))))
+    (unwind-protect
+         (with-transaction
+           (execute-ddl (sql `(create table alma ,columns)))
+           (execute "INSERT INTO alma VALUES (?, ?)"
+                    :bindings (loop for column :in columns
+                                    for value :in bindings
+                                    collect (cl-rdbms::type-of column)
+                                    collect value))
+           (execute "SELECT * FROM alma"
+                    :visitor (let ((first-time #t))
+                               (lambda (row)
+                                 (unless first-time
+                                   (fail "Multiple rows?!"))
+                                 (setf first-time #f)
+                                 (is (string= (first row) (first bindings)))
+                                 (is (= (second row) (second bindings)))))))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 
