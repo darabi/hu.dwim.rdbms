@@ -82,14 +82,13 @@
   :compile-time-level #+debug +dribble+ #-debug +warn+
   :appender (make-instance 'brief-stream-log-appender :stream *debug-io*))
 
+(defclass sql-log-appender (stream-log-appender)
+  ())
+
 (deflogger sql-log ()
   :level +warn+
   :compile-time-level +info+
   :appender (make-instance 'sql-log-appender :stream *debug-io*))
-
-(eval-always
-  (defclass sql-log-appender (stream-log-appender)
-    ()))
 
 (defun start-sql-recording ()
   (setf (log.level (get-logger 'sql-log)) +info+))
@@ -97,5 +96,5 @@
 (defun stop-sql-recording ()
   (setf (log.level (get-logger 'sql-log)) +warn+))
 
-(defmethod append-message ((category log-category) (s sql-log-appender) message level)
-  (format (arnesi::log-stream s) "~A~%" message))
+(defmethod append-message ((category log-category) (appender sql-log-appender) message level)
+  (format (arnesi::log-stream appender) "~A~%" message))
