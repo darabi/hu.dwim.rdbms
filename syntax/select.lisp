@@ -12,6 +12,7 @@
   ((columns
     :type (list sql-column-alias*))
    (tables
+    nil
     :type (list sql-table-alias*))
    (where
     nil
@@ -20,8 +21,9 @@
   (:format-sql-syntax-node
    (format-string "SELECT ")
    (format-comma-separated-identifiers columns)
-   (format-string " FROM ")
-   (format-comma-separated-identifiers tables)
+   (when tables
+     (format-string " FROM ")
+     (format-comma-separated-identifiers tables))
    (format-where where)))
 
 (define-syntax-node sql-table-alias (sql-identifier)

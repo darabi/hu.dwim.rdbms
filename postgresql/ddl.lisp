@@ -11,6 +11,9 @@
 (defun list-objects (type)
   (mapcar #'car (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
 
+(defmethod database-list-sequences ((database postgresql))
+  (list-objects "S"))
+
 (defmethod database-list-tables ((database postgresql))
   (list-objects "r"))
 

@@ -177,6 +177,19 @@
                  :table (make-instance 'sql-identifier :name "a"))
   "DELETE from a")
 
+(ast-test sequence-syntax
+  (make-instance 'sql-create-sequence
+                 :name "a")
+  "CREATE SEQUENCE a"
+
+  (make-instance 'sql-drop-sequence
+                 :name "a")
+  "DROP SEQUENCE a"
+
+  (make-instance 'sql-select
+                 :columns (list (make-instance 'sql-sequence-nextval-column :name "a")))
+  "SELECT NEXTVAL('a')")
+
 (syntax-test sexp-syntax
   `(select "bar" table)
   "SELECT bar FROM table"

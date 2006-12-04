@@ -41,6 +41,7 @@
   'postgresql-pg-transaction)
 
 (defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) command &key visitor bindings &allow-other-keys)
+  ;; TODO: handle bindings
   (if visitor
       (pg:pg-for-each (connection-of tr) command visitor)
       (pg::pgresult-tuples (pg:pg-exec (connection-of tr) command))))

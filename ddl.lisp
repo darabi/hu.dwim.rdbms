@@ -130,17 +130,19 @@
 ;;; Create, drop sequence
 
 (defun create-sequence (name)
-  ;; TODO:
-  )
+  (execute-ddl (make-instance 'sql-create-sequence :name name)))
 
 (defun drop-sequence (name)
-  ;; TODO:
-  )
+  (execute-ddl (make-instance 'sql-drop-sequence :name name)))
 
 (defun sequence-exists-p (name)
-  ;; TODO:
-  #t)
+  (not (null (member (string-downcase name) (list-sequences) :test 'equalp))))
+
+(defun list-sequences ()
+  (database-list-tables *database*))
+
+(defgeneric database-list-sequences (database)
+  (:documentation "Returns the list of sequence names present in the database."))
 
 (defun sequence-next (name)
-  ;; TODO:
-  (random 100000000))
+  (execute (make-instance 'sql-select :columns (list (make-instance 'sql-sequence-nextval-column :nam name)))))
