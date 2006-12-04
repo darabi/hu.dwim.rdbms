@@ -91,10 +91,12 @@
   :appender (make-instance 'sql-log-appender :stream *debug-io*))
 
 (defun start-sql-recording ()
-  (setf (log.level (get-logger 'sql-log)) +info+))
+  (setf (log.level (get-logger 'sql-log)) +info+)
+  (values))
 
 (defun stop-sql-recording ()
-  (setf (log.level (get-logger 'sql-log)) +warn+))
+  (setf (log.level (get-logger 'sql-log)) +warn+)
+  (values))
 
 (defmethod append-message ((category log-category) (appender sql-log-appender) message level)
   (format (arnesi::log-stream appender) "~A~%" message))

@@ -94,7 +94,7 @@
 
 (defgeneric equal-type-p (type-1 type-2 database)
   (:method (type-1 type-2 database)
-           (error "Cannot match types ~A and ~A" type-1 type-2)))
+           #f))
 
 (defun update-existing-table (name columns)
   (let ((table-columns (list-table-columns name)))

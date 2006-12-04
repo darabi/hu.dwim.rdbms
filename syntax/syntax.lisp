@@ -155,6 +155,7 @@
 (defgeneric format-sql-identifier (identifier database)
   (:documentation "Formats an SQL identifier into *sql-stream*.")
 
+  ;; allows to put other AST nodes in place of identifiers (e.g. table name of select statements)
   (:method (literal database)
            (format-sql-syntax-node literal database))
   

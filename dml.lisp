@@ -21,7 +21,7 @@
                           :values values
                           :where where)))
 
-(defun delete-records (table where)
+(defun delete-records (table &optional where)
   (execute (make-instance 'sql-delete
                           :table table
                           :where where)))
