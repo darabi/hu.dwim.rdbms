@@ -8,6 +8,7 @@
 
 #.(file-header)
 
+;; TODO: rename columns and tables to something more general?
 (define-syntax-node sql-select (sql-dml-statement)
   ((columns
     :type (list sql-column-alias*))
