@@ -40,21 +40,20 @@
   (finishes
     (with-test-transaction
       (unwind-protect
-           (execute "CREATE TABLE alma ()")
+           (execute-ddl "CREATE TABLE alma ()")
         (ignore-errors
-          (execute "DROP TABLE alma"))))))
+          (execute-ddl "DROP TABLE alma"))))))
 
 (test* encoding
-  (finishes
+  (let ((unicode-text "éáúóüőű"))
     (with-test-transaction
       (unwind-protect
            (progn
-             (execute "CREATE TABLE alma (
-                       name varchar(40))")
-             (execute "INSERT INTO alma VALUES ('éáúóüőű')")
-             (execute "SELECT NAME FROM alma"))
+             (execute-ddl "CREATE TABLE alma (name varchar(40))")
+             (execute (format nil "INSERT INTO alma VALUES ('~A')" unicode-text))
+             (is (string= (first (first (execute "SELECT name FROM alma"))) unicode-text)))
         (ignore-errors
-          (execute "DROP TABLE alma"))))))
+          (execute-ddl "DROP TABLE alma"))))))
 
 (defmacro syntax-test* (name sexp-p &body body)
   `(test (,name)
