@@ -8,9 +8,12 @@
 
 #.(file-header)
 
-;; nothing postgres specific for now
-#+nil(defmethod format-sql-syntax-node ((type sql-boolean-type) (database postgresql))
-  (format-string "BOOL"))
+(defmethod format-sql-syntax-node ((type sql-float-type) (database postgresql))
+  (let ((bit-size (bit-size-of type)))
+    (cond ((<= bit-size 32)
+           (format-string "FLOAT4"))
+          ((<= bit-size 64)
+           (format-string "FLOAT8")))))
 
 (defun sql-column-type-for-internal-type (description)
   (let ((type-name (first description)))
