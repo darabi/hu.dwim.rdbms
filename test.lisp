@@ -29,31 +29,50 @@
 
 (defmacro test* (name &body body)
   `(test (,name :depends-on connect)
-    ,@body))
+    (with-database *test-database*
+      ,@body)))
 
 (test connect
   (finishes
-    (with-test-transaction
-      (execute "select now()"))))
+    (with-database *test-database*
+      (with-transaction
+        (execute "select now()"))
+      (ignore-errors
+        (execute-ddl "DROP TABLE alma")))))
 
 (test* create-table
   (finishes
-    (with-test-transaction
-      (unwind-protect
-           (execute-ddl "CREATE TABLE alma ()")
-        (ignore-errors
-          (execute-ddl "DROP TABLE alma"))))))
+    (unwind-protect
+         (execute-ddl "CREATE TABLE alma ()")
+      (ignore-errors
+        (execute-ddl "DROP TABLE alma")))))
 
 (test* encoding
   (let ((unicode-text "éáúóüőű"))
-    (with-test-transaction
-      (unwind-protect
-           (progn
-             (execute-ddl "CREATE TABLE alma (name varchar(40))")
-             (execute (format nil "INSERT INTO alma VALUES ('~A')" unicode-text))
-             (is (string= (first (first (execute "SELECT name FROM alma"))) unicode-text)))
-        (ignore-errors
-          (execute-ddl "DROP TABLE alma"))))))
+    (unwind-protect
+         (with-transaction
+           (execute-ddl "CREATE TABLE alma (name varchar(40))")
+           (execute (format nil "INSERT INTO alma VALUES ('~A')" unicode-text))
+           (is (string= (first (first (execute "SELECT name FROM alma"))) unicode-text)))
+      (ignore-errors
+        (execute-ddl "DROP TABLE alma")))))
+
+(test* terminal-action
+  (unwind-protect
+       (progn
+         (execute-ddl "CREATE TABLE alma (x integer)")
+         (with-transaction* ()
+           (execute "INSERT INTO alma VALUES (42)")
+           (is (= (first (first (execute "SELECT x FROM alma"))) 42))
+           (mark-transaction-for-rollback-only))
+         (with-transaction
+           (is (zerop (first (first (execute "SELECT count(*) FROM alma")))) "mark-transaction-for-rollback-only had no effects?"))
+         (with-transaction
+           (execute "INSERT INTO alma VALUES (42)"))
+         (with-transaction
+           (is (= 1 (first (first (execute "SELECT count(*) FROM alma")))) "with-transaction didn't commit as a terminal action?")))
+    (ignore-errors
+      (execute-ddl "DROP TABLE alma"))))
 
 (defmacro syntax-test* (name sexp-p &body body)
   `(test (,name)

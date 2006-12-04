@@ -50,6 +50,9 @@
    #:format-sql-to-string
    #:import-sql-syntax-node-names
 
+   #:mark-transaction-for-commit-only
+   #:mark-transaction-for-rollback-only
+
    #:insert-records
    #:update-records
    #:delete-records

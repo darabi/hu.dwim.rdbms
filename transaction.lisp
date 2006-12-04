@@ -27,7 +27,11 @@
     :type boolean)
    (state
     :uninitialized
-    :type (member :uninitialized :committed :rolled-back :in-progress)))
+    :type (member :uninitialized :committed :rolled-back :in-progress))
+   (terminal-action
+    :commit
+    :type (member :commit :rollback :marked-for-commit-only :marked-for-rollback-only)
+    :documentation "Used by with-transaction to decide what to do when the with-transaction body finishes without any errors."))
   (:documentation "An object representing a transaction context. The actual backend connection/transaction is usually lazily created."))
 
 (defclass* command-counter ()
@@ -46,23 +50,52 @@
   `(with-transaction* ()
     ,@body))
 
-(defmacro with-transaction* ((&key database) &body body)
+(defmacro with-transaction* ((&rest args &key database (default-terminal-action :commit) &allow-other-keys)
+                             &body body)
+  (remf-keywords args :database :default-terminal-action)
   (with-unique-names (body-finished-p)
     `(let* (,@(when database `((*database* ,database)))
             (*transaction* nil)
             (,body-finished-p #f))
       (unwind-protect
            (progn
-             (begin)
+             (begin :terminal-action ,default-terminal-action ,@args)
              (multiple-value-prog1
                  (progn
                    ,@body)
                (setf ,body-finished-p #t)
-               (commit)))
+               (ecase (terminal-action-of *transaction*)
+                 ((:commit :marked-for-commit-only)
+                  (commit))
+                 ((:rollback :marked-for-rollback-only)
+                  (rollback)))))
         (unless ,body-finished-p
           (rollback))
         (when *transaction*
           (cleanup-transaction *transaction*))))))
+
+(defmethod (setf terminal-action) :before (new-value (transaction transaction))
+  (let ((fail #f))
+    (ecase (terminal-action-of *transaction*)
+      ((:commit :marked-for-commit-only)
+       (unless (or (eq new-value :marked-for-commit-only)
+                   (eq new-value :commit))
+         (setf fail #t)))
+      ((:rollback :marked-for-rollback-only)
+       (unless (or (eq new-value :marked-for-rollback-only)
+                   (eq new-value :rollback))
+         (setf fail #t))))
+    (when fail
+      (error "You can not set the terminal action of the transaction ~A from ~A to ~A"
+             *transaction* (terminal-action-of *transaction*) :marked-for-commit-only))))
+
+(defun mark-transaction-for-commit-only ()
+  (assert-transaction-in-progress)
+  (setf (terminal-action-of *transaction*) :marked-for-commit-only))
+
+(defun mark-transaction-for-rollback-only ()
+  (assert-transaction-in-progress)
+  (setf (terminal-action-of *transaction*) :marked-for-rollback-only))
 
 (defun in-transaction-p ()
   (and (boundp '*transaction*)
@@ -76,8 +109,8 @@
   (unless (in-transaction-p)
     (error 'transaction-error :format-control "No transaction in progress")))
 
-(defun begin ()
-  (setf *transaction* (make-transaction *database*)))
+(defun begin (&rest args)
+  (setf *transaction* (apply #'make-transaction *database* args)))
 
 (defun commit ()
   (assert-transaction-in-progress)
@@ -100,12 +133,12 @@
 (defmethod transaction-class-name list (database)
   'transaction)
   
-(defgeneric make-transaction (database)
-  (:method :before (database)
+(defgeneric make-transaction (database &key &allow-other-keys)
+  (:method :before (database &key &allow-other-keys)
            (log.debug "About to BEGIN transaction in database ~A" database))
 
-  (:method (database)
-           (make-instance (transaction-class-of database) :database database :state :in-progress)))
+  (:method (database &rest args)
+           (apply #'make-instance (transaction-class-of database) :database database :state :in-progress args)))
 
 (defgeneric begin-transaction (database transaction)
   (:method (database transaction)
