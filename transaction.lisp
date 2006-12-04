@@ -141,7 +141,8 @@
              (setf (transaction-begin-executed-p transaction) #t)
              (begin-transaction database transaction))
            (log.dribble "*** ~S in transaction ~A of database ~A"
-                        command transaction database))
+                        command transaction database)
+           (sql-log.info "; ~A" command))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
            (let ((command-counter (command-counter-of transaction)))

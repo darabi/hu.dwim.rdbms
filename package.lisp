@@ -7,7 +7,7 @@
 (in-package :cl-user)
 
 (defpackage :cl-rdbms
-    (:shadow #:log #:type-of)
+  (:shadow #:log #:type-of)
   
   (:use :cl :cl-rdbms-system :arnesi :defclass-star)
 
@@ -61,6 +61,9 @@
    #:commit
    #:rollback
 
+   #:start-sql-recording
+   #:stop-sql-recording
+
    #:command-counter-of
    #:insert-counter-of
    #:select-counter-of
@@ -75,6 +78,24 @@
 (in-package :cl-rdbms)
 
 (deflogger log ()
-  :level #+debug +dribble+ #-debug +warn+
+  :level +warn+
   :compile-time-level #+debug +dribble+ #-debug +warn+
   :appender (make-instance 'brief-stream-log-appender :stream *debug-io*))
+
+(deflogger sql-log ()
+  :level +warn+
+  :compile-time-level +info+
+  :appender (make-instance 'sql-log-appender :stream *debug-io*))
+
+(eval-always
+  (defclass sql-log-appender (stream-log-appender)
+    ()))
+
+(defun start-sql-recording ()
+  (setf (log.level (get-logger 'sql-log)) +info+))
+
+(defun stop-sql-recording ()
+  (setf (log.level (get-logger 'sql-log)) +warn+))
+
+(defmethod append-message ((category log-category) (s sql-log-appender) message level)
+  (format (arnesi::log-stream s) "~A~%" message))
