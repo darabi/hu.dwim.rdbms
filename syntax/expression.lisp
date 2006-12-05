@@ -15,6 +15,14 @@
   ((name
     :type sql-identifier*)))
 
+(define-syntax-node sql-unary-operator (sql-operator)
+  ((expression
+    :type sql-expression))
+  (:format-sql-syntax-node
+   (format-sql-identifier (name-of self))
+   (format-char " ")
+   (format-sql-syntax-node expression)))
+
 (define-syntax-node sql-binary-operator (sql-operator)
   ((left
     :type sql-expression)
@@ -31,11 +39,7 @@
   ((expressions
     :type list))
   (:format-sql-syntax-node
-   (loop for i = nil then t
-         for expression in expressions
-         when i
-         do (format-string (name-of self))
-         do (format-sql-syntax-node expression))))
+   (format-separated-list expressions (strcat " " (name-of self) " "))))
 
 (define-syntax-node sql-function-call (sql-expression)
   ((name
@@ -48,3 +52,30 @@
    (dolist (arg arguments)
      (format-sql-syntax-node arg))
    (format-char ")")))
+
+(defmacro define-unary-operator (name)
+  `(defun ,(concatenate-symbol (find-package :cl-rdbms) "SQL-" name) (expression)
+    (make-instance 'sql-unary-operator
+     :name ,(string-upcase name)
+     :expression expression)))
+
+(defmacro define-binary-operator (name)
+  `(defun ,(concatenate-symbol (find-package :cl-rdbms) "SQL-" name) (left right)
+    (make-instance 'sql-binary-operator
+     :name ,(string-upcase name)
+     :left left
+     :right right)))
+
+(defmacro define-n-ary-operator (name)
+  `(defun ,(concatenate-symbol (find-package :cl-rdbms) "SQL-" name) (&rest expressions)
+    (make-instance 'sql-n-ary-operator
+     :name ,(string-upcase name)
+     :expressions expressions)))
+
+(define-unary-operator not)
+
+(define-n-ary-operator and)
+
+(define-n-ary-operator or)
+
+(define-binary-operator in)

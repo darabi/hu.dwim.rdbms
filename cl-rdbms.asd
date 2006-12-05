@@ -53,7 +53,8 @@
    (:file "type" :depends-on ("syntax"))
    (:module "syntax"
             :depends-on ("database" "transaction" "ddl")
-            :components ((:file "syntax")
+            :components ((:file "format")
+                         (:file "syntax" :depends-on ("format"))
                          (:file "sexp" :depends-on ("syntax"))
                          (:file "type" :depends-on ("syntax"))
                          (:file "constraint" :depends-on ("syntax"))
@@ -94,6 +95,7 @@
   (eval (read-from-string "(progn
                              (cl-rdbms::enable-sharp-boolean-syntax)
                              (5am:run!))"))
+  (eval (read-from-string "(setf *database* *test-database*)"))
   (values))
 
 (defmethod operation-done-p ((op test-op) (system (eql (find-system :cl-rdbms))))
