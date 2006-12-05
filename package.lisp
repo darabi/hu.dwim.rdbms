@@ -9,7 +9,7 @@
 (defpackage :cl-rdbms
   (:shadow #:log #:type-of)
   
-  (:use :cl :cl-rdbms-system :arnesi :defclass-star)
+  (:use :cl :sb-pcl :cl-rdbms-system :arnesi :defclass-star)
 
   (:export
    #:database
@@ -49,6 +49,7 @@
    #:format-sql
    #:format-sql-to-string
    #:import-sql-syntax-node-names
+   #:import-sql-constructor-names
 
    #:+the-sql-varchar-type+
    #:+the-sql-integer-16-type+

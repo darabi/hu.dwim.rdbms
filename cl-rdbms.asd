@@ -60,7 +60,7 @@
                          (:file "constraint" :depends-on ("syntax"))
                          (:file "create-table" :depends-on ("syntax"))
                          (:file "drop-table" :depends-on ("syntax"))
-                         (:file "alter-table" :depends-on ("syntax"))
+                         (:file "alter-table" :depends-on ("create-table"))
                          (:file "expression" :depends-on ("syntax"))
                          (:file "insert" :depends-on ("syntax"))
                          (:file "select" :depends-on ("syntax" "expression"))

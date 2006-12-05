@@ -10,8 +10,13 @@
 
 (defparameter *sql-syntax-node-names* nil)
 
+(defparameter *sql-constructor-names* nil)
+
 (defun import-sql-syntax-node-names (&optional (package *package*))
   (import *sql-syntax-node-names* package))
+
+(defun import-sql-constructor-names (&optional (package *package*))
+  (import *sql-constructor-names* package))
 
 (defvar *sql-stream*)
 
@@ -33,34 +38,48 @@
   (with-output-to-string (stream)
     (apply #'format-sql statement :stream stream args)))
 
+(defun sql-constructor-name (name)
+  (pushnew 'name *sql-constructor-names*)
+  (concatenate-symbol (find-package :cl-rdbms) "SQL-" name))
+
 (defmacro define-syntax-node (name supers slots &rest options)
-  `(progn
-    (defclass* ,name ,supers ,slots
-               ,@(remove-if (lambda (option)
-                              (starts-with (string-downcase (first option)) "format"))
-                            options))
-    (pushnew ',name *sql-syntax-node-names*)
-    ,(awhen (find :format-sql-syntax-node options :key #'first)
-            `(defmethod format-sql-syntax-node ((self ,name) database)
-              (macrolet ((format-sql-syntax-node (node)
-                           `(funcall 'format-sql-syntax-node ,node database))
-                         (format-sql-literal (node)
-                           `(funcall 'format-sql-literal ,node database))
-                         (format-sql-identifier (node)
-                           `(funcall 'format-sql-identifier ,node database)))
-                (with-slots ,(mapcar #'first slots) self
-                  ,@(rest it)))))
-    ,(awhen (find :format-sql-identifier options :key #'first)
-            `(defmethod format-sql-identifier ((self ,name) database)
-              (macrolet ((format-sql-syntax-node (node)
-                           `(funcall 'format-sql-syntax-node ,node database))
-                         (format-sql-literal (node)
-                           `(funcall 'format-sql-literal ,node database))
-                         (format-sql-identifier (node)
-                           `(funcall 'format-sql-identifier ,node database)))
-                (with-slots ,(mapcar #'first slots) self
-                  ,@(rest it)))))
-    (find-class ',name)))
+  (let ((effective-slots (delete-duplicates
+                          (append (mapcan #L(aif (find-class !1 nil)
+                                                 (progn
+                                                   (finalize-inheritance it)
+                                                   (mapcar #'slot-definition-name (class-slots it))))
+                                          supers)
+                                  (mapcar #'first slots)))))
+    `(progn
+      (defclass* ,name ,supers ,slots
+                 ,@(remove-if (lambda (option)
+                                (starts-with (string-downcase (first option)) "format"))
+                              options))
+      (pushnew ',name *sql-syntax-node-names*)
+      ,(awhen (find :format-sql-syntax-node options :key #'first)
+              `(defmethod format-sql-syntax-node ((self ,name) database)
+                (macrolet ((format-sql-syntax-node (node)
+                             `(funcall 'format-sql-syntax-node ,node database))
+                           (format-sql-literal (node)
+                             `(funcall 'format-sql-literal ,node database))
+                           (format-sql-identifier (node)
+                             `(funcall 'format-sql-identifier ,node database)))
+                  (with-slots ,effective-slots self
+                    ,@(rest it)))))
+      ,(awhen (find :format-sql-identifier options :key #'first)
+              `(defmethod format-sql-identifier ((self ,name) database)
+                (macrolet ((format-sql-syntax-node (node)
+                             `(funcall 'format-sql-syntax-node ,node database))
+                           (format-sql-literal (node)
+                             `(funcall 'format-sql-literal ,node database))
+                           (format-sql-identifier (node)
+                             `(funcall 'format-sql-identifier ,node database)))
+                  (with-slots ,effective-slots
+                      self
+                    ,@(rest it)))))
+      (defun ,(sql-constructor-name name) (&rest args)
+        (apply #'make-instance ',name args))
+      (find-class ',name))))
 
 (defmacro format-comma-separated-identifiers (nodes)
   `(format-comma-separated-list ,nodes nil format-sql-identifier))

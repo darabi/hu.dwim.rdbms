@@ -48,20 +48,20 @@
    (format-separated-list expressions (strcat " " (name-of self) " "))))
 
 (defmacro define-unary-operator (name)
-  `(defun ,(concatenate-symbol (find-package :cl-rdbms) "SQL-" name) (expression)
+  `(defun ,(sql-constructor-name name) (expression)
     (make-instance 'sql-unary-operator
      :name ,(string-upcase name)
      :expression expression)))
 
 (defmacro define-binary-operator (name)
-  `(defun ,(concatenate-symbol (find-package :cl-rdbms) "SQL-" name) (left right)
+  `(defun ,(sql-constructor-name name) (left right)
     (make-instance 'sql-binary-operator
      :name ,(string-upcase name)
      :left left
      :right right)))
 
 (defmacro define-n-ary-operator (name)
-  `(defun ,(concatenate-symbol (find-package :cl-rdbms) "SQL-" name) (&rest expressions)
+  `(defun ,(sql-constructor-name name) (&rest expressions)
     (make-instance 'sql-n-ary-operator
      :name ,(string-upcase name)
      :expressions expressions)))
@@ -111,7 +111,7 @@
    (format-char ")")))
 
 (defmacro define-aggregate-function (name)
-  `(defun ,(concatenate-symbol (find-package :cl-rdbms) "SQL-" name) (&rest arguments)
+  `(defun ,(sql-constructor-name name) (&rest arguments)
     (make-instance 'sql-function-call
      :name ,(string-upcase name)
      :arguments arguments)))

@@ -25,21 +25,21 @@
     :type t))
   (:format-sql-syntax-node
    (format-string "ADD (")
-   (format-sql-identifier (name-of self))
+   (format-sql-identifier name)
    (format-char " ")
-   (format-sql-syntax-node (type-of self))
+   (format-sql-syntax-node type)
    (format-char ")")))
 
 (define-syntax-node sql-drop-column-action (sql-column)
   ()
   (:format-sql-syntax-node
    (format-string "DROP COLUMN ")
-   (format-sql-identifier (name-of self))))
+   (format-sql-identifier name)))
 
 (define-syntax-node sql-alter-column-type-action (sql-column)
   ()
   (:format-sql-syntax-node
    (format-string "ALTER COLUMN ")
-   (format-sql-identifier (name-of self))
+   (format-sql-identifier name)
    (format-string " TYPE ")
-   (format-sql-syntax-node (type-of self))))
+   (format-sql-syntax-node type)))
