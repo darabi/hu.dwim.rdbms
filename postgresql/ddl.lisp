@@ -22,7 +22,7 @@
    (lambda (column)
      (make-instance 'sql-column
                     :name (first column)
-                    :type (sql-column-type-for-internal-type (rest column))))
+                    :type (sql-type-for-internal-type (rest column))))
    (execute
     (format nil "SELECT pg_attribute.attname, pg_type.typname, pg_attribute.attlen,
                                    pg_attribute.atttypmod, pg_attribute.attnotnull

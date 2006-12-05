@@ -63,7 +63,7 @@
          (with-transaction
            (execute-ddl (sql `(create table alma ((name (varchar 50))))))
            (execute "INSERT INTO alma VALUES (?)"
-                    :bindings `(,+the-sql-text-type+ ,unicode-text))
+                    :bindings `(,(make-instance 'sql-character-varying-type :size 32) ,unicode-text))
            (is (string= (first (first (execute "SELECT * FROM alma"))) unicode-text)))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
@@ -263,7 +263,7 @@
   "SELECT foo.column, bar FROM alma alma_alias"
 
   `(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
-  "CREATE TEMPORARY TABLE alma (col1 VARCHAR, col2 INT4) ON COMMIT DROP"
+  "CREATE TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP"
 
   `(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
-  "CREATE TEMPORARY TABLE alma (col2 INT4) ON COMMIT DELETE ROWS")
+  "CREATE TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")

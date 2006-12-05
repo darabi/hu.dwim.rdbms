@@ -51,11 +51,6 @@
    #:import-sql-syntax-node-names
    #:import-sql-constructor-names
 
-   #:+the-sql-integer-16-type+
-   #:+the-sql-integer-32-type+
-   #:+the-sql-integer-64-type+
-   #:+the-sql-text-type+
-
    #:mark-transaction-for-commit-only
    #:mark-transaction-for-rollback-only
 

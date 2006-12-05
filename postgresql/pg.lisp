@@ -67,11 +67,7 @@
                (multiple-value-bind (binding-types bindings)
                    (loop for (type value) :on bindings :by #'cddr
                          ;; TODO this is hackish here: we subseq to drop any type parameters starting with #\(
-                         collect (let ((str (format-sql-to-string type :database db)))
-                                   (string-downcase
-                                    (aif (position #\( str :test #'char=)
-                                         (subseq str 0 it)
-                                         str))) :into binding-types
+                         collect (internal-type-for-sql-type type) :into binding-types
                          collect (list (binding-type-for-sql-type type db) value) :into bindings
                          finally (return (values binding-types bindings)))
                  (setf portal-name (generate-unique-postgresql-name "portal"))

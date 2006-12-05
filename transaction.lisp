@@ -74,20 +74,11 @@
         (when *transaction*
           (cleanup-transaction *transaction*))))))
 
-(defmethod (setf terminal-action) :before (new-value (transaction transaction))
-  (let ((fail #f))
-    (ecase (terminal-action-of *transaction*)
-      ((:commit :marked-for-commit-only)
-       (unless (or (eq new-value :marked-for-commit-only)
-                   (eq new-value :commit))
-         (setf fail #t)))
-      ((:rollback :marked-for-rollback-only)
-       (unless (or (eq new-value :marked-for-rollback-only)
-                   (eq new-value :rollback))
-         (setf fail #t))))
-    (when fail
-      (error "You can not set the terminal action of the transaction ~A from ~A to ~A"
-             *transaction* (terminal-action-of *transaction*) :marked-for-commit-only))))
+(defmethod (setf terminal-action-of) :before (new-value (transaction transaction))
+  (when (and (member (terminal-action-of *transaction*) '(:marked-for-rollback-only :marked-for-commit-only))
+             (not (eq new-value (terminal-action-of *transaction*))))
+    (error "You can not set the terminal action of the transaction ~A from ~A to ~A"
+           *transaction* (terminal-action-of *transaction*) new-value)))
 
 (defun mark-transaction-for-commit-only ()
   (assert-transaction-in-progress)

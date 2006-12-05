@@ -136,8 +136,8 @@
         (type-args (when (consp body)
                      (rest body))))
     (cond ((sql-symbol-equal name "varchar")
-           (make-instance 'sql-varchar-type :size (when type-args
-                                                    (first type-args))))
+           (make-instance 'sql-character-varying-type :size (when type-args
+                                                              (first type-args))))
           ((sql-symbol-equal name "integer")
            (make-instance 'sql-integer-type :bit-size (when type-args
                                                         (first type-args))))

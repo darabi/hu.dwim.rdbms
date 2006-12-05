@@ -8,19 +8,23 @@
 
 #.(file-header)
 
+;; Types from:
+;; http://savage.net.au/SQL/sql-2003-2.bnf.html
+
 (define-syntax-node sql-type (sql-syntax-node)
   ()
   (:documentation "Base class for all SQL types."))
 
 (define-syntax-node sql-simple-type (sql-type)
-  ())
+  ()
+  (:documentation "Types without parameters"))
 
 (define-syntax-node sql-boolean-type (sql-simple-type)
   ()
   (:format-sql-syntax-node
    (format-string "BOOL")))
 
-(define-syntax-node sql-number-type (sql-simple-type)
+(define-syntax-node sql-numeric-type (sql-simple-type)
   ()
   (:format-sql-syntax-node
    (format-string "NUMERIC")))
@@ -36,9 +40,9 @@
    (assert (and bit-size
                 (<= 32 bit-size 64)))
    (cond ((<= bit-size 32)
-          (format-string "FLOAT4"))
+          (format-string "REAL"))
          ((<= bit-size 64)
-          (format-string "FLOAT8")))))
+          (format-string "DOUBLE PRECISION")))))
 
 (define-syntax-node sql-integer-type (sql-bit-sized-type)
   ()
@@ -46,11 +50,11 @@
    (cond ((null bit-size)
           (format-string "NUMERIC"))
          ((<= bit-size 16)
-          (format-string "INT2"))
+          (format-string "SMALLINT"))
          ((<= bit-size 32)
-          (format-string "INT4"))
+          (format-string "INT"))
          ((<= bit-size 64)
-          (format-string "INT8"))
+          (format-string "BIGINT"))
          (t
           (format-string "NUMERIC")))))
 
@@ -59,28 +63,26 @@
     nil
     :type (or null integer))))
 
-(define-syntax-node sql-char-type (sql-sized-type)
-  ()
-  (:format-sql-syntax-node
-   (format-string "CHAR")
-   (when size
-     (format-char "(")
-     (format-number size)
-     (format-char ")"))))
+(define-syntax-node sql-string-type (sql-sized-type)
+  ())
 
-(define-syntax-node sql-varchar-type (sql-sized-type)
+(define-syntax-node sql-character-type (sql-string-type)
   ()
   (:format-sql-syntax-node
-   (format-string "VARCHAR")
-   (when size
-     (format-char "(")
-     (format-number size)
-     (format-char ")"))))
+   (format-string "CHARACTER")
+   (format-size size)))
 
-(define-syntax-node sql-text-type (sql-simple-type)
+(define-syntax-node sql-character-varying-type (sql-string-type)
   ()
   (:format-sql-syntax-node
-   (format-string "TEXT")))
+   (format-string "CHARACTER VARYING")
+   (format-size size)))
+
+(define-syntax-node sql-character-large-object-type (sql-string-type)
+  ()
+  (:format-sql-syntax-node
+   (format-string "CHARACTER LARGE OBJECT")
+   (format-size size)))
 
 (define-syntax-node sql-date-type (sql-simple-type)
   ()
@@ -97,6 +99,17 @@
   (:format-sql-syntax-node
    (format-string "TIMESTAMP")))
 
+(define-syntax-node sql-interval-type (sql-simple-type)
+  ()
+  (:format-sql-syntax-node
+   (format-string "INTERVAL")))
+
+(define-syntax-node sql-binary-large-object-type (sql-sized-type)
+  ()
+  (:format-sql-syntax-node
+   (format-string "BINARY LARGE OBJECT")
+   (format-size size)))
+
 (defmethod equal-type-p ((type-1 sql-simple-type) (type-2 sql-simple-type) database)
   (eq (class-of type-1) (class-of type-2)))
 
@@ -104,7 +117,8 @@
   (eq (bit-size-of type-1) (bit-size-of type-2)))
 
 (defmethod equal-type-p ((type-1 sql-sized-type) (type-2 sql-sized-type) database)
-  (eq (size-of type-1) (size-of type-2)))
+  (and (eq (class-of type-1) (class-of type-2))
+       (eq (size-of type-1) (size-of type-2))))
 
 (defmethod rdbms-type-for ((type sql-bit-sized-type) database)
   (let ((bit-size (bit-size-of type)))
@@ -119,10 +133,8 @@
           (t
            (make-instance (class-of type))))))
 
-(defparameter +the-sql-integer-16-type+ (make-instance 'sql-integer-type :bit-size 16))
-
-(defparameter +the-sql-integer-32-type+ (make-instance 'sql-integer-type :bit-size 32))
-
-(defparameter +the-sql-integer-64-type+ (make-instance 'sql-integer-type :bit-size 64))
-
-(defparameter +the-sql-text-type+ (make-instance 'sql-text-type))
+(defun format-size (size)
+  (when size
+    (format-char "(")
+    (format-number size)
+    (format-char ")")))
