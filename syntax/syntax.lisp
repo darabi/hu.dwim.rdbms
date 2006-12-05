@@ -136,6 +136,11 @@
            (format-string (symbol-name literal))
            (format-char "'"))
 
+  (:method ((literal list) database)
+           (format-string "(")
+           (format-comma-separated-list literal database)
+           (format-string ")"))
+
   (:method ((literal sql-literal) database)
            (format-sql-literal (value-of literal) database)))
 
