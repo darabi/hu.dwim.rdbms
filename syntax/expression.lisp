@@ -238,7 +238,6 @@
 
 ;;;;;;;;;;;;
 ;;; Count(*)
+
 (defun sql-count-* ()
   (sql-count (sql-identifier :name '*)))
-
-

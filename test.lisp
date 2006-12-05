@@ -195,7 +195,7 @@
                                        :name '=
                                        :left (make-instance 'sql-identifier :name "a")
                                        :right (make-instance 'sql-identifier :name "b")))
-  "SELECT a FROM a WHERE a = b"
+  "SELECT a FROM a WHERE (a = b)"
   
   (make-instance 'sql-select
                  :columns (list (make-instance 'sql-identifier :name "a"))
