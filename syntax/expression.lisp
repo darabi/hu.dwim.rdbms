@@ -25,7 +25,7 @@
   ((expression
     :type sql-expression))
   (:format-sql-syntax-node
-   (format-sql-identifier (name-of self))
+   (format-sql-identifier name)
    (format-char " ")
    (format-sql-syntax-node expression)))
 
@@ -37,7 +37,7 @@
   (:format-sql-syntax-node
    (format-sql-syntax-node left)
    (format-char " ")
-   (format-sql-identifier (name-of self))
+   (format-sql-identifier name)
    (format-char " ")
    (format-sql-syntax-node right)))
 
@@ -45,7 +45,7 @@
   ((expressions
     :type list))
   (:format-sql-syntax-node
-   (format-separated-list expressions (strcat " " (name-of self) " "))))
+   (format-separated-list expressions (strcat " " name " "))))
 
 (defmacro define-unary-operator (name)
   (let ((constructor-name (sql-constructor-name name)))

@@ -43,13 +43,11 @@
 
 (defmacro define-syntax-node (name supers slots &rest options)
   (let ((effective-slots (delete-duplicates
-                          (append (mapcan #L(aif (find-class !1 nil)
-                                                 (progn
-                                                   (finalize-inheritance it)
-                                                   (mapcar #'slot-definition-name (class-slots it))))
-                                          supers)
+                          (append (mapcan #L(copy-list (get !1 :slot-names)) supers)
                                   (mapcar #'first slots)))))
     `(progn
+      (eval-always
+        (setf (get ',name :slot-names) ',effective-slots))
       (defclass* ,name ,supers ,slots
                  ,@(remove-if (lambda (option)
                                 (starts-with (string-downcase (first option)) "format"))

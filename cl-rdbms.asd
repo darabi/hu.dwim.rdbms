@@ -50,7 +50,6 @@
    (:file "transaction" :depends-on ("database"))
    (:file "ddl" :depends-on ("configuration"))
    (:file "dml" :depends-on ("configuration"))
-   (:file "type" :depends-on ("syntax"))
    (:module "syntax"
             :depends-on ("database" "transaction" "ddl")
             :components ((:file "format")
@@ -70,9 +69,9 @@
    (:module "postgresql"
             :depends-on ("database" "transaction" "syntax")
             :components ((:file "database")
-                         (:file "pg")
+                         (:file "pg" :depends-on ("database"))
                          (:file "syntax" :depends-on ("database"))
-                         (:file "type" :depends-on ("database"))
+                         (:file "type" :depends-on ("pg"))
                          (:file "ddl" :depends-on ("database"))))))
 
 (defsystem :cl-rdbms-test

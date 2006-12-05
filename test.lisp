@@ -63,7 +63,7 @@
          (with-transaction
            (execute-ddl (sql `(create table alma ((name (varchar 50))))))
            (execute "INSERT INTO alma VALUES (?)"
-                    :bindings `(,+the-sql-varchar-type+ ,unicode-text))
+                    :bindings `(,+the-sql-text-type+ ,unicode-text))
            (is (string= (first (first (execute "SELECT * FROM alma"))) unicode-text)))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
