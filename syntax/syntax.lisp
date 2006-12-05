@@ -191,7 +191,7 @@
 ;;;;;;;;;;;
 ;;; Execute
 
-(defmethod execute-command :around (database transaction (command sql-statement) &rest args &key &allow-other-keys)
+(defmethod execute-command (database transaction (command sql-statement) &rest args &key &allow-other-keys)
   (apply 'execute-command database transaction (format-sql-to-string command) args))
 
 (defmethod execute-command :before (database transaction (command sql-ddl-statement) &key &allow-other-keys)
