@@ -96,3 +96,10 @@
 
 (defmacro format-number (number)
   `(write ,number :stream *sql-stream*))
+
+(defmacro format-where (where &optional database)
+  `(when ,where
+    (format-string " WHERE ")
+    ,(if database
+         `(format-sql-syntax-node ,where ,database)
+         `(format-sql-syntax-node ,where))))

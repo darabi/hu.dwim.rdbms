@@ -112,13 +112,6 @@
 (defclass* sql-dml-statement (sql-statement)
   ())
 
-(defmacro format-where (where &optional database)
-  `(when ,where
-    (format-string " WHERE ")
-    ,(if database
-         `(format-sql-syntax-node ,where ,database)
-         `(format-sql-syntax-node ,where))))
-
 ;;;;;;;;;;;
 ;;; Execute
 
