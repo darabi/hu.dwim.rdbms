@@ -10,22 +10,45 @@
 
 ;; TODO: rename columns and tables to something more general?
 (define-syntax-node sql-select (sql-dml-statement)
-  ((columns
+  ((distinct
+    nil
+    :type boolean)
+   (columns
     :type (list sql-column-alias*))
    (tables
     nil
     :type (list sql-table-alias*))
    (where
     nil
-    :type sql-expression))
+    :type sql-expression)
+   (order-by
+    nil
+    :type list)  ; TODO: element type
+   (offset
+    nil
+    :type number)
+   (limit
+    nil
+    :type number))
   (:documentation "An SQL SELECT statement.")
   (:format-sql-syntax-node
    (format-string "SELECT ")
+   (when distinct
+     (format-string "DISTINCT "))
    (format-comma-separated-identifiers columns)
    (when tables
      (format-string " FROM ")
      (format-comma-separated-identifiers tables))
-   (format-where where)))
+   (format-where where)
+   (when order-by
+     (format-string " ORDER BY ")
+     (format-comma-separated-list order-by))
+   (when limit
+     (format-string " LIMIT ")
+     (format-number limit))
+   (when offset
+     (format-string " OFFSET ")
+     (format-number offset))))
 
 (define-syntax-node sql-table-alias (sql-identifier)
   ((name
@@ -67,3 +90,16 @@
   ()
   (:format-sql-identifier
    (format-char "*")))
+
+(define-syntax-node sql-sort-spec (sql-syntax-node)
+  ((sort-key
+    :type (or number sql-column-alias*))
+   (ordering
+    :ascending
+    :type (member :ascending :descending)))
+  (:format-sql-syntax-node
+   (format-sql-syntax-node sort-key)
+   (format-char " ")
+   (ecase ordering
+     (:ascending (format-string "ASC"))
+     (:descending (format-string "DESC")))))

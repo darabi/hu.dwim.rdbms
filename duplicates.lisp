@@ -53,3 +53,6 @@
         (intern symbol-name package)
         (intern symbol-name))))
 
+(defun length=1 (list)
+  (and list (null (cdr list))))
+
