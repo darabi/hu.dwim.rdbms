@@ -64,9 +64,6 @@
   (:method ((literal sql-literal) database)
            (format-sql-literal (value-of literal) database)))
 
-(defun sql-literal (value)
-  (make-instance 'sql-literal :name value))
-
 ;;;;;;;;;;;;;;
 ;;; Identifier
 
@@ -95,9 +92,6 @@
 
   (:method ((identifier sql-identifier) database)
            (format-sql-identifier (name-of identifier) database)))
-
-(defun sql-identifier (name)
-  (make-instance 'sql-identifier :name name))
 
 ;;;;;;;;;;;;;
 ;;; Statement

@@ -39,7 +39,6 @@
     (apply #'format-sql statement :stream stream args)))
 
 (defun sql-constructor-name (name)
-  (pushnew 'name *sql-constructor-names*)
   (concatenate-symbol (find-package :cl-rdbms) "SQL-" name))
 
 (defmacro define-syntax-node (name supers slots &rest options)
@@ -77,7 +76,8 @@
                   (with-slots ,effective-slots
                       self
                     ,@(rest it)))))
-      (defun ,(sql-constructor-name name) (&rest args)
+      (pushnew ',name *sql-constructor-names*)
+      (defun ,name (&rest args)
         (apply #'make-instance ',name args))
       (find-class ',name))))
 
