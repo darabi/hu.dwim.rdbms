@@ -45,6 +45,11 @@
   (:documentation "An SQL column specification.")
   (:format-sql-syntax-node
    (format-sql-identifier name)
-   (format-char " ")
-   (format-sql-syntax-node type)
-   (mapc (lambda (constraint) (format-sql-syntax-node constraint)) constraints)))
+   (when type
+     (format-char " ")
+     (format-sql-syntax-node type))
+   (mapc (lambda (constraint) (format-sql-syntax-node constraint)) constraints))
+  (:format-sql-identifier
+   (format-sql-identifier name)))
+
+

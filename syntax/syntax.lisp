@@ -20,7 +20,9 @@
 
 (define-syntax-node sql-literal (sql-syntax-node)
   ((value
-    :type (or null boolean number string symbol)))
+    :type (or null boolean number string symbol))
+   (type nil
+    :type sql-type))
   (:documentation "Represents an SQL literal.")
   (:format-sql-syntax-node
    (format-sql-literal self)))
@@ -63,6 +65,15 @@
 
   (:method ((literal sql-literal) database)
            (format-sql-literal (value-of literal) database)))
+
+(define-syntax-node sql-binding-variable (sql-syntax-node)
+  ((name
+    :type (or string symbol))
+   (type nil
+    :type sql-type)))
+
+(defprint-object (self sql-binding-variable)
+  (princ (name-of self)))
 
 ;;;;;;;;;;;;;;
 ;;; Identifier
@@ -109,8 +120,22 @@
 ;;;;;;;;;;;
 ;;; Execute
 
-(defmethod execute-command (database transaction (command sql-statement) &rest args &key &allow-other-keys)
-  (apply 'execute-command database transaction (format-sql-to-string command) args))
+(defmethod execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
+  (remf-keywords args :bindings)
+  (collecting (final-bindings)
+    (multiple-value-bind (string binding-entries) (format-sql-to-string command)
+      (dolist (binding-entry binding-entries)
+        (assert (type-of binding-entry) ((type-of binding-entry)) "The type of literals and binding variables must be defined because they are transmitted through the binding infrastructure")
+        (etypecase binding-entry
+          (sql-literal
+           (collect (type-of binding-entry))
+           (collect (value-of binding-entry)))
+          (sql-binding-variable
+           (collect (type-of binding-entry))
+           (aif (getf bindings (name-of binding-entry))
+                (collect it)
+                (error "Binding entry ~A was not provided in the bindings ~A" binding-entry bindings)))))
+      (apply 'execute-command database transaction string :bindings final-bindings args))))
 
 (defmethod execute-command :before (database transaction (command sql-ddl-statement) &key &allow-other-keys)
   (unless (ddl-only-p *transaction*)

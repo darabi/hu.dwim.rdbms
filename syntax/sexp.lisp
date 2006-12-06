@@ -25,14 +25,15 @@
        (equalp (string a) (string b))))
 
 (defun compile-sql (form)
-  (let ((sql-compiler-function-name (concatenate 'string
-                                                 (symbol-name '#:compile-sql-)
-                                                 (when (symbolp (first form))
-                                                   (symbol-name (first form))))))
-    (awhen (find-symbol sql-compiler-function-name (find-package :cl-rdbms))
-      (if (fboundp it)
-          (funcall it (rest form))
-          (sql-compile-error form)))))
+  (let* ((sql-compiler-function-name (concatenate 'string
+                                                  (symbol-name '#:compile-sql-)
+                                                  (when (symbolp (first form))
+                                                    (symbol-name (first form)))))
+         (handler-name (find-symbol sql-compiler-function-name (find-package :cl-rdbms))))
+    (if (and handler-name
+             (fboundp handler-name))
+        (funcall handler-name (rest form))
+        (sql-compile-error form))))
 
 (defun process-sql-syntax-list (visitor body &key function-call-allowed-p)
   (if (and function-call-allowed-p
@@ -69,6 +70,16 @@
                             :name (pop body)
                             :columns (process-sql-syntax-list #'compile-sql-column (pop body)))))
           (t (sql-compile-error whole-body body)))))
+
+(defun compile-sql-insert (body)
+  (let ((whole-body body))
+    (prog1
+        (make-instance 'sql-insert
+                       :table (pop body)
+                       :columns (process-sql-syntax-list #'compile-sql-column (pop body))
+                       :values (process-sql-syntax-list #'compile-sql-literal (pop body)))
+      (when body
+        (sql-compile-error whole-body body)))))
 
 (defun compile-sql-delete (body)
   (destructuring-bind (table &optional where) body
@@ -129,6 +140,26 @@
                   (setf column name))
              (make-instance 'sql-column-alias :table table :column column :alias alias)))))
 
+(defun compile-sql-literal (body)
+  (let ((whole-body body)
+        (value)
+        (type))
+    (if (consp body)
+        (if (sql-symbol-equal (first body) '?)
+            (progn
+              (pop body)
+              (return-from compile-sql-literal (compile-sql-binding-variable body)))
+            (progn
+              (setf value (pop body))
+              (setf type (compile-sql-type (pop body)))
+              (when body
+                (sql-compile-error whole-body body))))
+        (setf value body))
+    (make-instance 'sql-literal :value value :type type)))
+
+(defun compile-sql-binding-variable (body)
+  (make-instance 'sql-binding-variable :name (pop body) :type (compile-sql-type (pop body))))
+
 (defun compile-sql-type (body)
   (let ((name (if (consp body)
                   (first body)
@@ -156,12 +187,15 @@
     (make-instance 'sql-column :name name :type type)))
 
 (defun compile-sql-table-alias (body)
-  (let ((name)
+  (let ((whole-body body)
+        (name)
         (alias))
     (if (consp body)
         (progn
-          (setf name (first body))
-          (setf alias (second body)))
+          (setf name (pop body))
+          (setf alias (pop body))
+          (when body
+            (sql-compile-error whole-body body)))
         (progn
           (setf name body)))
     (make-instance 'sql-table-alias :name name :alias alias)))

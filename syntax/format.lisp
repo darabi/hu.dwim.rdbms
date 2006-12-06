@@ -26,17 +26,22 @@
   (:method (node database)
            (format-sql-literal node database)))
 
+(defvar *binding-entries*)
+
 (defun format-sql (statement &key (stream t) (database *database*))
   "Formats the given SQL statement into the stream."
   (let ((*sql-stream* stream)
-        (*database* database))
+        (*database* database)
+        (*binding-entries* '()))
     (format-sql-syntax-node statement database)
-    (values)))
+    (values stream (nreverse *binding-entries*))))
 
 (defun format-sql-to-string (statement &rest args &key &allow-other-keys)
   "Formats the given SQL statement into a string."
-  (with-output-to-string (stream)
-    (apply #'format-sql statement :stream stream args)))
+  (let* ((bindings)
+         (string (with-output-to-string (stream)
+                   (setf bindings (second (multiple-value-list (apply #'format-sql statement :stream stream args)))))))
+    (values string bindings)))
 
 (defun sql-constructor-name (name)
   (concatenate-symbol (find-package :cl-rdbms) "SQL-" name))

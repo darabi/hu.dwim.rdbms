@@ -12,7 +12,8 @@
   (import (let ((*package* (find-package :cl-rdbms)))
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
-                                with-transaction* process-sql-syntax-list compile-sql-column
+                                with-transaction* process-sql-syntax-list compile-sql-column compile-sql-type
+                                value-of compile-sql-binding-variable compile-sql-literal
                                 log log.dribble log.debug log.info log.warn log.error)")))
   (import-sql-syntax-node-names))
 
@@ -28,9 +29,11 @@
     ,@body))
 
 (defmacro test* (name &body body)
-  `(test (,name :depends-on connect)
-    (with-database *test-database*
-      ,@body)))
+  (destructuring-bind (name &rest args &key depends-on &allow-other-keys) (ensure-list name)
+    (remf-keywords args :depends-on)
+    `(test (,name :depends-on (and ,@(ensure-list depends-on) connect) ,@args)
+      (with-database *test-database*
+        ,@body))))
 
 (test connect
   (finishes
@@ -57,37 +60,50 @@
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 
-(test* simple-binding
+(test* basic-binding
   (let ((unicode-text "éáúóüőű"))
     (unwind-protect
          (with-transaction
            (execute-ddl (sql `(create table alma ((name (varchar 50))))))
-           (execute "INSERT INTO alma VALUES (?)"
-                    :bindings `(,(make-instance 'sql-character-varying-type :size 32) ,unicode-text))
+           (execute (sql `(insert alma (name) ((,unicode-text varchar)))))
            (is (string= (first (first (execute "SELECT * FROM alma"))) unicode-text)))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 
 (test* binding
-  (let ((bindings (list "éáúóüőű" 42))
-        (columns (process-sql-syntax-list #'compile-sql-column
-                                          `((name (varchar 50)) (x (integer 32))))))
+  (let* ((columns (process-sql-syntax-list #'compile-sql-column
+                                           `((a (integer 32))
+                                             (string_column (varchar 50))
+                                             (integer_column (integer 32))
+                                             (b (integer 32)))))
+         (binding-literals (loop for entry :in `(("éáúóüőű" varchar)
+                                                 (42 (integer 32)))
+                                 for value = (if (consp entry) (first entry) entry)
+                                 for type = (when (consp entry) (second entry))
+                                 for idx :upfrom 0
+                                 collect (progn
+                                           (setf type (if type
+                                                          (compile-sql-type type)
+                                                          (type-of (elt columns idx))))
+                                           (make-instance 'sql-literal :value value :type type)))))
     (unwind-protect
          (with-transaction
            (execute-ddl (sql `(create table alma ,columns)))
-           (execute "INSERT INTO alma VALUES (?, ?)"
-                    :bindings (loop for column :in columns
-                                    for value :in bindings
-                                    collect (cl-rdbms::type-of column)
-                                    collect value))
-           (execute "SELECT * FROM alma"
+           (execute (sql `(insert alma ,columns ,(append (list (compile-sql-literal '(? named1 (integer 32))))
+                                                         binding-literals
+                                                         (list (compile-sql-literal '(? named2 (integer 32)))))))
+                    :bindings `(named1 11
+                                named2 22))
+           (execute (sql `(select ,columns alma))
                     :visitor (let ((first-time #t))
                                (lambda (row)
                                  (unless first-time
                                    (fail "Multiple rows?!"))
                                  (setf first-time #f)
-                                 (is (string= (first row) (first bindings)))
-                                 (is (= (second row) (second bindings)))))))
+                                 (is (= (pop row) 11))
+                                 (is (string= (pop row) (value-of (first binding-literals))))
+                                 (is (= (pop row) (value-of (second binding-literals))))
+                                 (is (= (pop row) 22))))))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 

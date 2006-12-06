@@ -49,18 +49,6 @@
   (assert (not (and visitor bindings)) (visitor bindings) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
   (let ((connection (connection-of tr))
         (portal-name nil))
-    (when bindings
-      (setf command
-            (loop with result = (make-array (+ (length command) 16) :element-type 'character :adjustable #t :fill-pointer 0)
-                  with counter = 0
-                  for char :across command
-                  do (if (char= char #\?)
-                         (progn
-                           (vector-push-extend #\$ result)
-                           (loop for char :across (princ-to-string (incf counter)) do
-                                 (vector-push-extend char result)))
-                         (vector-push-extend char result))
-                  finally (return result))))
     (unwind-protect
          (progn
            (when bindings
