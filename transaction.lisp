@@ -161,21 +161,29 @@
 (defgeneric cleanup-transaction (transaction))
 
 (defgeneric execute-command (database transaction command &key visitor bindings &allow-other-keys)
-  (:method :before (database transaction command &key &allow-other-keys)
+  (:method :before (database transaction command &key bindings &allow-other-keys)
            (unless (transaction-begin-executed-p transaction)
              (setf (transaction-begin-executed-p transaction) #t)
              (begin-transaction database transaction))
            (log.dribble "*** ~S in transaction ~A of database ~A"
                         command transaction database)
-           (sql-log.info "; ~A" command))
+           (when (stringp command)
+             (when bindings
+               (log.info "Binding ~A in command ~A"
+                         (loop for i upfrom 0
+                               for el in bindings
+                               when (oddp i)
+                               collect el)
+                         command))
+             (sql-log.info "; ~A" command)))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
            (let ((command-counter (command-counter-of transaction)))
              (cond ((starts-with command "INSERT" :test #'equalp)
-                   (incf (insert-counter-of command-counter)))
-                  ((starts-with command "SELECT" :test #'equalp)
-                   (incf (select-counter-of command-counter)))
-                  ((starts-with command "UPDATE" :test #'equalp)
-                   (incf (update-counter-of command-counter)))
-                  ((starts-with command "DELETE" :test #'equalp)
-                   (incf (delete-counter-of command-counter)))))))
+                    (incf (insert-counter-of command-counter)))
+                   ((starts-with command "SELECT" :test #'equalp)
+                    (incf (select-counter-of command-counter)))
+                   ((starts-with command "UPDATE" :test #'equalp)
+                    (incf (update-counter-of command-counter)))
+                   ((starts-with command "DELETE" :test #'equalp)
+                    (incf (delete-counter-of command-counter)))))))

@@ -8,17 +8,26 @@
 
 #.(file-header)
 
-(defun insert-records (table columns values)
-  (execute (make-instance 'sql-insert
-                          :table table
-                          :columns columns
-                          :values values)))
+(defun sql-literal-values-for (columns values)
+  (mapcar (lambda (column value)
+            (if (typep value 'sql-literal)
+                value
+                (make-instance 'sql-literal
+                               :value value
+                               :type (type-of column))))
+          columns values))
 
-(defun update-records (table columns values where)
+(defun insert-records (table columns values)
+  (execute(make-instance 'sql-insert
+                         :table table
+                         :columns columns
+                         :values (sql-literal-values-for columns values))))
+
+(defun update-records (table columns values &optional where)
   (execute (make-instance 'sql-update
                           :table table
                           :columns columns
-                          :values values
+                          :values (sql-literal-values-for columns values)
                           :where where)))
 
 (defun delete-records (table &optional where)
@@ -26,7 +35,7 @@
                           :table table
                           :where where)))
 
-(defun select-records (columns tables where)
+(defun select-records (columns tables &optional where)
   (execute (make-instance 'sql-select
                           :columns columns
                           :tables tables

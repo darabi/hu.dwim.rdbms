@@ -114,7 +114,7 @@
   (unwind-protect
        (progn
          (execute-ddl "CREATE TABLE alma (x integer)")
-         (with-transaction* ()
+         (with-transaction
            (execute "INSERT INTO alma VALUES (42)")
            (is (= (first (first (execute "SELECT x FROM alma"))) 42))
            (mark-transaction-for-rollback-only))
@@ -124,6 +124,31 @@
            (execute "INSERT INTO alma VALUES (42)"))
          (with-transaction
            (is (= 1 (first (first (execute "SELECT count(*) FROM alma")))) "with-transaction didn't commit as a terminal action?")))
+    (ignore-errors
+      (execute-ddl "DROP TABLE alma"))))
+
+(test* insert-records
+  (unwind-protect
+       (let ((columns (compile-sql-columns
+                       `((a (integer 32))
+                         (b (varchar 50))))))
+         (create-table 'alma columns)
+         (with-transaction
+           (insert-records 'alma columns (list 1 "alma"))
+           (is (equal '((1 "alma")) (select-records columns '(alma))))))
+    (ignore-errors
+      (execute-ddl "DROP TABLE alma"))))
+
+(test* update-records
+  (unwind-protect
+       (let ((columns (compile-sql-columns
+                       `((a (integer 32))
+                         (b (varchar 50))))))
+         (create-table 'alma columns)
+         (with-transaction
+           (execute "insert into alma values (NULL, NULL)")
+           (update-records 'alma columns (list 1 "alma"))
+           (is (equal '((1 "alma")) (select-records columns '(alma))))))
     (ignore-errors
       (execute-ddl "DROP TABLE alma"))))
 
