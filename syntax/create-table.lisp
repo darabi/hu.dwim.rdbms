@@ -10,13 +10,16 @@
 
 (define-syntax-node sql-create-table (sql-ddl-statement)
   ((name
-    :type string)
+    :type sql-identifier*)
    (temporary
     nil
     :type (or boolean (member (:drop :preserve-rows :delete-rows))))
    (columns
     nil
-    :type list))
+    :type list)
+   (as
+    nil
+    :type sql-subquery))
   (:documentation "An SQL CREATE TABLE statement.")
   (:format-sql-syntax-node
    (format-string "CREATE")
@@ -25,10 +28,12 @@
    (format-string " TABLE ")
    (format-sql-identifier name)
    (format-string " (")
-   (format-comma-separated-list columns)
+   (format-comma-separated-identifiers columns)
    (format-char ")")
-   (when (and temporary
-              (not (eq temporary #t)))
+   (when as
+     (format-string " AS ")
+     (format-sql-syntax-node as))
+   (when (and temporary (not (eq temporary #t)) (not as))
      (format-string " ON COMMIT ")
      (format-string (ecase temporary
                       (:drop "DROP")
