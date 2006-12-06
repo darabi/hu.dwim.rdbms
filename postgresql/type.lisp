@@ -85,9 +85,18 @@
                    ((<= bit-size 32)
                     :int32)
                    ((<= bit-size 64)
-                    (error "integer with bit-size 64 is not yet supported for bindings"))
+                    :int64)
                    (t
                     (error "NUMERIC is not yet supported for bindings")))))
 
   (:method ((type sql-string-type) (database postgresql-pg))
+           :string)
+
+  (:method ((type sql-date-type) (database postgresql-pg))
+           :string)
+
+  (:method ((type sql-timestamp-type) (database postgresql-pg))
+           :string)
+
+  (:method ((type sql-time-type) (database postgresql-pg))
            :string))
