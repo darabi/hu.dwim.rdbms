@@ -48,8 +48,8 @@
    (:file "configuration" :depends-on ("duplicates"))
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("database"))
-   (:file "ddl" :depends-on ("configuration"))
-   (:file "dml" :depends-on ("configuration"))
+   (:file "ddl" :depends-on ("transaction"))
+   (:file "dml" :depends-on ("transaction"))
    (:module "syntax"
             :depends-on ("database" "transaction" "ddl")
             :components ((:file "format")
