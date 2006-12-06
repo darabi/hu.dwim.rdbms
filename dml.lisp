@@ -10,7 +10,8 @@
 
 (defun sql-literal-values-for (columns values)
   (mapcar (lambda (column value)
-            (if (typep value 'sql-literal)
+            (if (or (typep value 'sql-literal)
+                    (not (typep column 'sql-column)))
                 value
                 (make-instance 'sql-literal
                                :value value
@@ -18,10 +19,10 @@
           columns values))
 
 (defun insert-records (table columns values)
-  (execute(make-instance 'sql-insert
-                         :table table
-                         :columns columns
-                         :values (sql-literal-values-for columns values))))
+  (execute (make-instance 'sql-insert
+                          :table table
+                          :columns columns
+                          :values (sql-literal-values-for columns values))))
 
 (defun update-records (table columns values &optional where)
   (execute (make-instance 'sql-update
