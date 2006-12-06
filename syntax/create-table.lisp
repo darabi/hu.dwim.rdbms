@@ -13,7 +13,7 @@
     :type string)
    (temporary
     nil
-    :type (or null (member (:drop :preserve-rows :delete-rows))))
+    :type (or boolean (member (:drop :preserve-rows :delete-rows))))
    (columns
     nil
     :type list))
@@ -27,7 +27,8 @@
    (format-string " (")
    (format-comma-separated-list columns)
    (format-char ")")
-   (when temporary
+   (when (and temporary
+              (not (eq temporary #t)))
      (format-string " ON COMMIT ")
      (format-string (ecase temporary
                       (:drop "DROP")
