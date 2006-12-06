@@ -103,7 +103,11 @@
                                  (is (= (pop row) 11))
                                  (is (string= (pop row) (value-of (first binding-literals))))
                                  (is (= (pop row) (value-of (second binding-literals))))
-                                 (is (= (pop row) 22))))))
+                                 (is (= (pop row) 22)))))
+           (signals unbound-binding-variable-error
+             (execute (sql `(insert alma ,columns ,(append (list (compile-sql-literal '(? named1 (integer 32))))
+                                                           binding-literals
+                                                           (list (compile-sql-literal '(? named2 (integer 32))))))))))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 

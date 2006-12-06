@@ -120,6 +120,13 @@
 ;;;;;;;;;;;
 ;;; Execute
 
+(defcondition* unbound-binding-variable-error (rdbms-error)
+  ((variable)
+   (query))
+  (:report (lambda (error stream)
+             (format stream "The variable ~A was not bound while executing the query ~A"
+                     (variable-of error) (query-of error)))))
+
 (defmethod execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
   (remf-keywords args :bindings)
   (collecting (final-bindings)
@@ -134,7 +141,7 @@
            (collect (type-of binding-entry))
            (aif (getf bindings (name-of binding-entry))
                 (collect it)
-                (error "Binding entry ~A was not provided in the bindings ~A" binding-entry bindings)))))
+                (error 'unbound-binding-variable-error :variable binding-entry :query command)))))
       (apply 'execute-command database transaction string :bindings final-bindings args))))
 
 (defmethod execute-command :before (database transaction (command sql-ddl-statement) &key &allow-other-keys)
