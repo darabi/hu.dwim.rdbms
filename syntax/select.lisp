@@ -17,7 +17,7 @@
     :type (list sql-column-alias*))
    (tables
     nil
-    :type (list sql-table-alias*))
+    :type (list sql-table-reference))
    (where
     nil
     :type sql-expression)
@@ -38,7 +38,7 @@
    (format-comma-separated-identifiers columns)
    (when tables
      (format-string " FROM ")
-     (format-comma-separated-identifiers tables))
+     (format-comma-separated-list tables database format-sql-table-reference))
    (format-where where)
    (when order-by
      (format-string " ORDER BY ")
@@ -63,7 +63,55 @@
      (format-sql-identifier alias))))
 
 (deftype sql-table-alias* ()
-  '(or string symbol sql-table-alias))
+  '(or string symbol sql-identifier sql-table-alias))
+
+(define-syntax-node sql-derived-table (sql-syntax-node)
+  ((subquery
+    :type )
+   (alias
+    nil
+    :type sql-identifier*))
+  (:format-sql-syntax-node
+   (format-sql-syntax-node subquery)
+   (when alias
+     (format-char " ")
+     (format-sql-identifier alias))))
+
+(define-syntax-node sql-joined-table (sql-syntax-node)
+  ((kind
+    :type (member :cross :inner :left :right :full :union))
+   (left
+    :type sql-table-reference)
+   (right
+    :type sql-table-reference)
+   (on
+    :type sql-expression)
+   (using
+    :type (list sql-identifier*)))
+  (:format-sql-syntax-node
+   (format-char "(")
+   (format-sql-syntax-node left)
+   (format-char " ")
+   (format-sql-identifier kind)
+   (format-string " JOIN ")
+   (format-sql-syntax-node right)
+   (when on
+     (format-string " ON ")
+     (format-sql-syntax-node on))
+   (when using
+     (format-string " USING ")
+     (format-char "(")
+     (format-comma-separated-identifiers using)
+     (format-char ")"))
+   (format-char ")")))
+
+(deftype sql-table-reference ()
+  '(or sql-table-alias* sql-derived-table sql-joined-table))
+
+(defun format-sql-table-reference (reference database)
+  (etypecase reference
+    (sql-table-alias* (format-sql-identifier reference database))
+    ((or sql-derived-table sql-joined-table) (format-sql-syntax-node reference database))))
 
 (define-syntax-node sql-column-alias (sql-identifier)
   ((table
