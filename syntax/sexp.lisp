@@ -186,6 +186,9 @@
           (setf name body)))
     (make-instance 'sql-column :name name :type type)))
 
+(defun compile-sql-columns (body)
+  (process-sql-syntax-list #'compile-sql-column body))
+
 (defun compile-sql-table-alias (body)
   (let ((whole-body body)
         (name)

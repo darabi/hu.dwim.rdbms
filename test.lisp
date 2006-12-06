@@ -12,7 +12,7 @@
   (import (let ((*package* (find-package :cl-rdbms)))
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
-                                with-transaction* process-sql-syntax-list compile-sql-column compile-sql-type
+                                with-transaction* process-sql-syntax-list compile-sql-column compile-sql-columns compile-sql-type
                                 value-of compile-sql-binding-variable compile-sql-literal
                                 log log.dribble log.debug log.info log.warn log.error)")))
   (import-sql-syntax-node-names))
@@ -71,11 +71,10 @@
         (execute-ddl "DROP TABLE alma")))))
 
 (test* binding
-  (let* ((columns (process-sql-syntax-list #'compile-sql-column
-                                           `((a (integer 32))
-                                             (string_column (varchar 50))
-                                             (integer_column (integer 32))
-                                             (b (integer 32)))))
+  (let* ((columns (compile-sql-columns `((a (integer 32))
+                                         (string_column (varchar 50))
+                                         (integer_column (integer 32))
+                                         (b (integer 32)))))
          (binding-literals (loop for entry :in `(("éáúóüőű" varchar)
                                                  (42 (integer 32)))
                                  for value = (if (consp entry) (first entry) entry)
