@@ -22,6 +22,7 @@
    #:execute
    #:execute-ddl
    #:with-transaction
+   #:with-transaction*
    #:in-transaction-p
    #:transaction-in-progress-p
 
