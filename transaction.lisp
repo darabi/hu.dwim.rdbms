@@ -19,9 +19,6 @@
    (command-counter
     (make-instance 'command-counter)
     :type command-counter)
-   (ddl-only
-    #f
-    :type boolean)
    (transaction-begin-executed
     #f
     :type boolean)
@@ -111,15 +108,19 @@
   (assert-transaction-in-progress)
   (rollback-transaction *database* *transaction*))
 
-(defun execute (command &rest args &key visitor bindings &allow-other-keys)
-  (declare (ignore visitor bindings)) ; for slime to bring up the arguments
-  (assert-transaction-in-progress)
-  (apply 'execute-command *database* *transaction* command args))
+(defun execute (command &rest args &key visitor bindings (in-new-transaction #f) &allow-other-keys)
+  (declare (ignore visitor bindings))   ; for slime to bring up the arguments
+  (flet ((%execute-command ()
+           (apply 'execute-command *database* *transaction* command args)))
+    (if in-new-transaction
+        (with-transaction
+          (%execute-command))
+        (progn
+          (assert-transaction-in-progress)
+          (%execute-command)))))
 
-(defun execute-ddl (command)
-  (with-transaction
-    (setf (ddl-only-p *transaction*) #t)
-    (execute command)))
+(defun execute-ddl (command &rest args &key &allow-other-keys)
+  (apply #'execute command :in-new-transaction #t args))
 
 (defmethod transaction-class-name list (database)
   'transaction)
