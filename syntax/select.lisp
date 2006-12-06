@@ -23,7 +23,7 @@
     :type sql-expression)
    (order-by
     nil
-    :type list)  ; TODO: element type
+    :type list)                         ; TODO: element type
    (offset
     nil
     :type number)

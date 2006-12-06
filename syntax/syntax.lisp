@@ -11,9 +11,11 @@
 ;;;;;;;;;;;;;;;
 ;;; Syntax node
 
-(defclass* sql-syntax-node ()
+(define-syntax-node sql-syntax-node ()
   ()
-  (:documentation "Base class for all kind of SQL syntax elements."))
+  (:documentation "Base class for all kind of SQL syntax elements.")
+  (:format-sql-syntax-node
+   (error "No formatter method for ~A" self)))
 
 ;;;;;;;;;;;
 ;;; Literal

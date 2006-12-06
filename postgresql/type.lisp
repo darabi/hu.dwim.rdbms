@@ -70,16 +70,16 @@
            "char")
 
   (:method ((type sql-character-varying-type))
-           "varchar")
-
-  (:method ((type sql-character-large-object-type))
-           "text"))
+           "varchar"))
 
 (defgeneric binding-type-for-sql-type (sql-type database)
+  (:method ((type sql-boolean-type) (database postgresql-pg))
+           :boolean)
+
   (:method ((type sql-integer-type) (database postgresql-pg))
            (let ((bit-size (bit-size-of type)))
              (cond ((null bit-size)
-                    (error "NUMERIC is not yet supported for bindings"))
+                    :numeric)
                    ((<= bit-size 16)
                     :int16)
                    ((<= bit-size 32)
@@ -87,11 +87,14 @@
                    ((<= bit-size 64)
                     :int64)
                    (t
-                    (error "NUMERIC is not yet supported for bindings")))))
+                    :numeric))))
 
-  (:method ((type sql-boolean-type) (database postgresql-pg))
-           :boolean)
-
+  (:method ((type sql-float-type) (database postgresql-pg))
+           :float)
+  
+  (:method ((type sql-numeric-type) (database postgresql-pg))
+           :numeric)
+  
   (:method ((type sql-string-type) (database postgresql-pg))
            :string)
 

@@ -28,7 +28,7 @@
    (format-string " TABLE ")
    (format-sql-identifier name)
    (format-string " (")
-   (format-comma-separated-identifiers columns)
+   (format-comma-separated-list columns)
    (format-char ")")
    (when as
      (format-string " AS ")
@@ -57,5 +57,3 @@
    (mapc (lambda (constraint) (format-sql-syntax-node constraint)) constraints))
   (:format-sql-identifier
    (format-sql-identifier name)))
-
-
