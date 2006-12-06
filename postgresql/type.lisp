@@ -89,6 +89,9 @@
                    (t
                     (error "NUMERIC is not yet supported for bindings")))))
 
+  (:method ((type sql-boolean-type) (database postgresql-pg))
+           :boolean)
+
   (:method ((type sql-string-type) (database postgresql-pg))
            :string)
 
