@@ -143,8 +143,3 @@
                 (collect it)
                 (error 'unbound-binding-variable-error :variable binding-entry :query command)))))
       (apply 'execute-command database transaction string :bindings final-bindings args))))
-
-(defmethod execute-command :before (database transaction (command sql-ddl-statement) &key &allow-other-keys)
-  (unless (ddl-only-p *transaction*)
-    (error 'transaction-error
-           :format-control "DDL statements are not allowed to be executed within a transaction, because they implicitly commit")))
