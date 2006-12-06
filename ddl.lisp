@@ -81,6 +81,12 @@
              (format stream "Dropping the column ~S from table ~S is a destructive transformation"
                      (column-name-of error) (table-name-of error)))))
 
+(defmacro with-confirmed-descructive-changes (&body body)
+  `(handler-bind ((unconfirmed-destructive-alter-table-error
+                   (lambda (e)
+                     (continue e))))
+    ,@body))
+
 (defun update-table (name columns)
   (if (table-exists-p name)
       (update-existing-table name columns)

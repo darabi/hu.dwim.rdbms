@@ -39,6 +39,7 @@
    #:unconfirmed-destructive-alter-table-error
    #:unconfirmed-destructive-alter-column-type-error
    #:unconfirmed-destructive-drop-column-error
+   #:with-confirmed-descructive-changes
 
    #:create-sequence
    #:drop-sequence
