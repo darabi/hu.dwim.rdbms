@@ -58,13 +58,16 @@
     :type sql-identifier*)))
 
 (define-syntax-node sql-unary-operator (sql-operator)
-  ((expression
+  ((fix
+    :prefix
+    :type (member :prefix :postfix))
+   (expression
     :type sql-expression))
   (:format-sql-syntax-node
    (format-char "(")
-   (format-sql-identifier name)
-   (format-char " ")
-   (format-sql-syntax-node expression)
+   (ecase fix
+     (:prefix (format-sql-identifier name) (format-char " ") (format-sql-syntax-node expression))
+     (:postfix (format-sql-syntax-node expression) (format-char " ") (format-sql-identifier name)))
    (format-char ")")))
 
 (define-syntax-node sql-binary-operator (sql-operator)
@@ -89,13 +92,14 @@
    (format-separated-list expressions (strcat " " name " "))
    (format-char ")")))
 
-(defmacro define-unary-operator (name)
+(defmacro define-unary-operator (name &optional (fix :prefix))
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
       (defun ,constructor-name (expression)
         (make-instance 'sql-unary-operator
-                       :name ,(string-upcase name)
+                       :name ,(sql-operator-name name)
+                       :fix ,fix
                        :expression expression)))))
 
 (defmacro define-binary-operator (name)
@@ -158,6 +162,8 @@
 (define-binary-operator >=)
 
 (define-binary-operator <>)
+
+(define-unary-operator is-null :postfix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Arithmetic operators
