@@ -106,4 +106,4 @@
   (values))
 
 (defmethod append-message ((category log-category) (appender sql-log-appender) message level)
-  (format (arnesi::log-stream appender) "~A~%" message))
+  (format (arnesi::log-stream appender) "~&~A~%" message))
