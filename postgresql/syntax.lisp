@@ -22,7 +22,7 @@
         (format-string (princ-to-string (length *binding-entries*))))
       (call-next-method)))
 
-(defmethod format-sql-literal ((variable sql-binding-variable) (database postgresql))
+(defmethod format-sql-syntax-node ((variable sql-binding-variable) (database postgresql))
   (push variable *binding-entries*)
   (format-string "$")
   (format-string (princ-to-string (length *binding-entries*))))
