@@ -70,10 +70,12 @@
     :type string)))
 
 (defcondition* unconfirmed-destructive-alter-column-type-error (unconfirmed-destructive-alter-table-error)
-  ((new-type))
+  ((old-type)
+   (new-type)
+   (new-rdbms-type))
   (:report (lambda (error stream)
-             (format stream "Changing the type of column ~S to ~S in table ~S is a destructive transformation"
-                     (column-name-of error) (new-type-of error) (table-name-of error)))))
+             (format stream "Changing the type of column ~S from ~A to ~A, ~A in table ~S is a destructive transformation"
+                     (column-name-of error) (old-type-of error) (new-type-of error) (new-rdbms-type-of error) (table-name-of error)))))
 
 (defcondition* unconfirmed-destructive-drop-column-error (unconfirmed-destructive-alter-table-error)
   ()
@@ -110,17 +112,20 @@
 	     (table-column (find (string-downcase column-name) table-columns :key #'name-of :test #'equalp)))
 	(if table-column
             ;; change column type where needed
-            (unless (equal-type-p (type-of table-column) (rdbms-type-for (type-of column) *database*) *database*)
-              (handler-case
-                  (alter-column-type name column)
-                (error (e)
-                       (declare (ignore e))
-                       (with-simple-restart
-                           (continue "Alter the table and let the data go")
-                         (error 'unconfirmed-destructive-alter-column-type-error :table-name name :column-name column-name
-                                :new-type (cl-rdbms::type-of column)))
-                       (drop-column name column-name)
-                       (add-column name column))))
+            (let ((new-type (rdbms-type-for (type-of column) *database*)))
+              (unless (equal-type-p (type-of table-column) new-type *database*)
+                (handler-case
+                    (alter-column-type name column)
+                  (error (e)
+                         (declare (ignore e))
+                         (with-simple-restart
+                             (continue "Alter the table and let the data go")
+                           (error 'unconfirmed-destructive-alter-column-type-error :table-name name :column-name column-name
+                                  :old-type (type-of table-column)
+                                  :new-type (type-of column)
+                                  :new-rdbms-type new-type))
+                         (drop-column name column-name)
+                         (add-column name column)))))
             ;; add missing columns not present in the table
             (add-column name column))))
     ;; drop extra columns that are present in the table
