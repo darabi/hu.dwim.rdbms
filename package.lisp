@@ -75,7 +75,11 @@
    #:insert-counter-of
    #:select-counter-of
    #:update-counter-of
-   #:delete-counter-of))
+   #:delete-counter-of
+   #:current-insert-counter
+   #:current-select-counter
+   #:current-update-counter
+   #:current-delete-counter))
 
 (defpackage :cl-rdbms-test
   (:use :cl :cl-rdbms :arnesi)

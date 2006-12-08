@@ -43,6 +43,18 @@
                  " update: " (update-counter-of self)
                  " delete: " (delete-counter-of self))))
 
+(defun current-insert-counter ()
+  (insert-counter-of (command-counter-of *transaction*)))
+
+(defun current-select-counter ()
+  (select-counter-of (command-counter-of *transaction*)))
+
+(defun current-update-counter ()
+  (update-counter-of (command-counter-of *transaction*)))
+
+(defun current-delete-counter ()
+  (delete-counter-of (command-counter-of *transaction*)))
+
 (defmacro with-transaction (&body body)
   `(with-transaction* ()
     ,@body))
