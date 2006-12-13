@@ -19,7 +19,7 @@
    (command-counter
     (make-instance 'command-counter)
     :type command-counter)
-   (transaction-begin-executed
+   (begin-was-executed
     #f
     :type boolean)
    (state
@@ -151,7 +151,7 @@
 (defgeneric commit-transaction (database transaction)
   (:method :around (database transaction)
            (log.debug "About to COMMIT transaction ~A" transaction)
-           (when (transaction-begin-executed-p transaction)
+           (when (begin-was-executed-p transaction)
              (call-next-method))
            (setf (state-of transaction) :committed)
            (values))
@@ -162,7 +162,7 @@
 (defgeneric rollback-transaction (database transaction)
   (:method :around (database transaction)
            (log.dribble "About to ROLLBACK transaction ~A" transaction)
-           (when (transaction-begin-executed-p transaction)
+           (when (begin-was-executed-p transaction)
              (call-next-method))
            (setf (state-of transaction) :rolled-back)
            (values))
@@ -174,8 +174,8 @@
 
 (defgeneric execute-command (database transaction command &key visitor bindings &allow-other-keys)
   (:method :before (database transaction command &key bindings &allow-other-keys)
-           (unless (transaction-begin-executed-p transaction)
-             (setf (transaction-begin-executed-p transaction) #t)
+           (unless (begin-was-executed-p transaction)
+             (setf (begin-was-executed-p transaction) #t)
              (begin-transaction database transaction))
            (log.dribble "*** ~S in transaction ~A of database ~A"
                         command transaction database)

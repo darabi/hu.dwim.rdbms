@@ -34,7 +34,7 @@
 
 (defprint-object (self postgresql-pg-transaction)
   (princ ":begin-executed-p ")
-  (princ (if (transaction-begin-executed-p self)
+  (princ (if (begin-was-executed-p self)
              "#t" "#f")))
 
 (defmethod transaction-class-name list ((db postgresql-pg))
