@@ -181,12 +181,10 @@
                         command transaction database)
            (when (stringp command)
              (when bindings
-               (log.info "Binding ~A in command ~A"
-                         (loop for i upfrom 0
-                               for el in bindings
-                               when (oddp i)
-                               collect el)
-                         command))
+               (sql-log.info "; ~A" (format nil "~{~A~^, ~}"
+                                            (loop for i upfrom 1
+                                                  for el in (cdr bindings) by #'cddr
+                                                  collect (strcat (format nil "$~A = " i) (format-sql-to-string el))))))
              (sql-log.info "; ~A" command)))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
