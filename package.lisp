@@ -7,6 +7,8 @@
 (in-package :cl-user)
 
 (defpackage :cl-rdbms
+  (:nicknames :rdbms)
+
   (:shadow #:log #:type-of)
   
   (:use :cl :sb-pcl :cl-rdbms-system :arnesi :defclass-star)
@@ -82,7 +84,10 @@
    #:current-delete-counter))
 
 (defpackage :cl-rdbms-test
+  (:nicknames :rdbmst)
+
   (:use :cl :cl-rdbms :arnesi)
+
   (:shadowing-import-from :cl-rdbms
                           #:log))
 
