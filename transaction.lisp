@@ -66,6 +66,8 @@
     `(let* (,@(when database `((*database* ,database)))
             (*transaction* nil)
             (,body-finished-p #f))
+      (unless (boundp '*database*)
+        (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction"))
       (unwind-protect
            (progn
              (begin :terminal-action ,default-terminal-action ,@args)
