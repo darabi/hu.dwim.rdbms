@@ -65,7 +65,8 @@
                          (:file "select" :depends-on ("syntax" "expression"))
                          (:file "update" :depends-on ("syntax"))
                          (:file "delete" :depends-on ("syntax"))
-                         (:file "sequence" :depends-on ("syntax"))))
+                         (:file "sequence" :depends-on ("syntax"))
+                         (:file "index" :depends-on ("syntax"))))
    (:module "postgresql"
             :depends-on ("database" "transaction" "syntax")
             :components ((:file "database")

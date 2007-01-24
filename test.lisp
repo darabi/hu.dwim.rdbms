@@ -208,6 +208,18 @@
                  :name "a")
   "DROP TABLE a")
 
+(ast-test create-index-syntax
+  (make-instance 'sql-create-index
+                 :name "a"
+                 :table-name "a"
+                 :columns (list "a" "a"))
+  "CREATE INDEX a ON a (a, a)")
+
+(ast-test drop-index-syntax
+  (make-instance 'sql-drop-index
+                 :name "a")
+  "DROP INDEX a")
+
 (ast-test insert-syntax
   (make-instance 'sql-insert
                  :table "a"

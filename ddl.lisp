@@ -157,3 +157,12 @@
 
 (defun sequence-next (name)
   (caar (execute (make-instance 'sql-select :columns (list (make-instance 'sql-sequence-nextval-column :name name))))))
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Create, drop index
+
+(defun create-index (name table-name columns)
+  (execute-ddl (make-instance 'sql-create-index :name name :table-name table-name :columns columns)))
+
+(defun drop-index (name)
+  (execute-ddl (make-instance 'sql-drop-index :name name)))
