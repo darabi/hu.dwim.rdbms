@@ -8,7 +8,7 @@
 
 #.(file-header)
 
-(define-syntax-node sql-create-index (sql-ddl-statement)
+(define-syntax-node sql-index (sql-syntax-node)
   ((name
     :type sql-identifier*)
    (table-name
@@ -16,6 +16,10 @@
    (columns
     nil
     :type list))
+  (:documentation "An SQL index specification."))
+
+(define-syntax-node sql-create-index (sql-ddl-statement sql-index)
+  ()
   (:documentation "An SQL CREATE INDEX statement.")
   (:format-sql-syntax-node
    (format-string "CREATE INDEX ")

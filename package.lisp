@@ -49,6 +49,12 @@
    #:sequence-exists-p
    #:sequence-next
 
+   #:create-index
+   #:create-index*
+   #:drop-index
+   #:update-index
+   #:update-index*
+
    #:sql
    #:sql*
    #:format-sql

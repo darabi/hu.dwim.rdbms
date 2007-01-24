@@ -162,7 +162,22 @@
 ;;; Create, drop index
 
 (defun create-index (name table-name columns)
-  (execute-ddl (make-instance 'sql-create-index :name name :table-name table-name :columns columns)))
+  (execute-ddl (make-instance 'sql-create-index
+                              :name name
+                              :table-name table-name
+                              :columns columns)))
+
+(defun create-index* (index)
+  (create-index (name-of index) (table-name-of index) (columns-of index)))
 
 (defun drop-index (name)
   (execute-ddl (make-instance 'sql-drop-index :name name)))
+
+(defun update-index (name table-name columns)
+  ;; TODO: we should check whether the index already exists and is the same or not
+  (handler-case (drop-index name)
+    (error (e) (declare (ignore e))))
+  (create-index name table-name columns))
+
+(defun update-index* (index)
+  (update-index (name-of index) (table-name-of index) (columns-of index)))
