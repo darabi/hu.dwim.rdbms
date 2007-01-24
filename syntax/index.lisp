@@ -23,7 +23,7 @@
    (format-string " ON ")
    (format-sql-identifier table-name)
    (format-string " (")
-   (format-comma-separated-list columns)
+   (format-comma-separated-identifiers columns)
    (format-char ")")))
 
 (define-syntax-node sql-drop-index (sql-ddl-statement)

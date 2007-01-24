@@ -77,24 +77,23 @@
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
-  :depends-on (:cl-rdbms :fiveam)
+  :depends-on (:cl-rdbms :stefil)
   :components
   ((:file "test")))
 
 (defmethod perform :after ((op load-op) (system (eql (find-system :cl-rdbms-test))))
-  ;; globally enable the syntax in the repl thread
+  (in-package :cl-rdbms-test)
   (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)")))
 
 (defmethod perform ((op test-op) (system (eql (find-system :cl-rdbms))))
   (operate 'load-op :cl-rdbms)
   (in-package :cl-rdbms-test)
-  (operate 'load-op :fiveam)
-  (use-package :5am)
+  (operate 'load-op :stefil)
   (push :debug *features*)
   (operate 'load-op :cl-rdbms-test)
   (eval (read-from-string "(progn
                              (cl-rdbms::enable-sharp-boolean-syntax)
-                             (5am:run!))"))
+                             (test))"))
   (eval (read-from-string "(setf *database* *test-database*)"))
   (values))
 
