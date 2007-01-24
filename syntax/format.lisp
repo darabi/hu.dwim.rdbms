@@ -47,13 +47,13 @@
   (concatenate-symbol (find-package :cl-rdbms) "SQL-" name))
 
 (defun sql-operator-name (name)
- (if (every #L(char= !1 #\-) (symbol-name name))
+ (if (every (lambda (char) (char= char #\-)) (symbol-name name))
      (string-upcase name)
      (substitute #\Space #\- (string-upcase name))))
 
 (defmacro define-syntax-node (name supers slots &rest options)
   (let ((effective-slots (delete-duplicates
-                          (append (mapcan #L(copy-list (get !1 :slot-names)) supers)
+                          (append (mapcan (lambda (super) (copy-list (get super :slot-names))) supers)
                                   (mapcar #'first slots)))))
     `(progn
       (eval-always
