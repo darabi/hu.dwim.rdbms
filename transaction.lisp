@@ -122,11 +122,13 @@
   (assert-transaction-in-progress)
   (rollback-transaction *database* *transaction*))
 
-(defun execute (command &rest args &key visitor bindings (in-new-transaction #f) &allow-other-keys)
+(defun execute (command &rest args &key visitor bindings (with-transaction #f) &allow-other-keys)
   (declare (ignore visitor bindings))   ; for slime to bring up the arguments
   (flet ((%execute-command ()
            (apply 'execute-command *database* *transaction* command args)))
-    (if in-new-transaction
+    (if (or (eq :new with-transaction)
+            (and (not (in-transaction-p))
+                 (eq :ensure with-transaction)))
         (with-transaction
           (%execute-command))
         (progn
@@ -134,7 +136,7 @@
           (%execute-command)))))
 
 (defun execute-ddl (command &rest args &key &allow-other-keys)
-  (apply #'execute command :in-new-transaction #t args))
+  (apply #'execute command :with-transaction :ensure args))
 
 (defmethod transaction-class-name list (database)
   'transaction)
