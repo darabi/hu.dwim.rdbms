@@ -174,10 +174,18 @@
   (execute-ddl (make-instance 'sql-drop-index :name name)))
 
 (defun update-index (name table-name columns)
-  ;; TODO: we should check whether the index already exists and is the same or not
-  (handler-case (drop-index name)
-    (error (e) (declare (ignore e))))
-  (create-index name table-name columns))
+  (unless (find name (list-table-indices table-name)
+                :key 'name-of
+                :test (lambda (o1 o2)
+                        (equalp (string-downcase o1)
+                                (string-downcase o2))))
+    (create-index name table-name columns)))
 
 (defun update-index* (index)
   (update-index (name-of index) (table-name-of index) (columns-of index)))
+
+(defun list-table-indices (table-name)
+  (database-list-table-indices table-name *database*))
+
+(defgeneric database-list-table-indices (table-name database)
+  (:documentation "Returns the list of table indices present in the database."))

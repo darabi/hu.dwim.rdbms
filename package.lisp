@@ -54,6 +54,7 @@
    #:drop-index
    #:update-index
    #:update-index*
+   #:list-table-indices
 
    #:sql
    #:sql*

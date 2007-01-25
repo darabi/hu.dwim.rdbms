@@ -33,3 +33,13 @@
                                   pg_attribute.attisdropped = FALSE AND
                                   pg_attribute.atttypid = pg_type.oid"
             (string-downcase name)))))
+
+(defmethod database-list-table-indices (table-name (database postgresql))
+  (mapcar
+   (lambda (column)
+     (make-instance 'sql-index
+                    :name (first column)
+                    :table-name table-name))
+   (execute
+    (format nil "select relname from pg_class, pg_index where pg_class.relfilenode = pg_index.indexrelid and pg_index.indrelid=(select relfilenode from pg_class where relname='~A')"
+            (string-downcase table-name)))))
