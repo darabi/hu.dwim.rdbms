@@ -27,6 +27,8 @@
    #:with-transaction*
    #:in-transaction-p
    #:transaction-in-progress-p
+   #:register-commit-hook
+   #:transaction-with-commit-hooks-mixin
 
    #:create-table
    #:drop-table

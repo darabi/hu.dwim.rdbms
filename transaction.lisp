@@ -201,3 +201,28 @@
                     (incf (update-counter-of command-counter)))
                    ((starts-with command "DELETE" :test #'equalp)
                     (incf (delete-counter-of command-counter)))))))
+
+
+(defclass* transaction-with-commit-hooks-mixin ()
+  ((after-commit-hooks '() :type list)))
+
+(defcondition* commit-hook-execution-error (transaction-error)
+  ((condition)))
+
+(defmethod commit-transaction :after (database (transaction transaction-with-commit-hooks-mixin))
+  (loop for hook :in (after-commit-hooks-of transaction) do
+        (block calling
+          (handler-bind
+              ((serious-condition (lambda (c)
+                                    (cerror "Continue" 'commit-hook-execution-error :condition c)
+                                    (return-from calling))))
+            (funcall hook)))))
+
+(defun register-commit-hook (hook &key (type :after) &allow-other-keys)
+  (register-commit-hook-in-transaction *transaction* hook :type type))
+
+(defgeneric register-commit-hook-in-transaction (transaction hook &key type &allow-other-keys)
+  (:method ((transaction transaction-with-commit-hooks-mixin) (hook function) &key (type :after) &allow-other-keys)
+           (assert (eq type :after) () "Only :after commit hooks are supported for now")
+           (push hook (after-commit-hooks-of transaction))))
+
