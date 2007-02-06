@@ -81,6 +81,8 @@
 
    #:start-sql-recording
    #:stop-sql-recording
+   #:enable-sql-recording
+   #:disable-sql-recording
 
    #:command-counter-of
    #:insert-counter-of
@@ -122,6 +124,12 @@
 (defun stop-sql-recording ()
   (setf (log.level (get-logger 'sql-log)) +warn+)
   (values))
+
+(defun enable-sql-recording ()
+  (start-sql-recording))
+
+(defun disable-sql-recording ()
+  (stop-sql-recording))
 
 (defmethod append-message ((category log-category) (appender sql-log-appender) message level)
   (format (arnesi::log-stream appender) "~&~A~%" message))
