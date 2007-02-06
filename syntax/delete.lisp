@@ -13,7 +13,7 @@
     :type sql-identifier*)
    (where
     nil
-    :type sql-expression))
+    :type (or null sql-expression)))
   (:documentation "An SQL DELETE statement.")
   (:format-sql-syntax-node
    (format-string "DELETE FROM ")
