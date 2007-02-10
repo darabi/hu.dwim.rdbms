@@ -16,6 +16,9 @@
 (defclass* transaction ()
   ((database
     :type database)
+   (timestamp
+    nil
+    :type integer)
    (command-counter
     (make-instance 'command-counter)
     :type command-counter)
@@ -98,6 +101,10 @@
 (defun mark-transaction-for-rollback-only ()
   (assert-transaction-in-progress)
   (setf (terminal-action-of *transaction*) :marked-for-rollback-only))
+
+(defun transaction-timestamp ()
+  (or (timestamp-of *transaction*)
+      (setf (timestamp-of *transaction*) (caar (execute "select now()")))))
 
 (defun in-transaction-p ()
   (and (boundp '*transaction*)

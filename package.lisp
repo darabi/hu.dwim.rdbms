@@ -29,6 +29,7 @@
    #:transaction-in-progress-p
    #:register-commit-hook
    #:transaction-with-commit-hooks-mixin
+   #:transaction-timestamp
 
    #:create-table
    #:drop-table
