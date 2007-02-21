@@ -67,7 +67,7 @@
                     "numeric"))))
 
   (:method ((type sql-character-type))
-           "char")
+           "varchar")
 
   (:method ((type sql-character-varying-type))
            "varchar"))
