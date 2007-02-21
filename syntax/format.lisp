@@ -122,7 +122,10 @@
          character) *sql-stream*))
 
 (defmacro format-number (number)
-  `(write ,number :stream *sql-stream*))
+  (rebinding (number)
+    `(write
+      (if (typep ,number 'ratio) (coerce ,number 'float) ,number)
+      :stream *sql-stream*)))
 
 (defmacro format-where (where &optional database)
   (rebinding (where)
