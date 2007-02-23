@@ -41,5 +41,5 @@
                     :name (first column)
                     :table-name table-name))
    (execute
-    (format nil "select relname from pg_class, pg_index where pg_class.relfilenode = pg_index.indexrelid and pg_index.indrelid=(select relfilenode from pg_class where relname='~A')"
+    (format nil "select indexname from pg_indexes where tablename = '~A'"
             (string-downcase table-name)))))
