@@ -18,6 +18,8 @@
                                 log log.dribble log.debug log.info log.warn log.error)")))
   (import-sql-syntax-node-names))
 
+(in-root-suite)
+
 (defsuite* test)
 
 (defparameter *test-database* (make-instance 'postgresql-pg  :connection-specification
