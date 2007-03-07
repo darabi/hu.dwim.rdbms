@@ -78,6 +78,7 @@
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
   :depends-on (:cl-rdbms :stefil)
+  :default-component-class local-cl-source-file
   :components
   ((:file "test")))
 
@@ -86,14 +87,14 @@
   (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)")))
 
 (defmethod perform ((op test-op) (system (eql (find-system :cl-rdbms))))
-  (operate 'load-op :cl-rdbms)
-  (in-package :cl-rdbms-test)
-  (operate 'load-op :stefil)
-  (push :debug *features*)
   (operate 'load-op :cl-rdbms-test)
-  (eval (read-from-string "(progn
-                             (cl-rdbms::enable-sharp-boolean-syntax)
-                             (test))"))
+  (in-package :cl-rdbms-test)
+  (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)"))
+  (declaim (optimize (debug 3)))
+  (warn "Enabled the #t/#f syntax in the repl thread and set (declaim (optimize (debug 3))) for easy C-c C-c'ing")
+  (format t "The result of (cl-rdbms-test::test) is:~%~%  ~A~%~%~
+             For more details run it from the repl and use the customized Slime inspector to inspect the results."
+          (funcall (read-from-string "cl-rdbms-test::test")))
   (eval (read-from-string "(setf *database* *test-database*)"))
   (values))
 
