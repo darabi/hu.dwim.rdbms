@@ -115,7 +115,8 @@
             (let ((new-type (rdbms-type-for (type-of column) *database*)))
               (unless (equal-type-p (type-of table-column) new-type *database*)
                 (handler-case
-                    (alter-column-type name column)
+                    (with-transaction
+                      (alter-column-type name column))
                   (error (e)
                          (declare (ignore e))
                          (with-simple-restart
