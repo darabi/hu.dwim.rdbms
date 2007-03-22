@@ -165,6 +165,8 @@
 
 (define-unary-operator is-null :postfix)
 
+(define-unary-operator is-not-null :postfix)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Arithmetic operators
 
