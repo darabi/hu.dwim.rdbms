@@ -27,6 +27,7 @@
    #:with-transaction*
    #:in-transaction-p
    #:transaction-in-progress-p
+   #:transaction-valid-p
    #:register-commit-hook
    #:transaction-with-commit-hooks-mixin
    #:transaction-timestamp

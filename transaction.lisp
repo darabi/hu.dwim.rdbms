@@ -114,6 +114,11 @@
 (defun transaction-in-progress-p (&optional (transaction *transaction*))
   (eq (state-of transaction) :in-progress))
 
+(defun transaction-valid-p (&optional (transaction *transaction*))
+  "Returns true if we have a running transaction and its terminal action will be a commit."
+  (and (transaction-in-progress-p transaction)
+       (not (eq (terminal-action-of transaction) :marked-for-rollback-only))))
+
 (defun assert-transaction-in-progress ()
   (unless (in-transaction-p)
     (error 'transaction-error :format-control "No transaction in progress")))
