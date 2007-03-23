@@ -67,6 +67,9 @@
    #:import-sql-syntax-node-names
    #:import-sql-constructor-names
 
+   #:sql-cond
+   #:sql-if
+
    #:mark-transaction-for-commit-only
    #:mark-transaction-for-rollback-only
 

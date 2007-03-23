@@ -196,6 +196,38 @@
 (define-binary-operator ~)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Case expressions
+(define-syntax-node sql-case (sql-expression)
+  ((clauses :type list))
+  (:format-sql-syntax-node
+   (format-char "(")
+   (format-string "CASE")
+   (dolist (clause clauses)
+     (let ((when (first clause))
+           (then (second clause)))
+       (format-char " ")
+       (if (eq when t)
+           (format-string "ELSE")
+           (progn
+             (format-string "WHEN")
+             (format-char " ")
+             (format-sql-syntax-node when)
+             (format-char " ")
+             (format-string "THEN")))
+       (format-char " ")
+       (format-sql-syntax-node then)))
+   (format-char " ")
+   (format-string "END")
+   (format-char ")")))
+
+(defun sql-cond (clauses)
+  (sql-case :clauses clauses))
+
+(defun sql-if (cond then else)
+  (sql-case :clauses `((,cond ,then) (t ,else))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Subquery expressions
 
 (define-syntax-node sql-subquery (sql-query-expression)
