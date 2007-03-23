@@ -61,7 +61,7 @@
 (define-syntax-node sql-sized-type (sql-type)
   ((size
     nil
-    :type (or null integer))))
+    :type (or null (integer 0)))))
 
 (define-syntax-node sql-string-type (sql-sized-type)
   ())
