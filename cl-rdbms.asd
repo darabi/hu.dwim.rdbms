@@ -92,10 +92,9 @@
   (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)"))
   (declaim (optimize (debug 3)))
   (warn "Enabled the #t/#f syntax in the repl thread and set (declaim (optimize (debug 3))) for easy C-c C-c'ing")
-  (format t "The result of (cl-rdbms-test::test) is:~%~%  ~A~%~%~
-             For more details run it from the repl and use the customized Slime inspector to inspect the results."
-          (funcall (read-from-string "cl-rdbms-test::test")))
-  (eval (read-from-string "(setf *database* *test-database*)"))
+  (eval (read-from-string "(progn
+                             (stefil:funcall-test-with-feedback-message 'test)
+                             (setf *database* *test-database*))"))
   (values))
 
 (defmethod operation-done-p ((op test-op) (system (eql (find-system :cl-rdbms))))
