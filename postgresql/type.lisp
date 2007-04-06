@@ -42,8 +42,9 @@
                      ("bytea" (make-instance 'sql-binary-large-object-type))
                      ("date" (make-instance 'sql-date-type))
                      ("time" (make-instance 'sql-time-type))
-                     ("timestamp" (make-instance 'sql-timestamp-type)))
-      (error "Unknown type"))))
+                     ("timestamp" (make-instance 'sql-timestamp-type :with-timezone #f))
+                     ("timestamptz" (make-instance 'sql-timestamp-type :with-timezone #t)))
+      (error "Unknown internal type"))))
 
 (defgeneric internal-type-for-sql-type (type)
   (:method (type)
@@ -70,7 +71,12 @@
            "varchar")
 
   (:method ((type sql-character-varying-type))
-           "varchar"))
+           "varchar")
+
+  (:method ((type sql-timestamp-type))
+           (if (with-timezone-p type)
+               "timestamptz"
+               "timestamp")))
 
 (defgeneric binding-type-for-sql-type (sql-type database)
   (:method ((type sql-boolean-type) (database postgresql-pg))
