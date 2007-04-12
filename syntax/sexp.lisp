@@ -172,6 +172,9 @@
           ((sql-symbol-equal name "integer")
            (make-instance 'sql-integer-type :bit-size (when type-args
                                                         (first type-args))))
+          ((or (sql-symbol-equal name "boolean")
+               (sql-symbol-equal name "bool"))
+           (make-instance 'sql-boolean-type))
           (t (sql-compile-error body)))))
 
 (defun compile-sql-column (body)
