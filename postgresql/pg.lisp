@@ -28,8 +28,6 @@
 (defclass* postgresql-pg-transaction (transaction)
   ((connection
     nil
-    :reader nil
-    :writer (setf connection-of)
     :documentation "The pg connection retuned by")))
 
 (defprint-object (self postgresql-pg-transaction)
@@ -77,8 +75,8 @@
         (pg:pg-close-portal connection portal-name)))))
 
 (defgeneric connection-of (tr)
-  (:method ((tr postgresql-pg-transaction))
-           (aif (slot-value tr 'connection)
+  (:method :around ((tr postgresql-pg-transaction))
+           (aif (call-next-method)
                 it
                 (let ((db (database-of tr)))
                   (log.debug "Opening connection the first time it was needed, using ~S" (remove-keywords (connection-specification-of db) :password))
