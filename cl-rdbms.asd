@@ -66,14 +66,36 @@
                          (:file "update" :depends-on ("syntax"))
                          (:file "delete" :depends-on ("syntax"))
                          (:file "sequence" :depends-on ("syntax"))
-                         (:file "index" :depends-on ("syntax"))))
-   (:module "postgresql"
-            :depends-on ("database" "transaction" "syntax")
-            :components ((:file "database")
-                         (:file "pg" :depends-on ("database"))
-                         (:file "syntax" :depends-on ("database"))
-                         (:file "type" :depends-on ("pg"))
-                         (:file "ddl" :depends-on ("database"))))))
+                         (:file "index" :depends-on ("syntax"))))))
+
+(defsystem :cl-rdbms.postgresql
+  :description "Common stuff for Postgresql backends for cl-rdbms"
+  :depends-on (:arnesi :defclass-star :cl-rdbms)
+  :default-component-class local-cl-source-file
+  :components
+  ((:module "postgresql"
+            :serial t
+            :components ((:file "package")
+                         (:file "database")
+                         (:file "syntax")
+                         (:file "type")
+                         (:file "ddl")))))
+
+(defsystem :cl-rdbms.pg
+  :description "cl-rdbms with pg backend"
+  :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :pg)
+  :default-component-class local-cl-source-file
+  :components
+  ((:module "postgresql"
+            :components ((:file "pg-backend")))))
+
+(defsystem :cl-rdbms.postmodern
+  :description "cl-rdbms with Postmodern backend"
+  :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :cl-postgres)
+  :default-component-class local-cl-source-file
+  :components
+  ((:module "postgresql"
+            :components ((:file "postmodern-backend")))))
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
@@ -87,6 +109,7 @@
   (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)")))
 
 (defmethod perform ((op test-op) (system (eql (find-system :cl-rdbms))))
+  (operate 'load-op :cl-rdbms.pg) ; we will test the pg backend by default
   (operate 'load-op :cl-rdbms-test)
   (in-package :cl-rdbms-test)
   (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)"))

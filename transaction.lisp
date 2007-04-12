@@ -34,6 +34,11 @@
     :documentation "Used by with-transaction to decide what to do when the with-transaction body finishes without any errors."))
   (:documentation "An object representing a transaction context. The actual backend connection/transaction is usually lazily created."))
 
+(defprint-object (self transaction)
+  (princ ":begin-executed-p ")
+  (princ (if (begin-was-executed-p self)
+             "#t" "#f")))
+
 (defclass* command-counter ()
   ((insert-counter 0 :type integer)
    (select-counter 0 :type integer)

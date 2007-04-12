@@ -4,7 +4,7 @@
 ;;;
 ;;; See LICENCE for details.
 
-(in-package :cl-rdbms)
+(in-package :cl-rdbms.postgresql)
 
 #.(file-header)
 

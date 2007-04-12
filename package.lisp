@@ -9,7 +9,7 @@
 (defpackage :cl-rdbms
   (:nicknames :rdbms)
 
-  (:shadow #:log #:type-of)
+  (:shadow #:log #:type-of #:type)
   
   (:use :cl :sb-pcl :cl-rdbms-system :arnesi :defclass-star)
 
@@ -17,8 +17,6 @@
    #:database
    #:*database*
    #:with-database
-   #:postgresql
-   #:postgresql-pg
    #:transaction
    #:*transaction*
    #:execute
@@ -108,6 +106,13 @@
                           #:log))
 
 (in-package :cl-rdbms)
+
+(defun publish-backend-symbol (symbol)
+  ;; export from the current package
+  (export symbol)
+  ;; and export from :cl-rdbms, too
+  (import symbol :cl-rdbms)
+  (export symbol :cl-rdbms))
 
 (deflogger log ()
   :level +warn+

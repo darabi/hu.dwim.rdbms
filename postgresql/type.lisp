@@ -4,7 +4,7 @@
 ;;;
 ;;; See LICENCE for details.
 
-(in-package :cl-rdbms)
+(in-package :cl-rdbms.postgresql)
 
 #.(file-header)
 
@@ -78,37 +78,6 @@
                "timestamptz"
                "timestamp")))
 
-(defgeneric binding-type-for-sql-type (sql-type database)
-  (:method ((type sql-boolean-type) (database postgresql-pg))
-           :boolean)
+(defgeneric binding-type-for-sql-type (sql-type database))
 
-  (:method ((type sql-integer-type) (database postgresql-pg))
-           (let ((bit-size (bit-size-of type)))
-             (cond ((null bit-size)
-                    :numeric)
-                   ((<= bit-size 16)
-                    :int16)
-                   ((<= bit-size 32)
-                    :int32)
-                   ((<= bit-size 64)
-                    :int64)
-                   (t
-                    :numeric))))
 
-  (:method ((type sql-float-type) (database postgresql-pg))
-           :float)
-  
-  (:method ((type sql-numeric-type) (database postgresql-pg))
-           :numeric)
-  
-  (:method ((type sql-string-type) (database postgresql-pg))
-           :string)
-
-  (:method ((type sql-date-type) (database postgresql-pg))
-           :string)
-
-  (:method ((type sql-timestamp-type) (database postgresql-pg))
-           :string)
-
-  (:method ((type sql-time-type) (database postgresql-pg))
-           :string))
