@@ -63,7 +63,7 @@
 ;;;;;;;;;;;;;;;;
 ;;; Update table
 
-(defcondition* unconfirmed-destructive-alter-table-error (error)
+(defcondition* unconfirmed-destructive-alter-table-error (serious-condition)
   ((table-name
     :type string)
    (column-name
