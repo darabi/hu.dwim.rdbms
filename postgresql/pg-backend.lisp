@@ -37,7 +37,7 @@
   (princ (if (begin-was-executed-p self)
              "#t" "#f")))
 
-(defmethod transaction-class-name list ((db postgresql-pg))
+(defmethod transaction-mixin-class list ((db postgresql-pg))
   'postgresql-pg-transaction)
 
 (defparameter *unique-counter* 0)

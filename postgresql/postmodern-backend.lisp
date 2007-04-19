@@ -18,7 +18,7 @@
     nil
     :documentation "The Postmodern connection")))
 
-(defmethod transaction-class-name list ((db postgresql-postmodern))
+(defmethod transaction-mixin-class list ((db postgresql-postmodern))
   'postgresql-postmodern-transaction)
 
 (defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string) &key visitor bindings &allow-other-keys)

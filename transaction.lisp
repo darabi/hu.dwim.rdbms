@@ -155,7 +155,7 @@
 (defun execute-ddl (command &rest args &key &allow-other-keys)
   (apply #'execute command :with-transaction :ensure args))
 
-(defmethod transaction-class-name list (database)
+(defmethod transaction-mixin-class list (database)
   'transaction)
   
 (defgeneric make-transaction (database &key &allow-other-keys)
