@@ -134,4 +134,7 @@
      :string)
 
     ((type sql-time-type)
-     :string)))
+     :string)
+
+    ((type sql-binary-large-object-type)
+     :rawdata)))
