@@ -40,11 +40,6 @@
 (defmethod transaction-mixin-class list ((db postgresql-pg))
   'postgresql-pg-transaction)
 
-(defparameter *unique-counter* 0)
-
-(defun generate-unique-postgresql-name (base)
-  (strcat base (incf *unique-counter*)))
-
 (defmethod execute-command ((db postgresql-pg) (tr postgresql-pg-transaction) (command string) &key visitor bindings &allow-other-keys)
   (assert (not (and visitor bindings)) (visitor bindings) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
   (let ((connection (connection-of tr))

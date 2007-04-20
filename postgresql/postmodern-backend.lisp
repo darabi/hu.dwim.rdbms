@@ -9,22 +9,62 @@
 #.(file-header)
 
 (defclass* postgresql-postmodern (postgresql)
-  ())
+  ((muffle-warnings #f :type boolean)))
 
 (publish-backend-symbol 'postgresql-postmodern)
 
 (defclass* postgresql-postmodern-transaction (transaction)
   ((connection
     nil
-    :documentation "The Postmodern connection")))
+    :documentation "The Postmodern connection")
+   (muffle-warnings (muffle-warnings-p *database*) :type boolean)))
 
 (defmethod transaction-mixin-class list ((db postgresql-postmodern))
   'postgresql-postmodern-transaction)
 
-(defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string) &key visitor bindings &allow-other-keys)
+(defmethod prepare-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string) &key (name (generate-unique-postgresql-name)))
+  (cl-postgres:prepare-query (connection-of tr) name command)
+  (make-instance 'prepared-statement :name name :query command))
+
+(defun execute-postmodern-prepared-statement (db connection statement-name bindings visitor)
   (assert (not (and visitor bindings)) (visitor bindings) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
-  (assert (not bindings) (bindings) "Bindings are not supported by the ~A backend" db)
-  (cl-postgres:exec-query (connection-of tr) command (or visitor 'cl-postgres:list-row-reader)))
+  (cl-postgres:exec-prepared connection statement-name
+                             (loop for (type value) :on bindings :by #'cddr
+                                   collect (if (typep type 'sql-boolean-type)
+                                               (if (stringp value)
+                                                   value
+                                                   (if value "TRUE" "FALSE"))
+                                               (if value
+                                                   (etypecase type
+                                                     (sql-binary-large-object-type value)
+                                                     ((or sql-simple-type
+                                                          sql-string-type
+                                                          sql-float-type
+                                                          sql-integer-type)
+                                                      (princ-to-string
+                                                       (if (numberp value)
+                                                           (lisp-number-to-sql-number value)
+                                                           value))))
+                                                   nil)))
+                             ;; TODO visitor needs more work
+                             (or visitor 'cl-postgres:list-row-reader)))
+
+(defmethod execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
+  (if (muffle-warnings-p tr)
+      (handler-bind ((cl-postgres:postgresql-warning #'muffle-warning))
+        (call-next-method))
+      (call-next-method)))
+
+(defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
+                            &key visitor bindings &allow-other-keys)
+  (let ((connection (connection-of tr))
+        (statement-name "")) ; unnamed prepared statement
+    (cl-postgres:prepare-query connection statement-name command)
+    (execute-postmodern-prepared-statement db connection statement-name bindings visitor)))
+
+(defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
+                            &key visitor bindings &allow-other-keys)
+  (execute-postmodern-prepared-statement db (connection-of tr) (name-of prepared-statement) bindings visitor))
 
 (defmethod connection-of :around ((tr postgresql-postmodern-transaction))
   (aif (call-next-method)
@@ -44,7 +84,6 @@
     (log.debug "Closing Postmodern connection ~A of transaction ~A in database ~A" it tr (database-of tr))
     (cl-postgres:close-database it)
     (setf (connection-of tr) nil)))
-
 
 
 

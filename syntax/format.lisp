@@ -32,9 +32,9 @@
   "Formats the given SQL statement into the stream."
   (let ((*sql-stream* stream)
         (*database* database)
-        (*binding-entries* '()))
+        (*binding-entries* (make-array 16 :adjustable #t :fill-pointer 0)))
     (format-sql-syntax-node statement database)
-    (values stream (nreverse *binding-entries*))))
+    (values stream *binding-entries*)))
 
 (defun format-sql-to-string (statement &rest args &key &allow-other-keys)
   "Formats the given SQL statement into a string."
@@ -121,10 +121,14 @@
            (elt character 0))
          character) *sql-stream*))
 
+(defun lisp-number-to-sql-number (number)
+  (if (typep number 'ratio)
+      (coerce number 'float)
+      number))
+
 (defmacro format-number (number)
   (rebinding (number)
-    `(write
-      (if (typep ,number 'ratio) (coerce ,number 'float) ,number)
+    `(write (lisp-number-to-sql-number ,number)
       :stream *sql-stream*)))
 
 (defmacro format-where (where &optional database)

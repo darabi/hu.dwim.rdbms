@@ -13,6 +13,10 @@
 (defcondition* transaction-error (simple-rdbms-error)
   ())
 
+(defclass* prepared-statement ()
+  ((name)
+   (query :documentation "The query passed in when this statement was prepared.")))
+
 (defclass* transaction ()
   ((database
     :type database)
@@ -192,6 +196,9 @@
            (execute-command database transaction "ROLLBACK")))
 
 (defgeneric cleanup-transaction (transaction))
+
+(defgeneric prepare-command (database transaction command &key name)
+  (:documentation "Sends a query to the database for parsing and returns a handler (a prepared-statement CLOS object) that can be used as a command for EXECUTE-COMMAND."))
 
 (defgeneric execute-command (database transaction command &key visitor bindings &allow-other-keys)
   (:method :before (database transaction command &key bindings &allow-other-keys)

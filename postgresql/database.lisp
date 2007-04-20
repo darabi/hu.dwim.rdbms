@@ -13,3 +13,9 @@
 
 (defclass* postgresql-transaction ()
   ())
+
+(defparameter *unique-counter* 0)
+
+(defun generate-unique-postgresql-name (base)
+  (strcat base (incf *unique-counter*)))
+

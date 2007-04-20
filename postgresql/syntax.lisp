@@ -14,14 +14,6 @@
   (format-char " ")
   (format-sql-syntax-node (type-of action) database))
 
-(defmethod format-sql-literal ((literal sql-literal) (database postgresql))
-  (if (type-of literal)
-      (progn
-        (push literal *binding-entries*)
-        (format-string "$")
-        (format-string (princ-to-string (length *binding-entries*))))
-      (call-next-method)))
-
 (defmethod format-sql-literal ((literal array) (database postgresql))
   (format-string "E'")
   (loop for el across literal
@@ -33,8 +25,20 @@
                (format-char (code-char el))))
   (format-string "'::bytea"))
 
-(defmethod format-sql-syntax-node ((variable sql-binding-variable) (database postgresql))
-  (push variable *binding-entries*)
-  (format-string "$")
-  (format-string (princ-to-string (length *binding-entries*))))
+(defmethod format-sql-literal ((literal sql-literal) (database postgresql))
+  (if (type-of literal)
+      (progn
+        (vector-push-extend literal *binding-entries*)
+        (format-string "$")
+        (format-string (princ-to-string (length *binding-entries*)))
+        (format-string "::")
+        (format-sql-syntax-node (type-of literal) database))
+      (call-next-method)))
 
+(defmethod format-sql-syntax-node ((variable sql-binding-variable) (database postgresql))
+  (vector-push-extend variable *binding-entries*)
+  (format-string "$")
+  (format-string (princ-to-string (length *binding-entries*)))
+  (awhen (type-of variable)
+    (format-string "::")
+    (format-sql-syntax-node (type-of variable) database)))
