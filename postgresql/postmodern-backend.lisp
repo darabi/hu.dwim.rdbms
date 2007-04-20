@@ -46,8 +46,19 @@
                                                            (lisp-number-to-sql-number value)
                                                            value))))
                                                    nil)))
-                             ;; TODO visitor needs more work
-                             (or visitor 'cl-postgres:list-row-reader)))
+                             (if visitor
+                                 (cl-postgres:row-reader (fields)
+                                   (loop with row = (make-array (length fields))
+                                         while (cl-postgres:next-row)
+                                         do (progn
+                                              (loop for field :across fields
+                                                    for next-field = (cl-postgres:next-field field)
+                                                    for idx :upfrom 0
+                                                    do (setf (aref row idx) (if (eq :null next-field)
+                                                                                nil
+                                                                                next-field)))
+                                              (funcall visitor row))))
+                                 'cl-postgres:list-row-reader)))
 
 (defmethod execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
   (if (muffle-warnings-p tr)
