@@ -8,6 +8,8 @@
 
 #.(file-header)
 
+(defvar *default-postmodern-row-reader* 'cl-postgres:list-row-reader)
+
 (defclass* postgresql-postmodern (postgresql)
   ((muffle-warnings #f :type boolean)))
 
@@ -58,7 +60,7 @@
                                                                                 nil
                                                                                 next-field)))
                                               (funcall visitor row))))
-                                 'cl-postgres:list-row-reader)))
+                                 *default-postmodern-row-reader*)))
 
 (defmethod execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
   (if (muffle-warnings-p tr)
