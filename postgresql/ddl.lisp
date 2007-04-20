@@ -9,7 +9,7 @@
 #.(file-header)
 
 (defun list-objects (type)
-  (mapcar #'car (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
+  (map 'list #L(elt !1 0) (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
 
 (defmethod database-list-sequences ((database postgresql))
   (list-objects "S"))
@@ -18,11 +18,11 @@
   (list-objects "r"))
 
 (defmethod database-list-table-columns (name (database postgresql))
-  (mapcar
+  (map 'list
    (lambda (column)
      (make-instance 'sql-column
-                    :name (first column)
-                    :type (sql-type-for-internal-type (rest column))))
+                    :name (first* column)
+                    :type (sql-type-for-internal-type (subseq column 1))))
    (execute
     (format nil "SELECT pg_attribute.attname, pg_type.typname, pg_attribute.attlen,
                                    pg_attribute.atttypmod, pg_attribute.attnotnull

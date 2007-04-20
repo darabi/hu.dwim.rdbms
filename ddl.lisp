@@ -157,7 +157,7 @@
   (:documentation "Returns the list of sequence names present in the database."))
 
 (defun sequence-next (name)
-  (caar (execute (make-instance 'sql-select :columns (list (make-instance 'sql-sequence-nextval-column :name name))))))
+  (first* (first* (execute (make-instance 'sql-select :columns (list (make-instance 'sql-sequence-nextval-column :name name)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop index

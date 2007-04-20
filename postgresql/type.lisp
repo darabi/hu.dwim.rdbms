@@ -22,7 +22,7 @@
   (format-string "BYTEA"))
 
 (defun sql-type-for-internal-type (description)
-  (let ((type-name (first description)))
+  (let ((type-name (first* description)))
     (macrolet ((sql-type-case (&body entries)
                  `(progn
                    ,@(loop for (name . body) :in entries
@@ -35,9 +35,9 @@
                      ("float8" (make-instance 'sql-float-type :bit-size 64))
                      ("numeric" (make-instance 'sql-numeric-type))
                      ("bool" (make-instance 'sql-boolean-type))
-                     ("char" (make-instance 'sql-character-type :size (- (third description) 4)))
-                     ("bpchar" (make-instance 'sql-character-type :size (- (third description) 4)))
-                     ("varchar" (make-instance 'sql-character-varying-type :size (- (third description) 4)))
+                     ("char" (make-instance 'sql-character-type :size (- (third* description) 4)))
+                     ("bpchar" (make-instance 'sql-character-type :size (- (third* description) 4)))
+                     ("varchar" (make-instance 'sql-character-varying-type :size (- (third* description) 4)))
                      ("text" (make-instance 'sql-character-large-object-type))
                      ("bytea" (make-instance 'sql-binary-large-object-type))
                      ("date" (make-instance 'sql-date-type))
