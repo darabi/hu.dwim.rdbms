@@ -50,11 +50,13 @@
   
   (:method ((literal string) database)
            (format-char "'")
+           ;; TODO: solve escaping
            (format-string literal)
            (format-char "'"))
 
   (:method ((literal symbol) database)
            (format-char "'")
+           ;; TODO: solve escaping
            (format-string (package-name (symbol-package literal)))
            (format-string "::")
            (format-string (symbol-name literal))
