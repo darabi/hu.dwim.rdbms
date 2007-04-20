@@ -21,9 +21,10 @@
       '(inline begin commit rollback execute assert-transaction-in-progress in-transaction-p)))
 
 (defun file-header ()
-  `(progn
+  `(eval-always
     (declaim ,(inline-declaration))
-    (enable-sharp-boolean-syntax)))
+    (setup-readtable)))
 
-
+(defun setup-readtable ()
+  (enable-sharp-boolean-syntax))
 

@@ -30,6 +30,9 @@
       (pushnew :debug *features*))
     (call-next-method)))
 
+(defclass cl-rdbms-backend-system (system)
+  ((database-factory-form :initarg :database-factory-form :accessor database-factory-form-of)))
+
 (defsystem :cl-rdbms
   :version "0.1"
   :author ("Attila Lendvai <attila.lendvai@gmail.com>"
@@ -40,7 +43,7 @@
 	       "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD"
   :description "rdbms lib with sql syntax and sql backend abstractions"
-  :depends-on (:arnesi :defclass-star :pg)
+  :depends-on (:arnesi :defclass-star)
   :default-component-class local-cl-source-file
   :components
   ((:file "package")
@@ -82,6 +85,9 @@
                          (:file "ddl")))))
 
 (defsystem :cl-rdbms.pg
+  :class cl-rdbms-backend-system
+  :database-factory-form "(make-instance 'postgresql-pg :connection-specification
+                                         '(:database \"dwim\" :user-name \"root\" :password \"admin123\"))"
   :description "cl-rdbms with pg backend"
   :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :pg)
   :default-component-class local-cl-source-file
@@ -90,6 +96,9 @@
             :components ((:file "pg-backend")))))
 
 (defsystem :cl-rdbms.postmodern
+  :class cl-rdbms-backend-system
+  :database-factory-form "(make-instance 'postgresql-postmodern :connection-specification
+                                         '(:database \"dwim\" :user-name \"root\" :password \"admin123\"))"
   :description "cl-rdbms with Postmodern backend"
   :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :cl-postgres)
   :default-component-class local-cl-source-file
@@ -109,16 +118,26 @@
   (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)")))
 
 (defmethod perform ((op test-op) (system (eql (find-system :cl-rdbms))))
-  (operate 'load-op :cl-rdbms.pg) ; we will test the pg backend by default
+  ;; we will test the postmodern backend by default
+  (operate 'test-op :cl-rdbms.postmodern)
+  (values))
+
+(defmethod perform ((op test-op) (system cl-rdbms-backend-system))
+  (operate 'load-op system)
   (operate 'load-op :cl-rdbms-test)
   (in-package :cl-rdbms-test)
-  (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)"))
+  (eval (read-from-string
+         (concatenate 'string "(setf *test-database* " (database-factory-form-of system) ")")))
   (declaim (optimize (debug 3)))
-  (warn "Enabled the #t/#f syntax in the repl thread and set (declaim (optimize (debug 3))) for easy C-c C-c'ing")
+  (warn "(declaim (optimize (debug 3))) was issued to help later C-c C-c'ing")
   (eval (read-from-string "(progn
                              (stefil:funcall-test-with-feedback-message 'test)
                              (setf *database* *test-database*))"))
+  (warn "(setf *database* *test-database*) was issued that have set the global value of *database* (helps REPL'ing)")
   (values))
 
 (defmethod operation-done-p ((op test-op) (system (eql (find-system :cl-rdbms))))
+  nil)
+
+(defmethod operation-done-p ((op test-op) (system cl-rdbms-backend-system))
   nil)

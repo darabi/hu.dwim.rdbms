@@ -22,8 +22,8 @@
 
 (defsuite* test)
 
-(defparameter *test-database* (make-instance 'postgresql-pg  :connection-specification
-                                             '(:database "dwim" :user-name "root" :password "admin123")))
+;; e.g. (make-instance 'postgresql-postmodern :connection-specification '(:database "dwim" :user-name "root" :password "admin123"))
+(defvar *test-database*)
 
 (defmacro with-test-transaction (&body body)
   `(with-transaction* (:database *test-database*)
@@ -98,6 +98,7 @@
            (execute (sql `(select ,columns alma))
                     :visitor (let ((first-time #t))
                                (lambda (row)
+                                 ;; TODO assume only sequences
                                  (is first-time)
                                  (setf first-time #f)
                                  (is (eql (pop row) 11))
