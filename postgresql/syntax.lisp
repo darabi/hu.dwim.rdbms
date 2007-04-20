@@ -29,7 +29,7 @@
                    (<= 127 el 255)
                    (eq el #\')
                    (eq el #\\))
-               (format *sql-stream* "\\~3,'0o" el)
+               (format *sql-stream* "\\\\~3,'0o" el)
                (format-char (code-char el))))
   (format-string "'::bytea"))
 
