@@ -204,8 +204,8 @@
              (when bindings
                (sql-log.info "; ~A" (format nil "~{~A~^, ~}"
                                             (loop for i upfrom 1
-                                                  for el in (cdr bindings) by #'cddr
-                                                  collect (strcat (format nil "$~A = " i) (format-sql-to-string el))))))
+                                                  for (type el) on bindings by #'cddr
+                                                  collect (format nil "$~A = ~A as ~A" i el (format-sql-to-string type))))))
              (sql-log.info "; ~A" command)))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
