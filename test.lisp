@@ -14,7 +14,7 @@
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
                                 with-transaction* process-sql-syntax-list compile-sql-column compile-sql-columns compile-sql-type
-                                value-of compile-sql-binding-variable compile-sql-literal
+                                value-of compile-sql-binding-variable compile-sql-literal first*
                                 log log.dribble log.debug log.info log.warn log.error)")))
   (import-sql-syntax-node-names))
 
@@ -54,7 +54,7 @@
          (with-transaction
            (execute-ddl "CREATE TABLE alma (name varchar(40))")
            (execute (format nil "INSERT INTO alma VALUES ('~A')" unicode-text))
-           (is (string= (first (first (execute "SELECT name FROM alma"))) unicode-text)))
+           (is (string= (first* (first* (execute "SELECT name FROM alma"))) unicode-text)))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 
@@ -64,7 +64,7 @@
          (with-transaction
            (execute-ddl (sql `(create table alma ((name (varchar 50))))))
            (execute (sql `(insert alma (name) ((,unicode-text varchar)))))
-           (is (string= (first (first (execute "SELECT * FROM alma"))) unicode-text)))
+           (is (string= (first* (first* (execute "SELECT * FROM alma"))) unicode-text)))
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 
@@ -98,15 +98,17 @@
            (execute (sql `(select ,columns alma))
                     :visitor (let ((first-time #t))
                                (lambda (row)
-                                 ;; TODO assume only sequences
-                                 (is first-time)
-                                 (setf first-time #f)
-                                 (is (eql (pop row) 11))
-                                 (is (string= (pop row) (value-of (first binding-literals))))
-                                 (is (eql (pop row) (value-of (second binding-literals))))
-                                 (is (eql (pop row) (value-of (third binding-literals))))
-                                 (is (eql (pop row) (value-of (fourth binding-literals))))
-                                 (is (eql (pop row) 22)))))
+                                 (let ((idx -1))
+                                   (flet ((next ()
+                                            (elt row (incf idx))))
+                                     (is first-time)
+                                     (setf first-time #f)
+                                     (is (eql (next) 11))
+                                     (is (string= (next) (value-of (first binding-literals))))
+                                     (is (eql (next) (value-of (second binding-literals))))
+                                     (is (eql (next) (value-of (third binding-literals))))
+                                     (is (eql (next) (value-of (fourth binding-literals))))
+                                     (is (eql (next) 22)))))))
            (signals unbound-binding-variable-error
              (execute (sql `(insert alma ,columns ,(append (list (compile-sql-literal '(? named1 (integer 32))))
                                                            binding-literals
@@ -120,14 +122,14 @@
          (execute-ddl "CREATE TABLE alma (x integer)")
          (with-transaction
            (execute "INSERT INTO alma VALUES (42)")
-           (is (= (first (first (execute "SELECT x FROM alma"))) 42))
+           (is (= (first* (first* (execute "SELECT x FROM alma"))) 42))
            (mark-transaction-for-rollback-only))
          (with-transaction
-           (is (zerop (first (first (execute "SELECT count(*) FROM alma"))))))
+           (is (zerop (first* (first* (execute "SELECT count(*) FROM alma"))))))
          (with-transaction
            (execute "INSERT INTO alma VALUES (42)"))
          (with-transaction
-           (is (= 1 (first (first (execute "SELECT count(*) FROM alma")))))))
+           (is (= 1 (first* (first* (execute "SELECT count(*) FROM alma")))))))
     (ignore-errors
       (execute-ddl "DROP TABLE alma"))))
 
@@ -139,7 +141,9 @@
          (create-table 'alma columns)
          (with-transaction
            (insert-records 'alma columns (list 1 "alma"))
-           (is (equal '((1 "alma")) (select-records columns '(alma))))))
+           (let ((row (first* (select-records columns '(alma)))))
+             (is (= (elt row 0) 1))
+             (is (string= (elt row 1) "alma")))))
     (ignore-errors
       (execute-ddl "DROP TABLE alma"))))
 
@@ -152,7 +156,9 @@
          (with-transaction
            (execute "insert into alma values (NULL, NULL)")
            (update-records 'alma columns (list 1 "alma"))
-           (is (equal '((1 "alma")) (select-records columns '(alma))))))
+           (let ((row (first* (select-records columns '(alma)))))
+             (is (= (elt row 0) 1))
+             (is (string= (elt row 1) "alma")))))
     (ignore-errors
       (execute-ddl "DROP TABLE alma"))))
 
