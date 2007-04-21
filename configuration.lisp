@@ -28,3 +28,11 @@
 (defun setup-readtable ()
   (enable-sharp-boolean-syntax))
 
+#+#.(cl:when (cl:find-package "SWANK") '(:and))
+(unless (assoc "CL-RDBMS" swank:*readtable-alist* :test #'string=)
+  (let ((*readtable* (copy-readtable)))
+    (setup-readtable)
+    (flet ((doit (&rest packages)
+             (dolist (package packages)
+               (push (cons package *readtable*) swank:*readtable-alist*))))
+      (doit "CL-RDBMS" "CL-RDBMS.POSTGRESQL" "CL-RDBMS-TEST"))))
