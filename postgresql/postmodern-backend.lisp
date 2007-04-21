@@ -32,22 +32,25 @@
   (assert (not (and visitor bindings)) (visitor bindings) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
   (cl-postgres:exec-prepared connection statement-name
                              (loop for (type value) :on bindings :by #'cddr
-                                   collect (if (typep type 'sql-boolean-type)
-                                               (if (stringp value)
-                                                   value
-                                                   (if value "TRUE" "FALSE"))
-                                               (if value
-                                                   (etypecase type
-                                                     (sql-binary-large-object-type value)
-                                                     ((or sql-simple-type
-                                                          sql-string-type
-                                                          sql-float-type
-                                                          sql-integer-type)
-                                                      (princ-to-string
-                                                       (if (numberp value)
-                                                           (lisp-number-to-sql-number value)
-                                                           value))))
-                                                   nil)))
+                                   collect (cond ((eq value :null)
+                                                  :null)
+                                                 ((typep type 'sql-boolean-type)
+                                                  (if (stringp value)
+                                                      value
+                                                      (if value "TRUE" "FALSE")))
+                                                 ((eq value nil)
+                                                  :null)
+                                                 (t
+                                                  (etypecase type
+                                                    (sql-binary-large-object-type value)
+                                                    ((or sql-simple-type
+                                                         sql-string-type
+                                                         sql-float-type
+                                                         sql-integer-type)
+                                                     (princ-to-string
+                                                      (if (numberp value)
+                                                          (lisp-number-to-sql-number value)
+                                                          value)))))))
                              (if visitor
                                  (cl-postgres:row-reader (fields)
                                    (loop with row = (make-array (length fields))
