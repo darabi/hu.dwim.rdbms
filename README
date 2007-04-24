@@ -1,0 +1,7 @@
+For details about cl-rdbms see http://common-lisp.net/project/cl-rdbms/
+
+To create a 'test' postgresql database with a 'test' user:
+ su - postgres
+ createdb test
+ createuser -d -r -l -P test
+
