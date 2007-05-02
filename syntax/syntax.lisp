@@ -38,6 +38,9 @@
   (:method ((literal null) database)
            (format-string "NULL"))
 
+  (:method ((literal (eql :null)) database)
+           (format-string "NULL"))
+
   (:method ((literal (eql t)) database)
            (format-string "true"))
 
