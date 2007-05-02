@@ -14,13 +14,13 @@
   (format-char " ")
   (format-sql-syntax-node (type-of action) database))
 
-(defmethod format-sql-literal ((literal array) (database postgresql))
+(defmethod format-sql-literal ((literal vector) (database postgresql))
   (format-string "E'")
   (loop for el across literal
         do (if (or (<= 0 el 31)
                    (<= 127 el 255)
-                   (eq el #\')
-                   (eq el #\\))
+                   (= el #.(char-code #\'))
+                   (= el #.(char-code #\\)))
                (format *sql-stream* "\\\\~3,'0o" el)
                (format-char (code-char el))))
   (format-string "'::bytea"))
