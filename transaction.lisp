@@ -92,9 +92,12 @@
                   (commit))
                  ((:rollback :marked-for-rollback-only)
                   (rollback)))))
-        (unless ,body-finished-p
-          (rollback))
         (when *transaction*
+          (unless ,body-finished-p
+            (handler-case
+                (rollback)
+              (error (error)
+                (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" error))))
           (cleanup-transaction *transaction*))))))
 
 (defmethod (setf terminal-action-of) :before (new-value (transaction transaction))
@@ -133,6 +136,7 @@
     (error 'transaction-error :format-control "No transaction in progress")))
 
 (defun begin (&rest args)
+  (assert (null *transaction*))
   (setf *transaction* (apply #'make-transaction *database* args)))
 
 (defun commit ()
