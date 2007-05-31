@@ -111,7 +111,7 @@
   :database-factory-form "(make-instance 'oracle :connection-specification
                                          '(:user-name \"rdbms-test\" :password \"test123\"))"
   :description "cl-rdbms with Oracle backend"
-  :depends-on (:arnesi :defclass-star)
+  :depends-on (:arnesi :defclass-star :verrazano-support)
   :default-component-class local-cl-source-file
   :components
   ((:module "oracle"

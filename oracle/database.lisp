@@ -13,3 +13,8 @@
 
 (defclass* oracle-transaction ()
   ())
+
+(cffi:define-foreign-library oracle-oci
+  (:unix (:or "lib?.so" "lib?32.so"))
+  (:windows "lib?.dll")
+  (t (:default "lib?")))
