@@ -117,6 +117,7 @@
   ((:module "oracle"
             :serial t
             :components ((:file "package")
+                         (:file "oracle-cffi-bindings")
                          (:file "database")))))
 
 (defsystem :cl-rdbms-test
