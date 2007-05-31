@@ -87,7 +87,7 @@
 (defsystem :cl-rdbms.pg
   :class cl-rdbms-backend-system
   :database-factory-form "(make-instance 'postgresql-pg :connection-specification
-                                         '(:database \"dwim\" :user-name \"root\" :password \"admin123\"))"
+                                         '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
   :description "cl-rdbms with pg backend"
   :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :pg)
   :default-component-class local-cl-source-file
@@ -98,13 +98,26 @@
 (defsystem :cl-rdbms.postmodern
   :class cl-rdbms-backend-system
   :database-factory-form "(make-instance 'postgresql-postmodern :connection-specification
-                                         '(:database \"dwim\" :user-name \"root\" :password \"admin123\"))"
+                                         '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
   :description "cl-rdbms with Postmodern backend"
   :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :cl-postgres)
   :default-component-class local-cl-source-file
   :components
   ((:module "postgresql"
             :components ((:file "postmodern-backend")))))
+
+(defsystem :cl-rdbms.oracle
+  :class cl-rdbms-backend-system
+  :database-factory-form "(make-instance 'oracle :connection-specification
+                                         '(:user-name \"rdbms-test\" :password \"test123\"))"
+  :description "cl-rdbms with Oracle backend"
+  :depends-on (:arnesi :defclass-star)
+  :default-component-class local-cl-source-file
+  :components
+  ((:module "oracle"
+            :serial t
+            :components ((:file "package")
+                         (:file "database")))))
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
