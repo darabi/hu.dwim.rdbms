@@ -185,8 +185,8 @@
 (defun update-index* (index)
   (update-index (name-of index) (table-name-of index) (columns-of index)))
 
-(defun list-table-indices (table-name)
-  (database-list-table-indices table-name *database*))
+(defun list-table-indices (name)
+  (database-list-table-indices name *database*))
 
-(defgeneric database-list-table-indices (table-name database)
+(defgeneric database-list-table-indices (name database)
   (:documentation "Returns the list of table indices present in the database."))

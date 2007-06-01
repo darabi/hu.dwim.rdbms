@@ -9,7 +9,7 @@
 #.(file-header)
 
 (defun list-objects (type)
-  (map 'list #L(elt !1 0) (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
+  (mapcar #L(elt !1 0) (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
 
 (defmethod database-list-sequences ((database postgresql))
   (list-objects "S"))
@@ -18,7 +18,7 @@
   (list-objects "r"))
 
 (defmethod database-list-table-columns (name (database postgresql))
-  (map 'list
+  (mapcar
    (lambda (column)
      (make-instance 'sql-column
                     :name (first* column)
@@ -34,12 +34,12 @@
                                   pg_attribute.atttypid = pg_type.oid"
             (string-downcase name)))))
 
-(defmethod database-list-table-indices (table-name (database postgresql))
+(defmethod database-list-table-indices (name (database postgresql))
   (mapcar
    (lambda (column)
      (make-instance 'sql-index
                     :name (first column)
-                    :table-name table-name))
+                    :table-name name))
    (execute
     (format nil "select indexname from pg_indexes where tablename = '~A'"
-            (string-downcase table-name)))))
+            (string-downcase name)))))

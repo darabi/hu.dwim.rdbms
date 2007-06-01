@@ -58,8 +58,10 @@
 
 (defmacro first* (seq)
   `(elt ,seq 0))
+
 (defmacro second* (seq)
   `(elt ,seq 1))
+
 (defmacro third* (seq)
   `(elt ,seq 2))
 

@@ -118,7 +118,10 @@
             :serial t
             :components ((:file "package")
                          (:file "oracle-cffi-bindings")
-                         (:file "database")))))
+                         (:file "database")
+                         (:file "syntax")
+                         (:file "type")
+                         (:file "ddl")))))
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
