@@ -13,6 +13,9 @@
 (defclass* database ()
   ((connection-specification
     :documentation "Backend specific connection data, usually a plist of args passed to the connect function.")
+   (default-result-type
+    'vector
+    :type (member vector list cursor))
    (transaction-class
     :type standard-class
     :documentation "Transactions will be instances of this class. This class is created according to the generic method transaction-mixin-class.")

@@ -9,7 +9,7 @@
 #.(file-header)
 
 (defun list-objects (type)
-  (mapcar #L(elt !1 0) (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
+  (map 'list #L(elt !1 0) (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
 
 (defmethod database-list-sequences ((database postgresql))
   (list-objects "S"))

@@ -74,7 +74,18 @@
    #:insert-records
    #:update-records
    #:delete-records
-   #:select-records)
+   #:select-records
+
+   #:make-cursor
+   #:cursor-position
+   #:column-count
+   #:row-count
+   #:column-name
+   #:column-type
+   #:column-value
+   #:for-each-row
+   #:collect-rows
+   #:current-row)
 
   ;; for debug purposes
   (:export

@@ -14,7 +14,7 @@
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
                                 with-transaction* process-sql-syntax-list compile-sql-column compile-sql-columns compile-sql-type
-                                value-of compile-sql-binding-variable compile-sql-literal first*
+                                value-of compile-sql-binding-variable compile-sql-literal first* second* third*
                                 log log.dribble log.debug log.info log.warn log.error)")))
   (import-sql-syntax-node-names))
 

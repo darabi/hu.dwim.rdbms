@@ -20,6 +20,8 @@
 (defclass* transaction ()
   ((database
     :type database)
+   (default-result-type
+    :type (member vector list cursor))
    (timestamp
     nil
     :type integer)
@@ -147,8 +149,8 @@
   (assert-transaction-in-progress)
   (rollback-transaction *database* *transaction*))
 
-(defun execute (command &rest args &key visitor bindings (with-transaction #f) &allow-other-keys)
-  (declare (ignore visitor bindings))   ; for slime to bring up the arguments
+(defun execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
+  (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
   (flet ((%execute-command ()
            (apply 'execute-command *database* *transaction* command args)))
     (if (or (eq :new with-transaction)
@@ -170,8 +172,12 @@
   (:method :before (database &key &allow-other-keys)
            (log.debug "About to BEGIN transaction in database ~A" database))
 
-  (:method (database &rest args)
-           (apply #'make-instance (transaction-class-of database) :database database :state :in-progress args)))
+  (:method (database &rest args &key default-result-type &allow-other-keys)
+           (apply #'make-instance (transaction-class-of database)
+                  :database database
+                  :state :in-progress
+                  :default-result-type (or default-result-type (default-result-type-of database))
+                  args)))
 
 (defgeneric begin-transaction (database transaction)
   (:method (database transaction)
@@ -204,7 +210,7 @@
 (defgeneric prepare-command (database transaction command &key name)
   (:documentation "Sends a query to the database for parsing and returns a handler (a prepared-statement CLOS object) that can be used as a command for EXECUTE-COMMAND."))
 
-(defgeneric execute-command (database transaction command &key visitor bindings &allow-other-keys)
+(defgeneric execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
   (:method :before (database transaction command &key bindings &allow-other-keys)
            (unless (begin-was-executed-p transaction)
              (setf (begin-was-executed-p transaction) #t)
@@ -218,6 +224,9 @@
                                                   for (type el) on bindings by #'cddr
                                                   collect (format nil "$~A = ~A as ~A" i el (format-sql-to-string type))))))
              (sql-log.info "; ~A" command)))
+
+  (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
+           (apply #'call-next-method database transaction command :result-type result-type args))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
            (let ((command-counter (command-counter-of transaction)))

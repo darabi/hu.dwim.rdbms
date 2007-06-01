@@ -8,8 +8,6 @@
 
 #.(file-header)
 
-(defvar *default-postmodern-row-reader* 'cl-postgres:list-row-reader)
-
 (defclass* postgresql-postmodern (postgresql)
   ((muffle-warnings #f :type boolean)))
 
@@ -28,7 +26,7 @@
   (cl-postgres:prepare-query (connection-of tr) name command)
   (make-instance 'prepared-statement :name name :query command))
 
-(defun execute-postmodern-prepared-statement (db connection statement-name bindings visitor)
+(defun execute-postmodern-prepared-statement (db connection statement-name &key bindings visitor result-type &allow-other-keys)
   (assert (not (and visitor bindings)) (visitor bindings) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
   (cl-postgres:exec-prepared connection statement-name
                              (loop for (type value) :on bindings :by #'cddr
@@ -53,17 +51,18 @@
                                                           value)))))))
                              (if visitor
                                  (cl-postgres:row-reader (fields)
-                                   (loop with row = (make-array (length fields))
+                                   (loop with row = (ecase result-type
+                                                      (vector (make-array (length fields))))
                                          while (cl-postgres:next-row)
                                          do (progn
                                               (loop for field :across fields
                                                     for next-field = (cl-postgres:next-field field)
                                                     for idx :upfrom 0
-                                                    do (setf (aref row idx) (if (eq :null next-field)
-                                                                                nil
-                                                                                next-field)))
+                                                    do (setf (aref row idx) next-field))
                                               (funcall visitor row))))
-                                 *default-postmodern-row-reader*)))
+                                 (ecase result-type
+                                   (list #'cl-postgres:list-row-reader)
+                                   (vector #'cl-postgres:vector-row-reader)))))
 
 (defmethod execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
   (if (muffle-warnings-p tr)
@@ -72,15 +71,15 @@
       (call-next-method)))
 
 (defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
-                            &key visitor bindings &allow-other-keys)
+                            &rest args)
   (let ((connection (connection-of tr))
         (statement-name "")) ; unnamed prepared statement
     (cl-postgres:prepare-query connection statement-name command)
-    (execute-postmodern-prepared-statement db connection statement-name bindings visitor)))
+    (apply #'execute-postmodern-prepared-statement db connection statement-name args)))
 
 (defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
-                            &key visitor bindings &allow-other-keys)
-  (execute-postmodern-prepared-statement db (connection-of tr) (name-of prepared-statement) bindings visitor))
+                            &rest args)
+  (apply #'execute-postmodern-prepared-statement db (connection-of tr) (name-of prepared-statement) args))
 
 (defmethod connection-of :around ((tr postgresql-postmodern-transaction))
   (aif (call-next-method)

@@ -18,4 +18,3 @@
 
 (defun generate-unique-postgresql-name (base)
   (strcat base (incf *unique-counter*)))
-

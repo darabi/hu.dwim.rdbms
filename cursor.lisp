@@ -12,7 +12,25 @@
 ;;; Cursor implementation API
 
 (defclass* cursor ()
-  ((result-type 'list :type symbol)))
+  ((transaction
+    :type transaction)
+   (default-result-type
+    :type (member vector list cursor))))
+
+(defgeneric make-cursor (transaction &key result-type initial-position &allow-other-keys)
+  (:documentation "Creates and associates a new cursor with the given ongoing transaction.")
+
+  (:method :around ((transaction transaction) &key (result-type 'list) (initial-position :first initial-position-p) &allow-other-keys)
+           (prog1-bind cursor (call-next-method)
+             (setf (transaction-of cursor) transaction)
+             (setf (default-result-type-of cursor)
+                   (or result-type
+                       (default-result-type-of transaction)))
+             (when initial-position-p
+               (setf (cursor-position cursor) initial-position)))))
+
+(defgeneric close-cursor (cursor)
+  (:documentation "Release any underlying resource."))
 
 (defgeneric cursor-position (cursor)
   (:documentation "Returns values of type (or null (integer 0 (1- row-count))) where nil means the position is invalid."))
@@ -26,8 +44,11 @@
 (defgeneric column-count (cursor))
 
 (defgeneric row-count (cursor)
-  (:method (cursor)
-           ))
+  (:method ((cursor cursor))
+           (setf (cursor-position cursor) :first)
+           (loop for i :from 0
+                 while (setf (cursor-position cursor) :next)
+                 return i)))
 
 (defgeneric column-name (cursor index)
   (:documentation "Returns the column name as a string."))
@@ -41,17 +62,11 @@
 ;;;;;;;;;;;;;;;;;;;
 ;;; Cursor user API
 
-(defun make-cursor (cursor-type &rest args &key (result-type 'list) (initial-position :first) &allow-other-keys)
-  (prog1-bind cursor
-      (apply #'make-instance cursor-type :result-type result-type args)
-    (when initial-position
-      (setf (cursor-position cursor) initial-position))))
-
-(defun current-row (cursor &key (result-type (result-type-of cursor)))
+(defun current-row (cursor &key (result-type (default-result-type-of cursor)))
   (if (cursor-position cursor)
       (let ((result (ecase result-type
                       (list nil)
-                      (vector (make-array 8 :adjustable #t :fill-pointer 0)))))
+                      (vector (make-array (column-count cursor) :adjustable #t :fill-pointer 0)))))
         (dotimes (index (column-count cursor))
           (let ((value (column-value cursor index)))
             (ecase result-type
@@ -62,7 +77,7 @@
           (setf result (nreverse result)))
         result)))
 
-(defun for-each-row (function cursor &key row-count start-position (result-type (result-type-of cursor)))
+(defun for-each-row (function cursor &key row-count start-position (result-type (default-result-type-of cursor)))
   (when start-position
     (setf (cursor-position cursor) start-position))
   (loop for row = (current-row cursor :result-type result-type)
@@ -73,7 +88,7 @@
              (funcall function row)
              (setf (cursor-position cursor) :next))))
 
-(defun collect-rows (cursor &key row-count start-position (result-type (result-type-of cursor)))
+(defun collect-rows (cursor &key row-count start-position (result-type (default-result-type-of cursor)))
   (let ((result (ecase result-type
                   (list nil)
                   (vector (make-array 8 :adjustable #t :fill-pointer 0)))))

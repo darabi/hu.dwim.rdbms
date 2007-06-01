@@ -56,14 +56,16 @@
 (defun length=1 (list)
   (and list (null (cdr list))))
 
-(defmacro first* (seq)
-  `(elt ,seq 0))
+(declaim (inline first* second* third*))
 
-(defmacro second* (seq)
-  `(elt ,seq 1))
+(defun first* (sequence)
+  (elt sequence 0))
 
-(defmacro third* (seq)
-  `(elt ,seq 2))
+(defun second* (sequence)
+  (elt sequence 1))
+
+(defun third* (sequence)
+  (elt sequence 2))
 
 ;;;;;;;;;;;;;;;;;;;
 ;;; from alexandria
