@@ -11,6 +11,9 @@
     #:type #:type-of #:log)
 
   (:use :cl :cl-rdbms :cl-rdbms-system :arnesi :defclass-star)
+  
+  (:shadow
+   #:null)
 
   (:export
    #:oracle))
@@ -22,4 +25,13 @@
   (when (and (eq (symbol-package symbol) #.(find-package :cl-rdbms))
              (not (find-symbol (symbol-name symbol) #.(find-package :cl-rdbms.oracle))))
     (import symbol)))
+
+(cffi:define-foreign-library oracle-oci
+  (:unix "libocixe.so")
+  (:windows "libocixe.dll")
+  (t (:default "libocixe")))
+
+(let ((cffi:*foreign-library-directories*
+       (list #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")))
+  (cffi:load-foreign-library 'oracle-oci))
 

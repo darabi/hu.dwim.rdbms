@@ -109,8 +109,14 @@
 
 (defsystem :cl-rdbms.oracle
   :class cl-rdbms-backend-system
-  :database-factory-form "(make-instance 'oracle :connection-specification
-                                         '(:user-name \"rdbms-test\" :password \"test123\"))"
+  :database-factory-form "(make-instance 'oracle
+                                         :connection-specification
+                                         '(:datasource \"(ADDRESS =
+                                                           (PROTOCOL = TCP)
+                                                           (HOST = tomi137)
+                                                           (PORT = 1521))\"
+                                           :user-name \"perec-test\"
+                                           :password \"test123\"))"
   :description "cl-rdbms with Oracle backend"
   :depends-on (:arnesi :defclass-star :verrazano-support)
   :default-component-class local-cl-source-file
@@ -119,10 +125,7 @@
             :serial t
             :components ((:file "package")
                          (:file "oracle-cffi-bindings")
-                         (:file "database")
-                         (:file "syntax")
-                         (:file "type")
-                         (:file "ddl")))))
+                         (:file "database")))))
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."

@@ -24,7 +24,7 @@
           ((or :utf8 :utf-8) "UTF8")
           ((or :us-ascii :ascii :latin1 :iso-8859-1) "LATIN1")
           ((or :latin2 :iso-8859-2) "LATIN2")
-          (t (error 'simple-rdbms-error :format-control "Unsupported encoding ~S" :format-arguments (list new-value)))))
+          (t (simple-rdbms-error "Unsupported encoding ~S" new-value))))
   (call-next-method))
 
 (defclass* postgresql-pg-transaction (transaction)

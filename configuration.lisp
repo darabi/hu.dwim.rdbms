@@ -36,4 +36,5 @@
     (flet ((doit (&rest packages)
              (dolist (package packages)
                (push (cons package *readtable*) swank:*readtable-alist*))))
-      (doit "CL-RDBMS" "CL-RDBMS.POSTGRESQL" "CL-RDBMS-TEST"))))
+      (doit "CL-RDBMS" "CL-RDBMS-TEST"
+            "CL-RDBMS.POSTGRESQL" "CL-RDBMS.ORACLE"))))

@@ -29,6 +29,9 @@
 (defcondition* simple-rdbms-error (simple-error)
   ())
 
+(defun simple-rdbms-error (message &rest args)
+  (error 'simple-rdbms-error :format-control message :format-arguments args))
+
 (defmethod shared-initialize :after ((database database) slot-names
                                      &key transaction-mixin generated-transaction-class-name &allow-other-keys)
   (let ((classes (mapcar #'find-class (transaction-mixin-class database))))
