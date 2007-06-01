@@ -39,7 +39,7 @@
     (when initial-position
       (setf (cursor-position cursor) initial-position))))
 
-(defun current-row (cursor &optional (result-type (result-type-of cursor)))
+(defun current-row (cursor &key (result-type (result-type-of cursor)))
   (if (cursor-position cursor)
       (let ((result (ecase result-type
                       (list nil)
@@ -54,25 +54,28 @@
           (setf result (nreverse result)))
         result)))
 
-(defun for-each-row (function cursor &optional (result-type (result-type-of cursor)))
-  (setf (cursor-position cursor) :first)
-  (for-each-remaining-row function cursor result-type))
-
-(defun for-each-remaining-row (function cursor &optional (result-type (result-type-of cursor)))
-  (loop for row = (current-row cursor result-type)
-        while row
+(defun for-each-row (function cursor &key row-count start-position (result-type (result-type-of cursor)))
+  (when start-position
+    (setf (cursor-position cursor) start-position))
+  (loop for row = (current-row cursor :result-type result-type)
+        while (and row
+                   (or (not row-count)
+                       (>= (decf row-count) 0)))
         do (progn
              (funcall function row)
              (setf (cursor-position cursor) :next))))
 
-(defun collect-rows (cursor &optional (result-type (result-type-of cursor)))
+(defun collect-rows (cursor &key row-count start-position (result-type (result-type-of cursor)))
   (let ((result (ecase result-type
                   (list nil)
                   (vector (make-array 8 :adjustable #t :fill-pointer 0)))))
     (for-each-row (ecase result-type
                     (list #L(push !1 result))
                     (vector #L(vector-push-extend !1 result)))
-                  cursor)
+                  cursor
+                  :start-position start-position
+                  :row-count row-count
+                  :result-type result-type)
     ;; TODO: optimize this
     (when (eq 'list result-type)
       (setf result (nreverse result)))
