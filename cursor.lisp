@@ -14,21 +14,29 @@
 (defclass* cursor ()
   ((result-type 'list :type symbol)))
 
-(defgeneric cursor-position (cursor))
+(defgeneric cursor-position (cursor)
+  (:documentation "Returns values of type (or null (integer 0 (1- row-count))) where nil means the position is invalid."))
 
 (defgeneric (setf cursor-position) (where cursor)
+  (:documentation "Modifies the cursor position, an implementation may not support all kinds of positioning.")
+
   (:method :before (where cursor)
            (check-type where (or integer (member :first :last :previous :next)))))
 
 (defgeneric column-count (cursor))
 
-(defgeneric row-count (cursor))
+(defgeneric row-count (cursor)
+  (:method (cursor)
+           ))
 
-(defgeneric column-name (cursor index))
+(defgeneric column-name (cursor index)
+  (:documentation "Returns the column name as a string."))
 
-(defgeneric column-type (cursor index))
+(defgeneric column-type (cursor index)
+  (:documentation "Returns the corresponding SQL type object slots filled in."))
 
-(defgeneric column-value (cursor index))
+(defgeneric column-value (cursor index)
+  (:documentation "Returns values of type (or (member :null nil t number string local-time) (vector (unsigned-byte 8)))."))
 
 ;;;;;;;;;;;;;;;;;;;
 ;;; Cursor user API
@@ -85,8 +93,8 @@
 ;;; Sequence cursor
 
 (defclass* sequence-cursor (cursor)
-  ((rows :type list)
-   (current-row-index :type list)))
+  ((rows :type (or vector list))
+   (current-row-index :type integer)))
 
 (defmethod cursor-position ((cursor sequence-cursor))
   (current-row-index-of cursor))
