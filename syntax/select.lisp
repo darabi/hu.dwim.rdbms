@@ -29,7 +29,13 @@
     :type number)
    (limit
     nil
-    :type number))
+    :type number)
+   (for
+    nil
+    :type (member :update :share))
+   (wait
+    #t
+    :type boolean))
   (:documentation "An SQL SELECT statement.")
   (:format-sql-syntax-node
    (format-string "SELECT ")
@@ -48,7 +54,12 @@
      (format-number limit))
    (when offset
      (format-string " OFFSET ")
-     (format-number offset))))
+     (format-number offset))
+   (when for
+     (format-string " FOR ")
+     (format-string (symbol-name for))
+     (unless wait
+       (format-string " NOWAIT")))))
 
 (define-syntax-node sql-table-alias (sql-identifier)
   ((name
