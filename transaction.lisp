@@ -84,20 +84,20 @@
         (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction"))
       (unwind-protect
            (progn
-             (begin :terminal-action ,default-terminal-action ,@args)
+             (setf *transaction* (apply #'make-transaction *database* :terminal-action ,default-terminal-action ,args))
              (multiple-value-prog1
                  (progn
                    ,@body)
                (setf ,body-finished-p #t)
                (ecase (terminal-action-of *transaction*)
                  ((:commit :marked-for-commit-only)
-                  (commit))
+                  (commit-transaction *database* *transaction*))
                  ((:rollback :marked-for-rollback-only)
-                  (rollback)))))
+                  (rollback-transaction *database* *transaction*)))))
         (when *transaction*
           (unless ,body-finished-p
             (handler-case
-                (rollback)
+                (rollback-transaction *database* *transaction*)
               (error (error)
                 (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" error))))
           (cleanup-transaction *transaction*))))))
@@ -138,18 +138,26 @@
     (error 'transaction-error :format-control "No transaction in progress")))
 
 (defun begin (&rest args)
-  (assert (null *transaction*))
+  "Starts a new transaction. This transaction must be closed by an explicit call to either rollback or commit. See with-transaction for convenience."
+  (assert (not (boundp '*transaction*)))
   (setf *transaction* (apply #'make-transaction *database* args)))
 
 (defun commit ()
+  "Commits the current transaction. The transaction must be started by an explicit call to begin."
   (assert-transaction-in-progress)
-  (commit-transaction *database* *transaction*))
+  (commit-transaction *database* *transaction*)
+  (makunbound '*transaction*)
+  (values))
 
 (defun rollback ()
+  "Rolls back the current transaction. The transaction must be started by an explicit call to begin."
   (assert-transaction-in-progress)
-  (rollback-transaction *database* *transaction*))
+  (rollback-transaction *database* *transaction*)
+  (makunbound '*transaction*)
+  (values))
 
 (defun execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
+  "Executes an SQL command. If VISITOR is not present the result is returned in a sequence. The type of the sequence is determined by RESULT-TYPE which is either LIST or VECTOR. When VISITOR is present it will be called for each row in the result."
   (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
   (flet ((%execute-command ()
            (apply 'execute-command *database* *transaction* command args)))
@@ -163,6 +171,7 @@
           (%execute-command)))))
 
 (defun execute-ddl (command &rest args &key &allow-other-keys)
+  "A DDL statement is executed in a separate transaction."
   (apply #'execute command :with-transaction :ensure args))
 
 (defmethod transaction-mixin-class list (database)
