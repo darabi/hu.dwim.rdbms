@@ -23,12 +23,10 @@
    (format-string "UPDATE ")
    (format-sql-identifier table)
    (format-string " SET ")
-   (loop for i = nil then t
-         for column in columns
-         for value in values
-         when i
-         do (format-string ", ")
-         do
+   (iter (for column in columns)
+         (for value in values)
+         (unless (first-iteration-p)
+           (format-string ", "))
          (format-sql-identifier column)
          (format-string " = ")
          (format-sql-syntax-node value))

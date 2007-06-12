@@ -93,22 +93,20 @@
   `(format-comma-separated-list ,nodes nil format-sql-identifier))
 
 (defmacro format-comma-separated-list (nodes &optional database (format-fn 'format-sql-syntax-node))
-  `(loop for i = nil then t
-    for node in ,nodes
-    when i
-    do (write-string ", " *sql-stream*)
-    do ,(if database
-            `(,format-fn node ,database)
-            `(,format-fn node))))
+  `(iter (for node :in-sequence ,nodes)
+         (unless (first-iteration-p)
+           (write-string ", " *sql-stream*))
+         ,(if database
+              `(,format-fn node ,database)
+              `(,format-fn node))))
 
 (defmacro format-separated-list (nodes separator &optional database (format-fn 'format-sql-syntax-node))
-  `(loop for i = nil then t
-    for node in ,nodes
-    when i
-    do (write-string ,separator *sql-stream*)
-    do ,(if database
-            `(,format-fn node ,database)
-            `(,format-fn node))))
+  `(iter (for node :in-sequence ,nodes)
+         (unless (first-iteration-p)
+           (write-string ,separator *sql-stream*))
+         ,(if database
+              `(,format-fn node ,database)
+              `(,format-fn node))))
 
 (defmacro format-string (string)
   `(write-string ,string *sql-stream*))

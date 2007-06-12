@@ -10,7 +10,7 @@
   (:shadowing-import-from #:cl-rdbms
     #:type #:type-of #:log)
 
-  (:use :cl :cl-rdbms :cl-rdbms-system :arnesi :defclass-star)
+  (:use :cl :iterate :arnesi :defclass-star :cl-rdbms-system :cl-rdbms)
   
   (:shadow
    #:null)

@@ -136,17 +136,17 @@
 
 (defmethod execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
   (remf-keywords args :bindings)
-  (collecting (final-bindings)
-    (multiple-value-bind (string binding-entries) (format-sql-to-string command)
-      (loop :for binding-entry :across binding-entries :do
-            (assert (type-of binding-entry) ((type-of binding-entry)) "The type of literals and binding variables must be defined because they are transmitted through the binding infrastructure")
-            (etypecase binding-entry
-              (sql-literal
-               (collect (type-of binding-entry))
-               (collect (value-of binding-entry)))
-              (sql-binding-variable
-               (collect (type-of binding-entry))
-               (aif (getf bindings (name-of binding-entry))
-                    (collect it)
-                    (error 'unbound-binding-variable-error :variable binding-entry :query command)))))
+  (multiple-value-bind (string binding-entries) (format-sql-to-string command)
+    (let ((final-bindings
+           (iter (for binding-entry :in-vector binding-entries)
+                 (assert (type-of binding-entry) ((type-of binding-entry)) "The type of literals and binding variables must be defined because they are transmitted through the binding infrastructure")
+                 (etypecase binding-entry
+                   (sql-literal
+                    (collect (type-of binding-entry))
+                    (collect (value-of binding-entry)))
+                   (sql-binding-variable
+                    (collect (type-of binding-entry))
+                    (aif (getf bindings (name-of binding-entry))
+                         (collect it)
+                         (error 'unbound-binding-variable-error :variable binding-entry :query command)))))))
       (apply 'execute-command database transaction string :bindings final-bindings args))))

@@ -11,7 +11,7 @@
 
   (:shadow #:log #:type-of #:type)
   
-  (:use :cl :sb-pcl :cl-rdbms-system :arnesi :defclass-star)
+  (:use :cl :sb-pcl :iterate :arnesi :defclass-star :cl-rdbms-system)
 
   (:export
    #:database
@@ -111,7 +111,7 @@
 (defpackage :cl-rdbms-test
   (:nicknames :rdbmst)
 
-  (:use :cl :cl-rdbms :arnesi)
+  (:use :cl :iterate :arnesi :cl-rdbms)
 
   (:shadowing-import-from :cl-rdbms
                           #:log))

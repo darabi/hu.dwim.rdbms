@@ -43,7 +43,7 @@
 	       "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD"
   :description "rdbms lib with sql syntax and sql backend abstractions"
-  :depends-on (:arnesi :defclass-star)
+  :depends-on (:arnesi :iterate :defclass-star)
   :default-component-class local-cl-source-file
   :components
   ((:file "package")
@@ -74,7 +74,7 @@
 
 (defsystem :cl-rdbms.postgresql
   :description "Common stuff for Postgresql backends for cl-rdbms"
-  :depends-on (:arnesi :defclass-star :cl-rdbms)
+  :depends-on (:arnesi :iterate :defclass-star :cl-rdbms)
   :default-component-class local-cl-source-file
   :components
   ((:module "postgresql"
@@ -90,7 +90,7 @@
   :database-factory-form "(make-instance 'postgresql-pg :connection-specification
                                          '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
   :description "cl-rdbms with pg backend"
-  :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :pg)
+  :depends-on (:arnesi :iterate :defclass-star :cl-rdbms.postgresql :pg)
   :default-component-class local-cl-source-file
   :components
   ((:module "postgresql"
@@ -101,7 +101,7 @@
   :database-factory-form "(make-instance 'postgresql-postmodern :connection-specification
                                          '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
   :description "cl-rdbms with Postmodern backend"
-  :depends-on (:arnesi :defclass-star :cl-rdbms.postgresql :cl-postgres)
+  :depends-on (:arnesi :iterate :defclass-star :cl-rdbms.postgresql :cl-postgres)
   :default-component-class local-cl-source-file
   :components
   ((:module "postgresql"
@@ -118,7 +118,7 @@
                                            :user-name \"perec-test\"
                                            :password \"test123\"))"
   :description "cl-rdbms with Oracle backend"
-  :depends-on (:arnesi :defclass-star :verrazano-support)
+  :depends-on (:arnesi :iterate :defclass-star :verrazano-support)
   :default-component-class local-cl-source-file
   :components
   ((:module "oracle"
@@ -134,7 +134,7 @@
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
-  :depends-on (:cl-rdbms :stefil)
+  :depends-on (:iterate :stefil :cl-rdbms)
   :default-component-class local-cl-source-file
   :components
   ((:file "test")))
