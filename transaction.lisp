@@ -98,8 +98,8 @@
           (unless ,body-finished-p
             (handler-case
                 (rollback-transaction *database* *transaction*)
-              (error (error)
-                (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" error))))
+              (serious-condition (condition)
+                (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
           (cleanup-transaction *transaction*))))))
 
 (defmethod (setf terminal-action-of) :before (new-value (transaction transaction))
