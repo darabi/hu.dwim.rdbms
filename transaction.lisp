@@ -138,19 +138,19 @@
     (error 'transaction-error :format-control "No transaction in progress")))
 
 (defun begin (&rest args)
-  "Starts a new transaction. This transaction must be closed by an explicit call to either rollback or commit. See with-transaction for convenience."
+  "Starts a new transaction. This transaction must be closed by an explicit call to either rollback or commit. See with-transaction for convenience and safety. This is for debug purposes."
   (assert (not (boundp '*transaction*)))
   (setf *transaction* (apply #'make-transaction *database* args)))
 
 (defun commit ()
-  "Commits the current transaction. The transaction must be started by an explicit call to begin."
+  "Commits the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
   (commit-transaction *database* *transaction*)
   (makunbound '*transaction*)
   (values))
 
 (defun rollback ()
-  "Rolls back the current transaction. The transaction must be started by an explicit call to begin."
+  "Rolls back the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
   (rollback-transaction *database* *transaction*)
   (makunbound '*transaction*)
