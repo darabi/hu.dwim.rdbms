@@ -145,15 +145,19 @@
 (defun commit ()
   "Commits the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
-  (commit-transaction *database* *transaction*)
-  (makunbound '*transaction*)
+  (unwind-protect
+       (commit-transaction *database* *transaction*)
+    (cleanup-transaction *transaction*)
+    (makunbound '*transaction*))
   (values))
 
 (defun rollback ()
   "Rolls back the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
-  (rollback-transaction *database* *transaction*)
-  (makunbound '*transaction*)
+  (unwind-protect
+       (rollback-transaction *database* *transaction*)
+    (cleanup-transaction *transaction*)
+    (makunbound '*transaction*))
   (values))
 
 (defun execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
