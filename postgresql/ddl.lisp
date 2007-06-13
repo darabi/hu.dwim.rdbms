@@ -18,13 +18,13 @@
   (list-objects "r"))
 
 (defmethod database-list-table-columns (name (database postgresql))
-  (mapcar
-   (lambda (column)
-     (make-instance 'sql-column
-                    :name (first* column)
-                    :type (sql-type-for-internal-type (subseq column 1))))
-   (execute
-    (format nil "SELECT pg_attribute.attname, pg_type.typname, pg_attribute.attlen,
+  (map 'list
+       (lambda (column)
+         (make-instance 'sql-column
+                        :name (first* column)
+                        :type (sql-type-for-internal-type (subseq column 1))))
+       (execute
+        (format nil "SELECT pg_attribute.attname, pg_type.typname, pg_attribute.attlen,
                                    pg_attribute.atttypmod, pg_attribute.attnotnull
                             FROM pg_type, pg_class, pg_attribute
                             WHERE pg_class.oid = pg_attribute.attrelid AND
@@ -32,14 +32,14 @@
                                   pg_attribute.attname NOT IN ('cmin', 'cmax', 'xmax', 'xmin', 'oid', 'ctid', 'tableoid') AND
                                   pg_attribute.attisdropped = FALSE AND
                                   pg_attribute.atttypid = pg_type.oid"
-            (string-downcase name)))))
+                (string-downcase name)))))
 
 (defmethod database-list-table-indices (name (database postgresql))
-  (mapcar
-   (lambda (column)
-     (make-instance 'sql-index
-                    :name (first column)
-                    :table-name name))
-   (execute
-    (format nil "select indexname from pg_indexes where tablename = '~A'"
-            (string-downcase name)))))
+  (map 'list
+       (lambda (column)
+         (make-instance 'sql-index
+                        :name (first* column)
+                        :table-name name))
+       (execute
+        (format nil "select indexname from pg_indexes where tablename = '~A'"
+                (string-downcase name)))))

@@ -9,14 +9,14 @@
 #.(file-header)
 
 (defun sql-literal-values-for (columns values)
-  (mapcar (lambda (column value)
-            (if (or (typep value 'sql-literal)
-                    (not (typep column 'sql-column)))
-                value
-                (make-instance 'sql-literal
-                               :value value
-                               :type (type-of column))))
-          columns values))
+  (map 'list (lambda (column value)
+               (if (or (typep value 'sql-literal)
+                       (not (typep column 'sql-column)))
+                   value
+                   (make-instance 'sql-literal
+                                  :value value
+                                  :type (type-of column))))
+       columns values))
 
 (defun insert-records (table columns values)
   (execute (make-instance 'sql-insert
