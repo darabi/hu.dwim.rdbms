@@ -51,7 +51,7 @@
    (:file "configuration" :depends-on ("duplicates"))
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("database"))
-   (:file "cursor" :depends-on ("database"))
+   (:file "cursor" :depends-on ("transaction"))
    (:file "ddl" :depends-on ("transaction"))
    (:file "dml" :depends-on ("transaction"))
    (:module "syntax"
