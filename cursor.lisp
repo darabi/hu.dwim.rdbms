@@ -17,6 +17,13 @@
    (default-result-type
     :type (member vector list cursor))))
 
+(defclass* sequential-access-cursor (cursor)
+  ()
+  (:documentation "Positioning supports only :first and :next"))
+
+(defclass* random-access-cursor (cursor)
+  ())
+
 (defgeneric make-cursor (transaction &key result-type initial-position &allow-other-keys)
   (:documentation "Creates and associates a new cursor with the given ongoing transaction.")
 
@@ -36,10 +43,23 @@
   (:documentation "Returns values of type (or null (integer 0 (1- row-count))) where nil means the position is invalid."))
 
 (defgeneric (setf cursor-position) (where cursor)
-  (:documentation "Modifies the cursor position, an implementation may not support all kinds of positioning.")
+  (:documentation "Modifies the cursor position, an implementation may not support all kinds of positioning. The integer is a signed value and means relative positioning.")
 
-  (:method :before (where cursor)
+  (:method :before (where (cursor sequential-access-cursor))
+           (check-type where (member :first :next)))
+
+  (:method :before (where (cursor random-access-cursor))
            (check-type where (or integer (member :first :last :previous :next)))))
+
+(defgeneric absolute-cursor-position (cursor))
+
+(defgeneric (setf absolute-cursor-position) (where cursor)
+  (:method :before (where (cursor cursor))
+           (check-type where (integer 0)))
+
+  (:method (where (cursor cursor))
+           (setf (cursor-position cursor) :first)
+           (setf (cursor-position cursor) where)))
 
 (defgeneric column-count (cursor))
 
