@@ -1,6 +1,6 @@
 ;;; WARNING: This is a generated file, editing it is not advised!
 (in-package :cl-user)
-(asdf:operate 'asdf:load-op :verrazano-support)
+(asdf:operate 'asdf:load-op :verrazano-runtime)
 (DEFPACKAGE :ORACLE-CFFI-BINDINGS (:USE :CFFI) (:NICKNAMES "OCI")
             (:EXPORT "+DIRPATH-EXPR-REF-TBLNAME+" "+DIRPATH-EXPR-SQL+" "+DIRPATH-EXPR-OBJ-CONSTR+"
              "+DIRPATH-DATASAVE-PARTIAL+" "+DIRPATH-DATASAVE-FINISH+" "+DIRPATH-DATASAVE-SAVEONLY+"
@@ -9,26 +9,32 @@
              "+DIRPATH-NORMAL+" "+DIRPATH-INDEX-MAINT-SKIP-ALL+"
              "+DIRPATH-INDEX-MAINT-DONT-SKIP-UNUSABLE+" "+DIRPATH-INDEX-MAINT-SKIP-UNUSABLE+"
              "+DIRPATH-INDEX-MAINT-SINGLE-ROW+" "+DIRPATH-CONVERT+" "+DIRPATH-UNLOAD+"
-             "+DIRPATH-LOAD+" "+EXTPROC-ERROR+" "+EXTPROC-SUCCESS+" "+STRING-MAXLEN+"
-             "+VARRAY-MAXSIZE+" "+TYPECODE-ERRHP+" "+TYPECODE-NONE+" "+TYPECODE-NCLOB+"
-             "+TYPECODE-NVARCHAR-2+" "+TYPECODE-NCHAR+" "+TYPECODE-PLS-INTEGER+"
-             "+TYPECODE-SYSLAST+" "+TYPECODE-SYSFIRST+" "+TYPECODE-OTMLAST+" "+TYPECODE-OTMFIRST+"
-             "+TYPECODE-OPAQUE+" "+TYPECODE-TABLE+" "+TYPECODE-VARRAY+" "+TYPECODE-PTR+"
-             "+TYPECODE-SMALLINT+" "+TYPECODE-OCTET+" "+TYPECODE-UNSIGNED-32+"
-             "+TYPECODE-UNSIGNED-16+" "+TYPECODE-DOUBLE+" "+TYPECODE-REAL+" "+TYPECODE-SIGNED-32+"
-             "+TYPECODE-SIGNED-16+" "+TYPECODE-SIGNED-8+" "+OBJECT-UPDATED+" "+OBJECT-DELETED+"
-             "+OBJECT-NEW+" "+OBJECTPROP-VIEW+" "+OBJECTPROP-MARKSTATUS+" "+OBJECTPROP-LOCK+"
-             "+OBJECTPROP-ALLOC-DURATION+" "+OBJECTPROP-PIN-DURATION+" "+OBJECTPROP-TABLE+"
-             "+OBJECTPROP-SCHEMA+" "+OBJECTPROP-LIFETIME+" "+DURATION-INVALID+"
-             "+ATTR-CACHE-ARRAYFLUSH+" "+ATTR-OBJECT-NEWNOTNULL+" "+ATTR-OBJECT-DETECTCHANGE+"
-             "+EXTRACT-TYPE-OCINUM+" "+EXTRACT-TYPE-INTEGER+" "+EXTRACT-TYPE-STRING+"
-             "+EXTRACT-TYPE-BOOLEAN+" "+EXTRACT-MULTIPLE+" "+EXTRACT-APPEND-VALUES+"
-             "+EXTRACT-UNIQUE-ABBREVS+" "+EXTRACT-CASE-SENSITIVE+" "+FILE-STDERR+" "+FILE-STDOUT+"
-             "+FILE-STDIN+" "+FILE-TEXT+" "+FILE-BIN+" "+FILE-BACKWARD+" "+FILE-FORWARD+"
-             "+FILE-SEEK-END+" "+FILE-SEEK-CURRENT+" "+FILE-SEEK-BEGINNING+" "+FILE-APPEND+"
-             "+FILE-TRUNCATE+" "+FILE-EXCL+" "+FILE-CREATE+" "+FILE-EXIST+" "+FILE-READ-WRITE+"
-             "+FILE-WRITE-ONLY+" "+FILE-READ-ONLY+" "+FORMAT-DP+" "+MINOR-VERSION+"
-             "+MAJOR-VERSION+" "+DBSHUTDOWN-FINAL+" "+DBSHUTDOWN-ABORT+" "+DBSHUTDOWN-IMMEDIATE+"
+             "+DIRPATH-LOAD+" "+EXTPROC-ERROR+" "+EXTPROC-SUCCESS+" "+DATE-INVALID-FORMAT+"
+             "+DATE-YEAR-ZERO+" "+DATE-DAY-MISSING-FROM-1582+" "+DATE-SECOND-BELOW-VALID+"
+             "+DATE-INVALID-SECOND+" "+DATE-MINUTE-BELOW-VALID+" "+DATE-INVALID-MINUTE+"
+             "+DATE-HOUR-BELOW-VALID+" "+DATE-INVALID-HOUR+" "+DATE-YEAR-BELOW-VALID+"
+             "+DATE-INVALID-YEAR+" "+DATE-MONTH-BELOW-VALID+" "+DATE-INVALID-MONTH+"
+             "+DATE-DAY-BELOW-VALID+" "+DATE-INVALID-DAY+" "+NUMBER-SIGNED+" "+NUMBER-UNSIGNED+"
+             "+NUMBER-SIZE+" "+STRING-MAXLEN+" "+VARRAY-MAXSIZE+" "+TYPECODE-ERRHP+"
+             "+TYPECODE-NONE+" "+TYPECODE-NCLOB+" "+TYPECODE-NVARCHAR-2+" "+TYPECODE-NCHAR+"
+             "+TYPECODE-PLS-INTEGER+" "+TYPECODE-SYSLAST+" "+TYPECODE-SYSFIRST+"
+             "+TYPECODE-OTMLAST+" "+TYPECODE-OTMFIRST+" "+TYPECODE-OPAQUE+" "+TYPECODE-TABLE+"
+             "+TYPECODE-VARRAY+" "+TYPECODE-PTR+" "+TYPECODE-SMALLINT+" "+TYPECODE-OCTET+"
+             "+TYPECODE-UNSIGNED-32+" "+TYPECODE-UNSIGNED-16+" "+TYPECODE-DOUBLE+"
+             "+TYPECODE-REAL+" "+TYPECODE-SIGNED-32+" "+TYPECODE-SIGNED-16+" "+TYPECODE-SIGNED-8+"
+             "+OBJECT-UPDATED+" "+OBJECT-DELETED+" "+OBJECT-NEW+" "+OBJECTPROP-VIEW+"
+             "+OBJECTPROP-MARKSTATUS+" "+OBJECTPROP-LOCK+" "+OBJECTPROP-ALLOC-DURATION+"
+             "+OBJECTPROP-PIN-DURATION+" "+OBJECTPROP-TABLE+" "+OBJECTPROP-SCHEMA+"
+             "+OBJECTPROP-LIFETIME+" "+DURATION-INVALID+" "+ATTR-CACHE-ARRAYFLUSH+"
+             "+ATTR-OBJECT-NEWNOTNULL+" "+ATTR-OBJECT-DETECTCHANGE+" "+EXTRACT-TYPE-OCINUM+"
+             "+EXTRACT-TYPE-INTEGER+" "+EXTRACT-TYPE-STRING+" "+EXTRACT-TYPE-BOOLEAN+"
+             "+EXTRACT-MULTIPLE+" "+EXTRACT-APPEND-VALUES+" "+EXTRACT-UNIQUE-ABBREVS+"
+             "+EXTRACT-CASE-SENSITIVE+" "+FILE-STDERR+" "+FILE-STDOUT+" "+FILE-STDIN+"
+             "+FILE-TEXT+" "+FILE-BIN+" "+FILE-BACKWARD+" "+FILE-FORWARD+" "+FILE-SEEK-END+"
+             "+FILE-SEEK-CURRENT+" "+FILE-SEEK-BEGINNING+" "+FILE-APPEND+" "+FILE-TRUNCATE+"
+             "+FILE-EXCL+" "+FILE-CREATE+" "+FILE-EXIST+" "+FILE-READ-WRITE+" "+FILE-WRITE-ONLY+"
+             "+FILE-READ-ONLY+" "+FORMAT-DP+" "+MINOR-VERSION+" "+MAJOR-VERSION+"
+             "+DBSHUTDOWN-FINAL+" "+DBSHUTDOWN-ABORT+" "+DBSHUTDOWN-IMMEDIATE+"
              "+DBSHUTDOWN-TRANSACTIONAL-LOCAL+" "+DBSHUTDOWN-TRANSACTIONAL+"
              "+DBSTARTUPFLAG-RESTRICT+" "+DBSTARTUPFLAG-FORCE+" "+KERBCRED-CLIENT-IDENTIFIER+"
              "+KERBCRED-PROXY+" "+XMLTYPE-CREATE-BLOB+" "+XMLTYPE-CREATE-CLOB+"
@@ -353,22 +359,40 @@
              "DURATION-GET-PARENT" "OBJECT-ALWAYS-LATEST" "OBJECT-NOT-ALWAYS-LATEST"
              "OBJECT-FLUSH-REFRESH" "OBJECT-IS-LOADED" "OBJECT-IS-DIRTIED" "CACHE-GET-OBJECTS"
              "CACHE-REGISTER" "CACHE-FLUSH-REFRESH" "OBJECT-SET-DATA" "OBJECT-GET-NEW-OID"
-             "OCIEPACM" "OCIEPERR" "OCIEPMSG" "OCIEPGOE" "OBINDPS" "OBREAK" "OCAN" "OCLOSE" "OCOF"
-             "OCOM" "OCON" "ODEFINPS" "ODESSP" "ODESCR" "OERHMS" "OERMSG" "OEXEC" "OEXFET" "OEXN"
-             "OFEN" "OFETCH" "OFLNG" "OGETPI" "OOPT" "OPINIT" "OLOG" "OLOGOF" "OOPEN" "OPARSE"
-             "OROL" "OSETPI" "SQLLD-2" "SQLLDA" "ONBSET" "ONBTST" "ONBCLR" "OGNFD" "OBNDRA"
-             "OBNDRN" "OBNDRV" "ODEFIN" "ONAME" "ORLON" "OLON" "OSQL-3" "ODSC" "INITIALIZE"
-             "TERMINATE" "ENV-CREATE" "ENV-NLS-CREATE" "FE-NV-CREATE" "HANDLE-ALLOC" "HANDLE-FREE"
-             "DESCRIPTOR-ALLOC" "DESCRIPTOR-FREE" "ENV-INIT" "SERVER-ATTACH" "SERVER-DETACH"
-             "SESSION-BEGIN" "SESSION-END" "LOGON" "LOGON-2" "LOGOFF" "PASSWORD-CHANGE"
-             "STMT-PREPARE" "STMT-PREPARE-2" "STMT-RELEASE" "BIND-BY-POS" "BIND-BY-NAME"
-             "BIND-OBJECT" "BIND-DYNAMIC" "BIND-ARRAY-OF-STRUCT" "STMT-GET-PIECE-INFO"
-             "STMT-SET-PIECE-INFO" "STMT-EXECUTE" "DEFINE-BY-POS" "DEFINE-OBJECT" "DEFINE-DYNAMIC"
-             "ROWID-TO-CHAR" "DEFINE-ARRAY-OF-STRUCT" "STMT-FETCH" "STMT-FETCH-2"
-             "STMT-GET-BIND-INFO" "DESCRIBE-ANY" "PARAM-GET" "PARAM-SET" "TRANS-START"
-             "TRANS-DETACH" "TRANS-COMMIT" "TRANS-ROLLBACK" "TRANS-PREPARE" "TRANS-MULTI-PREPARE"
-             "TRANS-FORGET" "ERROR-GET" "LOB-APPEND" "LOB-ASSIGN" "LOB-CHAR-SET-FORM"
-             "LOB-CHAR-SET-ID" "LOB-COPY" "LOB-CREATE-TEMPORARY" "LOB-CLOSE"
+             "NUMBER-INC" "NUMBER-DEC" "NUMBER-SET-ZERO" "NUMBER-SET-PI" "NUMBER-ADD" "NUMBER-SUB"
+             "NUMBER-MUL" "NUMBER-DIV" "NUMBER-MOD" "NUMBER-INT-POWER" "NUMBER-SHIFT" "NUMBER-NEG"
+             "NUMBER-TO-TEXT" "NUMBER-FROM-TEXT" "NUMBER-TO-INT" "NUMBER-FROM-INT" "NUMBER-TO-REAL"
+             "NUMBER-TO-REAL-ARRAY" "NUMBER-FROM-REAL" "NUMBER-CMP" "NUMBER-SIGN" "NUMBER-IS-ZERO"
+             "NUMBER-IS-INT" "NUMBER-ASSIGN" "NUMBER-ABS" "NUMBER-CEIL" "NUMBER-FLOOR"
+             "NUMBER-SQRT" "NUMBER-TRUNC" "NUMBER-POWER" "NUMBER-ROUND" "NUMBER-PREC" "NUMBER-SIN"
+             "NUMBER-ARC-SIN" "NUMBER-HYP-SIN" "NUMBER-COS" "NUMBER-ARC-COS" "NUMBER-HYP-COS"
+             "NUMBER-TAN" "NUMBER-ARC-TAN" "NUMBER-ARC-TAN-2" "NUMBER-HYP-TAN" "NUMBER-EXP"
+             "NUMBER-LN" "NUMBER-LOG" "DATE-ASSIGN" "DATE-TO-TEXT" "DATE-FROM-TEXT" "DATE-COMPARE"
+             "DATE-ADD-MONTHS" "DATE-ADD-DAYS" "DATE-LAST-DAY" "DATE-DAYS-BETWEEN"
+             "DATE-ZONE-TO-ZONE" "DATE-NEXT-DAY" "DATE-CHECK" "DATE-SYS-DATE" "STRING-ASSIGN"
+             "STRING-ASSIGN-TEXT" "STRING-RESIZE" "STRING-SIZE" "STRING-PTR" "STRING-ALLOC-SIZE"
+             "RAW-ASSIGN-RAW" "RAW-ASSIGN-BYTES" "RAW-RESIZE" "RAW-SIZE" "RAW-PTR" "RAW-ALLOC-SIZE"
+             "REF-CLEAR" "REF-ASSIGN" "REF-IS-EQUAL" "REF-IS-NULL" "REF-HEX-SIZE" "REF-FROM-HEX"
+             "REF-TO-HEX" "COLL-SIZE" "COLL-MAX" "COLL-GET-ELEM" "COLL-GET-ELEM-ARRAY"
+             "COLL-ASSIGN-ELEM" "COLL-ASSIGN" "COLL-APPEND" "COLL-TRIM" "COLL-IS-LOCATOR"
+             "ITER-CREATE" "ITER-DELETE" "ITER-INIT" "ITER-GET-CURRENT" "ITER-NEXT" "ITER-PREV"
+             "TABLE-SIZE" "TABLE-EXISTS" "TABLE-DELETE" "TABLE-FIRST" "TABLE-LAST" "TABLE-NEXT"
+             "TABLE-PREV" "OCIEPACM" "OCIEPERR" "OCIEPMSG" "OCIEPGOE" "OBINDPS" "OBREAK" "OCAN"
+             "OCLOSE" "OCOF" "OCOM" "OCON" "ODEFINPS" "ODESSP" "ODESCR" "OERHMS" "OERMSG" "OEXEC"
+             "OEXFET" "OEXN" "OFEN" "OFETCH" "OFLNG" "OGETPI" "OOPT" "OPINIT" "OLOG" "OLOGOF"
+             "OOPEN" "OPARSE" "OROL" "OSETPI" "SQLLD-2" "SQLLDA" "ONBSET" "ONBTST" "ONBCLR" "OGNFD"
+             "OBNDRA" "OBNDRN" "OBNDRV" "ODEFIN" "ONAME" "ORLON" "OLON" "OSQL-3" "ODSC"
+             "INITIALIZE" "TERMINATE" "ENV-CREATE" "ENV-NLS-CREATE" "FE-NV-CREATE" "HANDLE-ALLOC"
+             "HANDLE-FREE" "DESCRIPTOR-ALLOC" "DESCRIPTOR-FREE" "ENV-INIT" "SERVER-ATTACH"
+             "SERVER-DETACH" "SESSION-BEGIN" "SESSION-END" "LOGON" "LOGON-2" "LOGOFF"
+             "PASSWORD-CHANGE" "STMT-PREPARE" "STMT-PREPARE-2" "STMT-RELEASE" "BIND-BY-POS"
+             "BIND-BY-NAME" "BIND-OBJECT" "BIND-DYNAMIC" "BIND-ARRAY-OF-STRUCT"
+             "STMT-GET-PIECE-INFO" "STMT-SET-PIECE-INFO" "STMT-EXECUTE" "DEFINE-BY-POS"
+             "DEFINE-OBJECT" "DEFINE-DYNAMIC" "ROWID-TO-CHAR" "DEFINE-ARRAY-OF-STRUCT" "STMT-FETCH"
+             "STMT-FETCH-2" "STMT-GET-BIND-INFO" "DESCRIBE-ANY" "PARAM-GET" "PARAM-SET"
+             "TRANS-START" "TRANS-DETACH" "TRANS-COMMIT" "TRANS-ROLLBACK" "TRANS-PREPARE"
+             "TRANS-MULTI-PREPARE" "TRANS-FORGET" "ERROR-GET" "LOB-APPEND" "LOB-ASSIGN"
+             "LOB-CHAR-SET-FORM" "LOB-CHAR-SET-ID" "LOB-COPY" "LOB-CREATE-TEMPORARY" "LOB-CLOSE"
              "LOB-DISABLE-BUFFERING" "LOB-ENABLE-BUFFERING" "LOB-ERASE" "LOB-FILE-CLOSE"
              "LOB-FILE-CLOSE-ALL" "LOB-FILE-EXISTS" "LOB-FILE-GET-NAME" "LOB-FILE-IS-OPEN"
              "LOB-FILE-OPEN" "LOB-FILE-SET-NAME" "LOB-FLUSH-BUFFER" "LOB-FREE-TEMPORARY"
@@ -468,25 +492,27 @@
              "OBJECT-PROPERTY" "OBJECT-EVENT" "NZTTTDUFMT" "NZTTCEF" "NZTT-IDENT-TYPE" "NZTTCES"
              "NZTT-CIPHER-TYPE" "NZTT-POLICY" "PARAM" "COMPLEX-OBJECT-COMP" "SERVER-DN-S"
              "AQN-FY-DESCRIPTOR" "AQS-IGNATURE" "ANY-DATA-CTX" "THREAD-CONTEXT" "COMPLEX-OBJECT"
-             "REF" "EXT-PROC-CONTEXT" "SERVER" "SNAPSHOT" "ROWID" "DEFINE" "BIND" "STMT" "DESCRIBE"
-             "TRANS" "RESULT" "UCB" "FILE-OBJECT" "LOB-LOCATOR" "SECURITY" "AQE-NQ-OPTIONS" "RAW"
-             "AQM-SG-PROPERTIES" "AQD-EQ-OPTIONS" "AQL-IS-MSG-PROPS" "AQL-ISTEN-OPTS" "AQA-GENT"
-             "PICKLER-TDS-CTX" "PICKLER-FDO" "PICKLER-TDS" "PICKLER-IMAGE" "TYPE" "ANY-DATA"
-             "ANY-DATA-SET" "MSG" "THREAD-MUTEX" "THREAD-KEY" "THREAD-ID" "THREAD-HANDLE"
-             "SUBSCRIPTION" "DATE-TIME" "INTERVAL" "CP-OOL" "SP-OOL" "AUTH-INFO" "ENV" "SESSION"
-             "ADMIN" "EVENT" "DIR-PATH-FUNC-CTX" "DIR-PATH-DESC" "SVC-CTX" "DIR-PATH-CTX"
-             "DIR-PATH-COL-ARRAY" "ERROR" "DIR-PATH-STREAM" "FOCBK-STRUCT" "NZTT-IDENTITY-DESC"
-             "NZTT-PERSONA-DESC" "NZTT-PROT-INFO" "NZTT-PKCS-7-P-ROT-INFO" "NZTT-BUFFER-BLOCK"
-             "NZTT-WALLET" "NZTT-WALLET-PRIVATE" "NZTT-PERSONA" "NZPKCS-11-I-NFO" "NZSS-ENTRY"
-             "NZTT-PERSONA-PRIVATE" "NZTT-IDENTITY" "NZTT-IDENTITY-PRIVATE" "NUMBER" "CDA-DEF"
-             "CDA-DEF-ANONYMOUS-1743" "CDA-DEF-ANONYMOUS-1743-ANONYMOUS-1738" "CDA-HEAD"
-             "CDA-HEAD-ANONYMOUS-1821" "CDA-HEAD-ANONYMOUS-1821-ANONYMOUS-1816" "EB-1" "B1" "EB-2"
-             "B2" "EB-4" "UB-8" "ORASB-8" "SB-8" "B4" "UTEXT" "EWORD" "LGENFP-T" "CDA-D-EF" "PARAM"
+             "STRING" "REF" "ITER" "COLL" "XMLT-YPE" "DOMD-OCUMENT" "EXT-PROC-CONTEXT" "SERVER"
+             "SNAPSHOT" "ROWID" "DEFINE" "BIND" "STMT" "DESCRIBE" "TRANS" "RESULT" "UCB"
+             "FILE-OBJECT" "LOB-LOCATOR" "SECURITY" "AQE-NQ-OPTIONS" "RAW" "AQM-SG-PROPERTIES"
+             "AQD-EQ-OPTIONS" "AQL-IS-MSG-PROPS" "AQL-ISTEN-OPTS" "AQA-GENT" "PICKLER-TDS-CTX"
+             "PICKLER-FDO" "PICKLER-TDS" "PICKLER-IMAGE" "TYPE" "ANY-DATA" "ANY-DATA-SET" "MSG"
+             "THREAD-MUTEX" "THREAD-KEY" "THREAD-ID" "THREAD-HANDLE" "SUBSCRIPTION" "DATE-TIME"
+             "INTERVAL" "CP-OOL" "SP-OOL" "AUTH-INFO" "ENV" "SESSION" "ADMIN" "EVENT"
+             "DIR-PATH-FUNC-CTX" "DIR-PATH-DESC" "SVC-CTX" "DIR-PATH-CTX" "DIR-PATH-COL-ARRAY"
+             "ERROR" "DIR-PATH-STREAM" "FOCBK-STRUCT" "NZTT-IDENTITY-DESC" "NZTT-PERSONA-DESC"
+             "NZTT-PROT-INFO" "NZTT-PKCS-7-P-ROT-INFO" "NZTT-BUFFER-BLOCK" "NZTT-WALLET"
+             "NZTT-WALLET-PRIVATE" "NZTT-PERSONA" "NZPKCS-11-I-NFO" "NZSS-ENTRY"
+             "NZTT-PERSONA-PRIVATE" "NZTT-IDENTITY" "NZTT-IDENTITY-PRIVATE" "DATE" "TIME" "NUMBER"
+             "CDA-DEF" "CDA-DEF-ANONYMOUS-1743" "CDA-DEF-ANONYMOUS-1743-ANONYMOUS-1738" "CDA-HEAD"
+             "CDA-HEAD-ANONYMOUS-1850" "CDA-HEAD-ANONYMOUS-1850-ANONYMOUS-1845" "EB-1" "B1" "EB-2"
+             "B2" "EB-4" "UB-8" "ORASB-8" "SB-8" "B4" "UTEXT" "LGENFP-T" "CDA-D-EF" "PARAM"
              "COMPLEX-OBJECT-COMP" "SERVER-DN-S" "AQN-FY-DESCRIPTOR" "AQS-IGNATURE" "CLOB-LOCATOR"
              "BLOB-LOCATOR" "BF-ILE-LOCATOR" "LOB-OFFSET" "LOB-LENGTH" "LOB-MODE" "ANY-DATA-CTX"
              "THREAD-CONTEXT" "MARK-OPT" "OBJECT-LIFETIME" "OBJECT-MARK-STATUS" "TYPE-GET-OPT"
              "TYPE-ENCAP" "TYPE-METHOD-FLAG" "TYPE-PARAM-MODE" "OBJECT-PROP-ID" "LOCK-OPT"
-             "PIN-OPT" "COMPLEX-OBJECT" "REFRESH-OPT" "OBJECT-PROPERTY" "OBJECT-EVENT" "REF"
+             "PIN-OPT" "COMPLEX-OBJECT" "REFRESH-OPT" "OBJECT-PROPERTY" "OBJECT-EVENT" "EWORD"
+             "DATE" "STRING" "REF" "ARRAY" "ITER" "COLL" "TABLE" "XMLT-YPE" "DOMD-OCUMENT"
              "EXT-PROC-CONTEXT" "CALLBACK-STMT-CACHE" "EVENT-CALLBACK" "SERVER" "CALLBACK-OUT-BIND"
              "CALLBACK-IN-BIND" "SNAPSHOT" "CALLBACK-DEFINE" "ROWID" "DEFINE" "BIND" "STMT"
              "DESCRIBE" "TRANS" "CALLBACK-LOB-READ" "CALLBACK-LOB-WRITE" "LDA-D-EF" "RESULT"
@@ -506,19 +532,19 @@
              "ERROR" "DIR-PATH-STREAM" "SB-4" "CALLBACK-FAILOVER" "NZTT-PKCS-7-P-ROT-INFO"
              "NZTT-CIPHER-TYPE" "UWORD" "NZTT-WALLET-PRIVATE" "NZTT-PERSONA" "NZTT-POLICY"
              "NZPKCS-11-I-NFO" "NZSS-ENTRY" "NZTT-IDENTITY" "NZTT-PERSONA-PRIVATE"
-             "NZTT-IDENTITY-PRIVATE" "ORATEXT" "TEXT" "SWORD" "SB-2" "UB-1" "UB-2" "UB-4"))
+             "NZTT-IDENTITY-PRIVATE" "ORATEXT" "TEXT" "TIME" "SWORD" "SB-2" "UB-1" "UB-2" "UB-4"))
 
 (in-package :ORACLE-CFFI-BINDINGS)
-(cffi:define-foreign-type ub-4 () ':unsigned-int)
-(cffi:define-foreign-type ub-2 () ':short)
-(cffi:define-foreign-type ub-1 () ':unsigned-char)
-(cffi:defcstruct cda-head-anonymous-1821-anonymous-1816 (rcs-4 ub-4) (rcs-5 ub-2) (rcs-6 ub-1))
-(cffi:defcstruct cda-head-anonymous-1821 (rd cda-head-anonymous-1821-anonymous-1816) (rcs-7 ub-4)
+(cffi::defctype* ub-4 :unsigned-int)
+(cffi::defctype* ub-2 :short)
+(cffi::defctype* ub-1 :unsigned-char)
+(cffi:defcstruct cda-head-anonymous-1850-anonymous-1845 (rcs-4 ub-4) (rcs-5 ub-2) (rcs-6 ub-1))
+(cffi:defcstruct cda-head-anonymous-1850 (rd cda-head-anonymous-1850-anonymous-1845) (rcs-7 ub-4)
  (rcs-8 ub-2))
-(cffi:define-foreign-type sb-2 () ':short)
-(cffi:define-foreign-type sword () ':int)
+(cffi::defctype* sb-2 :short)
+(cffi::defctype* sword :int)
 (cffi:defcstruct cda-head (v2-rc sb-2) (ft ub-2) (rpc ub-4) (peo ub-2) (fc ub-1) (rcs-1 ub-1)
- (rc ub-2) (wrn ub-1) (rcs-2 ub-1) (rcs-3 sword) (rid cda-head-anonymous-1821) (ose sword)
+ (rc ub-2) (wrn ub-1) (rcs-2 ub-1) (rcs-3 sword) (rid cda-head-anonymous-1850) (ose sword)
  (chk ub-1) (rcsp :pointer))
 (cffi:defcstruct cda-def-anonymous-1743-anonymous-1738 (rcs-4 ub-4) (rcs-5 ub-2) (rcs-6 ub-1))
 (cffi:defcstruct cda-def-anonymous-1743 (rd cda-def-anonymous-1743-anonymous-1738) (rcs-7 ub-4)
@@ -527,44 +553,43 @@
  (rc ub-2) (wrn ub-1) (rcs-2 ub-1) (rcs-3 sword) (rid cda-def-anonymous-1743) (ose sword)
  (chk ub-1) (rcsp :pointer) (rcs-9 ub-1 :count 15))
 (cffi:defcstruct number (number-part ub-1 :count 21))
-(cffi:define-foreign-type text () 'oratext)
-(cffi:define-foreign-type oratext () ':unsigned-char)
-(cffi:define-foreign-type nztt-identity-private () 'nztt-identity-private)
+(cffi:defcstruct time (time-hh ub-1) (time-mi ub-1) (time-ss ub-1))
+(cffi:defcstruct date (date-yyyy sb-2) (date-mm ub-1) (date-dd ub-1) (date-time time))
+(cffi::defctype* text oratext)
+(cffi::defctype* oratext :unsigned-char)
+(cffi::defctype* nztt-identity-private nztt-identity-private)
 (cffi:defcstruct nztt-identity-private)
 (cffi:defcstruct nztt-identity (dn-nztt-identity :pointer) (dnlen-nztt-identity ub-4)
  (comment-nztt-identity :pointer) (commentlen-nztt-identity ub-4) (private-nztt-identity :pointer)
  (next-nztt-identity :pointer))
-(cffi:define-foreign-type nztt-persona-private () 'nztt-persona-private)
+(cffi::defctype* nztt-persona-private nztt-persona-private)
 (cffi:defcstruct nztt-persona-private)
-(cffi:define-foreign-type nztt-identity () 'nztt-identity)
-(cffi:define-foreign-type nzss-entry () 'nzss-entry)
+(cffi::defctype* nzss-entry nzss-entry)
 (cffi:defcstruct nzss-entry)
-(cffi:define-foreign-type nzpkcs-11-i-nfo () 'nzpkcs-11-i-nfo)
+(cffi::defctype* nzpkcs-11-i-nfo nzpkcs-11-i-nfo)
 (cffi:defcstruct nzpkcs-11-i-nfo)
 (cffi:defcstruct nztt-persona (generic-name-nztt-persona :pointer)
  (generic-namelen-nztt-persona ub-4) (private-nztt-persona :pointer)
  (mycertreqs-nztt-persona :pointer) (mycerts-nztt-persona :pointer) (mytps-nztt-persona :pointer)
  (mystore-nztt-persona :pointer) (mypkcs-11-i-nfo-nztt-persona :pointer)
  (next-nztt-persona :pointer))
-(cffi:define-foreign-type nztt-policy () 'nztt-policy)
+(cffi::defctype* nztt-policy nztt-policy)
 (cffi:defcenum nztt-policy (:nzttpolicy-none 0) (:nzttpolicy-retry-1 1) (:nzttpolicy-retry-2 2)
  (:nzttpolicy-retry-3 3))
-(cffi:define-foreign-type nztt-persona () 'nztt-persona)
-(cffi:define-foreign-type nztt-wallet-private () 'nztt-wallet-private)
+(cffi::defctype* nztt-wallet-private nztt-wallet-private)
 (cffi:defcstruct nztt-wallet-private)
 (cffi:defcstruct nztt-wallet (ldap-name-nztt-wallet :pointer) (ldap-namelen-nztt-wallet ub-4)
  (secure-policy-nztt-wallet nztt-policy) (open-policy-nztt-wallet nztt-policy)
  (persona-nztt-wallet :pointer) (private-nztt-wallet :pointer))
-(cffi:define-foreign-type uword () ':unsigned-int)
+(cffi::defctype* uword :unsigned-int)
 (cffi:defcstruct nztt-buffer-block (flags-nztt-buffer-block uword) (buflen-nztt-buffer-block ub-4)
  (usedlen-nztt-buffer-block ub-4) (buffer-nztt-buffer-block :pointer))
-(cffi:define-foreign-type nztt-cipher-type () 'nztt-cipher-type)
+(cffi::defctype* nztt-cipher-type nztt-cipher-type)
 (cffi:defcenum nztt-cipher-type (:nzttciphertype-rsa 1) (:nzttciphertype-des 2)
  (:nzttciphertype-rc-4 3) (:nzttciphertype-md-5-des 4) (:nzttciphertype-md-5-rc-2 5)
  (:nzttciphertype-md-5 6) (:nzttciphertype-sha 7))
 (cffi:defcstruct nztt-pkcs-7-p-rot-info (mictype-nztt-pkcs-7-p-rot-info nztt-cipher-type)
  (symmtype-nztt-pkcs-7-p-rot-info nztt-cipher-type) (keylen-nztt-pkcs-7-p-rot-info ub-4))
-(cffi:define-foreign-type nztt-pkcs-7-p-rot-info () 'nztt-pkcs-7-p-rot-info)
 (cffi:defcstruct nztt-prot-info (pkcs-7-nztt-prot-info nztt-pkcs-7-p-rot-info))
 (cffi:defcstruct nztt-persona-desc (privlen-nztt-persona-desc ub-4)
  (priv-nztt-persona-desc :pointer) (prllen-nztt-persona-desc ub-4) (prl-nztt-persona-desc :pointer)
@@ -574,230 +599,236 @@
  (pub-nztt-identity-desc :pointer) (dnlen-nztt-identity-desc ub-4) (dn-nztt-identity-desc :pointer)
  (longlen-nztt-identity-desc ub-4) (long-nztt-identity-desc :pointer)
  (quallen-nztt-identity-desc ub-4) (trustqual-nztt-identity-desc :pointer))
-(cffi:define-foreign-type callback-failover () ':pointer)
-(cffi:define-foreign-type sb-4 () ':int)
+(cffi::defctype* callback-failover :pointer)
+(cffi::defctype* sb-4 :int)
 (cffi:defcstruct focbk-struct (callback-function callback-failover) (fo-ctx :pointer))
-(cffi:define-foreign-type dir-path-stream () 'dir-path-stream)
+(cffi::defctype* dir-path-stream dir-path-stream)
 (cffi:defcstruct dir-path-stream)
-(cffi:define-foreign-type error () 'error)
+(cffi::defctype* error error)
 (cffi:defcstruct error)
-(cffi:define-foreign-type dir-path-col-array () 'dir-path-col-array)
+(cffi::defctype* dir-path-col-array dir-path-col-array)
 (cffi:defcstruct dir-path-col-array)
-(cffi:define-foreign-type dir-path-ctx () 'dir-path-ctx)
+(cffi::defctype* dir-path-ctx dir-path-ctx)
 (cffi:defcstruct dir-path-ctx)
-(cffi:define-foreign-type svc-ctx () 'svc-ctx)
+(cffi::defctype* svc-ctx svc-ctx)
 (cffi:defcstruct svc-ctx)
-(cffi:define-foreign-type dir-path-desc () 'dir-path-desc)
+(cffi::defctype* dir-path-desc dir-path-desc)
 (cffi:defcstruct dir-path-desc)
-(cffi:define-foreign-type dir-path-func-ctx () 'dir-path-func-ctx)
+(cffi::defctype* dir-path-func-ctx dir-path-func-ctx)
 (cffi:defcstruct dir-path-func-ctx)
-(cffi:define-foreign-type event () 'event)
+(cffi::defctype* event event)
 (cffi:defcstruct event)
-(cffi:define-foreign-type admin () 'admin)
+(cffi::defctype* admin admin)
 (cffi:defcstruct admin)
-(cffi:define-foreign-type session () 'session)
+(cffi::defctype* session session)
 (cffi:defcstruct session)
-(cffi:define-foreign-type ora-text () 'oratext)
-(cffi:define-foreign-type env () 'env)
+(cffi::defctype* ora-text oratext)
+(cffi::defctype* env env)
 (cffi:defcstruct env)
-(cffi:define-foreign-type auth-info () 'auth-info)
+(cffi::defctype* auth-info auth-info)
 (cffi:defcstruct auth-info)
-(cffi:define-foreign-type boolean () ':int)
-(cffi:define-foreign-type sp-ool () 'sp-ool)
+(cffi::defctype* boolean :int)
+(cffi::defctype* sp-ool sp-ool)
 (cffi:defcstruct sp-ool)
-(cffi:define-foreign-type cp-ool () 'cp-ool)
+(cffi::defctype* cp-ool cp-ool)
 (cffi:defcstruct cp-ool)
-(cffi:define-foreign-type size-t () ':unsigned-int)
-(cffi:define-foreign-type interval () 'interval)
+(cffi::defctype* size-t :unsigned-int)
+(cffi::defctype* interval interval)
 (cffi:defcstruct interval)
-(cffi:define-foreign-type date-time () 'date-time)
+(cffi::defctype* date-time date-time)
 (cffi:defcstruct date-time)
-(cffi:define-foreign-type number () 'number)
-(cffi:define-foreign-type sb-1 () ':char)
-(cffi:define-foreign-type subscription () 'subscription)
+(cffi::defctype* sb-1 :char)
+(cffi::defctype* subscription subscription)
 (cffi:defcstruct subscription)
-(cffi:define-foreign-type subscription-notify () ':pointer)
-(cffi:define-foreign-type fetch-row-callback () ':pointer)
-(cffi:define-foreign-type bind-row-callback () ':pointer)
-(cffi:define-foreign-type thread-handle () 'thread-handle)
+(cffi::defctype* subscription-notify :pointer)
+(cffi::defctype* fetch-row-callback :pointer)
+(cffi::defctype* bind-row-callback :pointer)
+(cffi::defctype* thread-handle thread-handle)
 (cffi:defcstruct thread-handle)
-(cffi:define-foreign-type thread-id () 'thread-id)
+(cffi::defctype* thread-id thread-id)
 (cffi:defcstruct thread-id)
-(cffi:define-foreign-type thread-key () 'thread-key)
+(cffi::defctype* thread-key thread-key)
 (cffi:defcstruct thread-key)
-(cffi:define-foreign-type thread-key-dest-func () ':pointer)
-(cffi:define-foreign-type thread-mutex () 'thread-mutex)
+(cffi::defctype* thread-key-dest-func :pointer)
+(cffi::defctype* thread-mutex thread-mutex)
 (cffi:defcstruct thread-mutex)
-(cffi:define-foreign-type msg () 'msg)
+(cffi::defctype* msg msg)
 (cffi:defcstruct msg)
-(cffi:define-foreign-type duration () 'ub-2)
-(cffi:define-foreign-type wchar () 'ub-4)
-(cffi:define-foreign-type sbig-ora () ':long)
-(cffi:define-foreign-type any-data-set () 'any-data-set)
+(cffi::defctype* duration ub-2)
+(cffi::defctype* wchar ub-4)
+(cffi::defctype* sbig-ora :long)
+(cffi::defctype* any-data-set any-data-set)
 (cffi:defcstruct any-data-set)
-(cffi:define-foreign-type any-data () 'any-data)
+(cffi::defctype* any-data any-data)
 (cffi:defcstruct any-data)
-(cffi:define-foreign-type type-code () 'ub-2)
-(cffi:define-foreign-type type () 'type)
+(cffi::defctype* type-code ub-2)
+(cffi::defctype* type type)
 (cffi:defcstruct type)
-(cffi:define-foreign-type pickler-image () 'pickler-image)
+(cffi::defctype* pickler-image pickler-image)
 (cffi:defcstruct pickler-image)
-(cffi:define-foreign-type ind () 'sb-2)
-(cffi:define-foreign-type pickler-tds () 'pickler-tds)
+(cffi::defctype* ind sb-2)
+(cffi::defctype* pickler-tds pickler-tds)
 (cffi:defcstruct pickler-tds)
-(cffi:define-foreign-type pickler-fdo () 'pickler-fdo)
+(cffi::defctype* pickler-fdo pickler-fdo)
 (cffi:defcstruct pickler-fdo)
-(cffi:define-foreign-type pickler-tds-element () 'ub-4)
-(cffi:define-foreign-type pickler-tds-ctx () 'pickler-tds-ctx)
+(cffi::defctype* pickler-tds-element ub-4)
+(cffi::defctype* pickler-tds-ctx pickler-tds-ctx)
 (cffi:defcstruct pickler-tds-ctx)
-(cffi:define-foreign-type aqa-gent () 'aqa-gent)
+(cffi::defctype* aqa-gent aqa-gent)
 (cffi:defcstruct aqa-gent)
-(cffi:define-foreign-type aql-isten-opts () 'aql-isten-opts)
+(cffi::defctype* aql-isten-opts aql-isten-opts)
 (cffi:defcstruct aql-isten-opts)
-(cffi:define-foreign-type aql-is-msg-props () 'aql-is-msg-props)
+(cffi::defctype* aql-is-msg-props aql-is-msg-props)
 (cffi:defcstruct aql-is-msg-props)
-(cffi:define-foreign-type aqd-eq-options () 'aqd-eq-options)
+(cffi::defctype* aqd-eq-options aqd-eq-options)
 (cffi:defcstruct aqd-eq-options)
-(cffi:define-foreign-type aqm-sg-properties () 'aqm-sg-properties)
+(cffi::defctype* aqm-sg-properties aqm-sg-properties)
 (cffi:defcstruct aqm-sg-properties)
-(cffi:define-foreign-type raw () 'raw)
+(cffi::defctype* raw raw)
 (cffi:defcstruct raw)
-(cffi:define-foreign-type callback-aqd-eq () ':pointer)
-(cffi:define-foreign-type aqe-nq-options () 'aqe-nq-options)
+(cffi::defctype* callback-aqd-eq :pointer)
+(cffi::defctype* aqe-nq-options aqe-nq-options)
 (cffi:defcstruct aqe-nq-options)
-(cffi:define-foreign-type callback-aqe-nq () ':pointer)
-(cffi:define-foreign-type security () 'security)
+(cffi::defctype* callback-aqe-nq :pointer)
+(cffi::defctype* security security)
 (cffi:defcstruct security)
-(cffi:define-foreign-type nztt-buffer-block () 'nztt-buffer-block)
-(cffi:define-foreign-type nzttces () 'nzttces)
+(cffi::defctype* nzttces nzttces)
 (cffi:defcenum nzttces (:nzttces-continue 1) (:nzttces-end 2) (:nzttces-reset 3))
-(cffi:define-foreign-type nztt-ident-type () 'nztt-ident-type)
+(cffi::defctype* nztt-ident-type nztt-ident-type)
 (cffi:defcenum nztt-ident-type (:nzttidentitytype-invalid-type 0) (:nzttidentitytype-certifictae 1)
  (:nzttidentitytype-cert-req 2) (:nzttidentitytype-renew-cert-req 3)
  (:nzttidentitytype-clear-etp 4) (:nzttidentitytype-clear-utp 5) (:nzttidentitytype-clear-ptp 6))
-(cffi:define-foreign-type nztt-identity-desc () 'nztt-identity-desc)
-(cffi:define-foreign-type nzttcef () 'nzttcef)
+(cffi::defctype* nzttcef nzttcef)
 (cffi:defcenum nzttcef (:nzttcef-detachedsignature 1) (:nzttcef-signature 2)
  (:nzttcef-enveloping 3) (:nzttcef-pkencryption 4) (:nzttcef-encryption 5) (:nzttcef-keyedhash 6)
  (:nzttcef-hash 7) (:nzttcef-random 8) (:nzttcef-last 9))
-(cffi:define-foreign-type nztttdufmt () 'nztttdufmt)
+(cffi::defctype* nztttdufmt nztttdufmt)
 (cffi:defcenum nztttdufmt (:nztttdufmt-pkcs-7 1) (:nztttdufmt-rsapad 2) (:nztttdufmt-oracle-v-1 3)
  (:nztttdufmt-last 4))
-(cffi:define-foreign-type nztt-prot-info () 'nztt-prot-info)
-(cffi:define-foreign-type nztt-persona-desc () 'nztt-persona-desc)
-(cffi:define-foreign-type nztt-wallet () 'nztt-wallet)
-(cffi:define-foreign-type lob-locator () 'lob-locator)
+(cffi::defctype* lob-locator lob-locator)
 (cffi:defcstruct lob-locator)
-(cffi:define-foreign-type oraub-8 () ':unsigned-long-long)
-(cffi:define-foreign-type callback-lob-write-2 () ':pointer)
-(cffi:define-foreign-type callback-lob-array-write () ':pointer)
-(cffi:define-foreign-type callback-lob-array-read () ':pointer)
-(cffi:define-foreign-type callback-lob-read-2 () ':pointer)
-(cffi:define-foreign-type file-object () 'file-object)
+(cffi::defctype* oraub-8 :unsigned-long-long)
+(cffi::defctype* callback-lob-write-2 :pointer)
+(cffi::defctype* callback-lob-array-write :pointer)
+(cffi::defctype* callback-lob-array-read :pointer)
+(cffi::defctype* callback-lob-read-2 :pointer)
+(cffi::defctype* file-object file-object)
 (cffi:defcstruct file-object)
-(cffi:define-foreign-type ubig-ora () ':unsigned-long)
-(cffi:define-foreign-type env-callback-type () ':pointer)
-(cffi:define-foreign-type ucb () 'ucb)
+(cffi::defctype* ubig-ora :unsigned-long)
+(cffi::defctype* env-callback-type :pointer)
+(cffi::defctype* ucb ucb)
 (cffi:defcstruct ucb)
-(cffi:define-foreign-type user-callback () ':pointer)
-(cffi:define-foreign-type result () 'result)
+(cffi::defctype* user-callback :pointer)
+(cffi::defctype* result result)
 (cffi:defcstruct result)
-(cffi:define-foreign-type lda-d-ef () 'cda-def)
-(cffi:define-foreign-type callback-lob-write () ':pointer)
-(cffi:define-foreign-type callback-lob-read () ':pointer)
-(cffi:define-foreign-type trans () 'trans)
+(cffi::defctype* lda-d-ef cda-def)
+(cffi::defctype* callback-lob-write :pointer)
+(cffi::defctype* callback-lob-read :pointer)
+(cffi::defctype* trans trans)
 (cffi:defcstruct trans)
-(cffi:define-foreign-type describe () 'describe)
+(cffi::defctype* describe describe)
 (cffi:defcstruct describe)
-(cffi:define-foreign-type stmt () 'stmt)
+(cffi::defctype* stmt stmt)
 (cffi:defcstruct stmt)
-(cffi:define-foreign-type bind () 'bind)
+(cffi::defctype* bind bind)
 (cffi:defcstruct bind)
-(cffi:define-foreign-type define () 'define)
+(cffi::defctype* define define)
 (cffi:defcstruct define)
-(cffi:define-foreign-type rowid () 'rowid)
+(cffi::defctype* rowid rowid)
 (cffi:defcstruct rowid)
-(cffi:define-foreign-type callback-define () ':pointer)
-(cffi:define-foreign-type snapshot () 'snapshot)
+(cffi::defctype* callback-define :pointer)
+(cffi::defctype* snapshot snapshot)
 (cffi:defcstruct snapshot)
-(cffi:define-foreign-type callback-in-bind () ':pointer)
-(cffi:define-foreign-type callback-out-bind () ':pointer)
-(cffi:define-foreign-type server () 'server)
+(cffi::defctype* callback-in-bind :pointer)
+(cffi::defctype* callback-out-bind :pointer)
+(cffi::defctype* server server)
 (cffi:defcstruct server)
-(cffi:define-foreign-type event-callback () ':pointer)
-(cffi:define-foreign-type callback-stmt-cache () ':pointer)
-(cffi:define-foreign-type ext-proc-context () 'ext-proc-context)
+(cffi::defctype* event-callback :pointer)
+(cffi::defctype* callback-stmt-cache :pointer)
+(cffi::defctype* ext-proc-context ext-proc-context)
 (cffi:defcstruct ext-proc-context)
-(cffi:define-foreign-type ref () 'ref)
+(cffi::defctype* domd-ocument domd-ocument)
+(cffi:defcstruct domd-ocument)
+(cffi::defctype* xmlt-ype xmlt-ype)
+(cffi:defcstruct xmlt-ype)
+(cffi::defctype* table coll)
+(cffi::defctype* coll coll)
+(cffi:defcstruct coll)
+(cffi::defctype* iter iter)
+(cffi:defcstruct iter)
+(cffi::defctype* array coll)
+(cffi::defctype* ref ref)
 (cffi:defcstruct ref)
-(cffi:define-foreign-type object-event () 'object-event)
+(cffi::defctype* string string)
+(cffi:defcstruct string)
+(cffi::defctype* eword :int)
+(cffi::defctype* object-event object-event)
 (cffi:defcenum object-event (:objectevent-before-flush 1) (:objectevent-after-flush 2)
  (:objectevent-before-refresh 3) (:objectevent-after-refresh 4) (:objectevent-when-mark-updated 5)
  (:objectevent-when-mark-deleted 6) (:objectevent-when-unmark 7) (:objectevent-when-lock 8))
-(cffi:define-foreign-type object-property () 'object-property)
+(cffi::defctype* object-property object-property)
 (cffi:defcenum object-property (:objectprop-dirtied 1) (:objectprop-loaded 2)
  (:objectprop-locked 3))
-(cffi:define-foreign-type refresh-opt () 'refresh-opt)
+(cffi::defctype* refresh-opt refresh-opt)
 (cffi:defcenum refresh-opt (:refresh-loaded 1))
-(cffi:define-foreign-type complex-object () 'complex-object)
+(cffi::defctype* complex-object complex-object)
 (cffi:defcstruct complex-object)
-(cffi:define-foreign-type pin-opt () 'pin-opt)
+(cffi::defctype* pin-opt pin-opt)
 (cffi:defcenum pin-opt (:pin-default 1) (:pin-any 3) (:pin-recent 4) (:pin-latest 5))
-(cffi:define-foreign-type lock-opt () 'lock-opt)
+(cffi::defctype* lock-opt lock-opt)
 (cffi:defcenum lock-opt (:lock-none 1) (:lock-x 2) (:lock-x-nowait 3))
-(cffi:define-foreign-type object-prop-id () 'ub-1)
-(cffi:define-foreign-type type-param-mode () 'type-param-mode)
+(cffi::defctype* object-prop-id ub-1)
+(cffi::defctype* type-param-mode type-param-mode)
 (cffi:defcenum type-param-mode (:typeparam-in 0) (:typeparam-out 1) (:typeparam-inout 2)
  (:typeparam-byref 3) (:typeparam-outncpy 4) (:typeparam-inoutncpy 5))
-(cffi:define-foreign-type type-method-flag () 'type-method-flag)
+(cffi::defctype* type-method-flag type-method-flag)
 (cffi:defcenum type-method-flag (:typemethod-inline 1) (:typemethod-constant 2)
  (:typemethod-virtual 4) (:typemethod-constructor 8) (:typemethod-destructor 16)
  (:typemethod-operator 32) (:typemethod-selfish 64) (:typemethod-map 128) (:typemethod-order 256)
  (:typemethod-rnds 512) (:typemethod-wnds 1024) (:typemethod-rnps 2048) (:typemethod-wnps 4096)
  (:typemethod-abstract 8192) (:typemethod-overriding 16384) (:typemethod-pipelined 32768))
-(cffi:define-foreign-type type-encap () 'type-encap)
+(cffi::defctype* type-encap type-encap)
 (cffi:defcenum type-encap (:typeencap-private 0) (:typeencap-public 1))
-(cffi:define-foreign-type type-get-opt () 'type-get-opt)
+(cffi::defctype* type-get-opt type-get-opt)
 (cffi:defcenum type-get-opt (:typeget-header 0) (:typeget-all 1))
-(cffi:define-foreign-type object-mark-status () 'uword)
-(cffi:define-foreign-type object-lifetime () 'object-lifetime)
+(cffi::defctype* object-mark-status uword)
+(cffi::defctype* object-lifetime object-lifetime)
 (cffi:defcenum object-lifetime (:object-persistent 1) (:object-transient 2) (:object-value 3))
-(cffi:define-foreign-type mark-opt () 'mark-opt)
+(cffi::defctype* mark-opt mark-opt)
 (cffi:defcenum mark-opt (:mark-none 1) (:mark-update 2))
-(cffi:define-foreign-type thread-context () 'thread-context)
+(cffi::defctype* thread-context thread-context)
 (cffi:defcstruct thread-context)
-(cffi:define-foreign-type any-data-ctx () 'any-data-ctx)
+(cffi::defctype* any-data-ctx any-data-ctx)
 (cffi:defcstruct any-data-ctx)
-(cffi:define-foreign-type lob-mode () 'lob-mode)
+(cffi::defctype* lob-mode lob-mode)
 (cffi:defcenum lob-mode (:lobmode-readonly 1) (:lobmode-readwrite 2))
-(cffi:define-foreign-type lob-length () 'ub-4)
-(cffi:define-foreign-type lob-offset () 'ub-4)
-(cffi:define-foreign-type bf-ile-locator () 'lob-locator)
-(cffi:define-foreign-type blob-locator () 'lob-locator)
-(cffi:define-foreign-type clob-locator () 'lob-locator)
-(cffi:define-foreign-type aqs-ignature () 'aqs-ignature)
+(cffi::defctype* lob-length ub-4)
+(cffi::defctype* lob-offset ub-4)
+(cffi::defctype* bf-ile-locator lob-locator)
+(cffi::defctype* blob-locator lob-locator)
+(cffi::defctype* clob-locator lob-locator)
+(cffi::defctype* aqs-ignature aqs-ignature)
 (cffi:defcstruct aqs-ignature)
-(cffi:define-foreign-type aqn-fy-descriptor () 'aqn-fy-descriptor)
+(cffi::defctype* aqn-fy-descriptor aqn-fy-descriptor)
 (cffi:defcstruct aqn-fy-descriptor)
-(cffi:define-foreign-type server-dn-s () 'server-dn-s)
+(cffi::defctype* server-dn-s server-dn-s)
 (cffi:defcstruct server-dn-s)
-(cffi:define-foreign-type complex-object-comp () 'complex-object-comp)
+(cffi::defctype* complex-object-comp complex-object-comp)
 (cffi:defcstruct complex-object-comp)
-(cffi:define-foreign-type param () 'param)
+(cffi::defctype* param param)
 (cffi:defcstruct param)
-(cffi:define-foreign-type cda-d-ef () 'cda-def)
-(cffi:define-foreign-type lgenfp-t () ':pointer)
-(cffi:define-foreign-type eword () ':int)
-(cffi:define-foreign-type utext () ':short)
-(cffi:define-foreign-type b4 () 'sb-4)
-(cffi:define-foreign-type sb-8 () 'orasb-8)
-(cffi:define-foreign-type orasb-8 () ':long-long)
-(cffi:define-foreign-type ub-8 () 'oraub-8)
-(cffi:define-foreign-type eb-4 () ':int)
-(cffi:define-foreign-type b2 () 'sb-2)
-(cffi:define-foreign-type eb-2 () ':short)
-(cffi:define-foreign-type b1 () 'sb-1)
-(cffi:define-foreign-type eb-1 () ':char)
+(cffi::defctype* cda-d-ef cda-def)
+(cffi::defctype* lgenfp-t :pointer)
+(cffi::defctype* utext :short)
+(cffi::defctype* b4 sb-4)
+(cffi::defctype* sb-8 orasb-8)
+(cffi::defctype* orasb-8 :long-long)
+(cffi::defctype* ub-8 oraub-8)
+(cffi::defctype* eb-4 :int)
+(cffi::defctype* b2 sb-2)
+(cffi::defctype* eb-2 :short)
+(cffi::defctype* b1 sb-1)
+(cffi::defctype* eb-1 :char)
 (cl:progn
  (cffi:defcfun ("OCIDirPathStreamReset" dir-path-stream-reset) sword (dpstr :pointer)
   (errhp :pointer))
@@ -1696,6 +1727,188 @@
   (error_message :pointer) (len size-t))
  (cffi:defcfun ("ocieperr" ocieperr) size-t (with_context :pointer) (error_number :int))
  (cffi:defcfun ("ociepacm" ociepacm) :pointer (with_context :pointer) (amount size-t))
+ (cffi:defcfun ("OCITablePrev" table-prev) sword (env :pointer) (err :pointer) (index sb-4)
+  (tbl :pointer) (prev_index :pointer) (exists :pointer))
+ (cffi:defcfun ("OCITableNext" table-next) sword (env :pointer) (err :pointer) (index sb-4)
+  (tbl :pointer) (next_index :pointer) (exists :pointer))
+ (cffi:defcfun ("OCITableLast" table-last) sword (env :pointer) (err :pointer) (tbl :pointer)
+  (index :pointer))
+ (cffi:defcfun ("OCITableFirst" table-first) sword (env :pointer) (err :pointer) (tbl :pointer)
+  (index :pointer))
+ (cffi:defcfun ("OCITableDelete" table-delete) sword (env :pointer) (err :pointer) (index sb-4)
+  (tbl :pointer))
+ (cffi:defcfun ("OCITableExists" table-exists) sword (env :pointer) (err :pointer) (tbl :pointer)
+  (index sb-4) (exists :pointer))
+ (cffi:defcfun ("OCITableSize" table-size) sword (env :pointer) (err :pointer) (tbl :pointer)
+  (size :pointer))
+ (cffi:defcfun ("OCIIterPrev" iter-prev) sword (env :pointer) (err :pointer) (itr :pointer)
+  (elem :pointer) (elemind :pointer) (boc :pointer))
+ (cffi:defcfun ("OCIIterNext" iter-next) sword (env :pointer) (err :pointer) (itr :pointer)
+  (elem :pointer) (elemind :pointer) (eoc :pointer))
+ (cffi:defcfun ("OCIIterGetCurrent" iter-get-current) sword (env :pointer) (err :pointer)
+  (itr :pointer) (elem :pointer) (elemind :pointer))
+ (cffi:defcfun ("OCIIterInit" iter-init) sword (env :pointer) (err :pointer) (coll :pointer)
+  (itr :pointer))
+ (cffi:defcfun ("OCIIterDelete" iter-delete) sword (env :pointer) (err :pointer) (itr :pointer))
+ (cffi:defcfun ("OCIIterCreate" iter-create) sword (env :pointer) (err :pointer) (coll :pointer)
+  (itr :pointer))
+ (cffi:defcfun ("OCICollIsLocator" coll-is-locator) sword (env :pointer) (err :pointer)
+  (coll :pointer) (result :pointer))
+ (cffi:defcfun ("OCICollTrim" coll-trim) sword (env :pointer) (err :pointer) (trim_num sb-4)
+  (coll :pointer))
+ (cffi:defcfun ("OCICollAppend" coll-append) sword (env :pointer) (err :pointer) (elem :pointer)
+  (elemind :pointer) (coll :pointer))
+ (cffi:defcfun ("OCICollAssign" coll-assign) sword (env :pointer) (err :pointer) (rhs :pointer)
+  (lhs :pointer))
+ (cffi:defcfun ("OCICollAssignElem" coll-assign-elem) sword (env :pointer) (err :pointer)
+  (index sb-4) (elem :pointer) (elemind :pointer) (coll :pointer))
+ (cffi:defcfun ("OCICollGetElemArray" coll-get-elem-array) sword (env :pointer) (err :pointer)
+  (coll :pointer) (index sb-4) (exists :pointer) (elem :pointer) (elemind :pointer)
+  (nelems :pointer))
+ (cffi:defcfun ("OCICollGetElem" coll-get-elem) sword (env :pointer) (err :pointer) (coll :pointer)
+  (index sb-4) (exists :pointer) (elem :pointer) (elemind :pointer))
+ (cffi:defcfun ("OCICollMax" coll-max) sb-4 (env :pointer) (coll :pointer))
+ (cffi:defcfun ("OCICollSize" coll-size) sword (env :pointer) (err :pointer) (coll :pointer)
+  (size :pointer))
+ (cffi:defcfun ("OCIRefToHex" ref-to-hex) sword (env :pointer) (err :pointer) (ref :pointer)
+  (hex :pointer) (hex_length :pointer))
+ (cffi:defcfun ("OCIRefFromHex" ref-from-hex) sword (env :pointer) (err :pointer) (svc :pointer)
+  (hex :pointer) (length ub-4) (ref :pointer))
+ (cffi:defcfun ("OCIRefHexSize" ref-hex-size) ub-4 (env :pointer) (ref :pointer))
+ (cffi:defcfun ("OCIRefIsNull" ref-is-null) boolean (env :pointer) (ref :pointer))
+ (cffi:defcfun ("OCIRefIsEqual" ref-is-equal) boolean (env :pointer) (x :pointer) (y :pointer))
+ (cffi:defcfun ("OCIRefAssign" ref-assign) sword (env :pointer) (err :pointer) (source :pointer)
+  (target :pointer))
+ (cffi:defcfun ("OCIRefClear" ref-clear) :void (env :pointer) (ref :pointer))
+ (cffi:defcfun ("OCIRawAllocSize" raw-alloc-size) sword (env :pointer) (err :pointer)
+  (raw :pointer) (allocsize :pointer))
+ (cffi:defcfun ("OCIRawPtr" raw-ptr) :pointer (env :pointer) (raw :pointer))
+ (cffi:defcfun ("OCIRawSize" raw-size) ub-4 (env :pointer) (raw :pointer))
+ (cffi:defcfun ("OCIRawResize" raw-resize) sword (env :pointer) (err :pointer) (new_size ub-4)
+  (raw :pointer))
+ (cffi:defcfun ("OCIRawAssignBytes" raw-assign-bytes) sword (env :pointer) (err :pointer)
+  (rhs :pointer) (rhs_len ub-4) (lhs :pointer))
+ (cffi:defcfun ("OCIRawAssignRaw" raw-assign-raw) sword (env :pointer) (err :pointer)
+  (rhs :pointer) (lhs :pointer))
+ (cffi:defcfun ("OCIStringAllocSize" string-alloc-size) sword (env :pointer) (err :pointer)
+  (vs :pointer) (allocsize :pointer))
+ (cffi:defcfun ("OCIStringPtr" string-ptr) :pointer (env :pointer) (vs :pointer))
+ (cffi:defcfun ("OCIStringSize" string-size) ub-4 (env :pointer) (vs :pointer))
+ (cffi:defcfun ("OCIStringResize" string-resize) sword (env :pointer) (err :pointer)
+  (new_size ub-4) (str :pointer))
+ (cffi:defcfun ("OCIStringAssignText" string-assign-text) sword (env :pointer) (err :pointer)
+  (rhs :pointer) (rhs_len ub-4) (lhs :pointer))
+ (cffi:defcfun ("OCIStringAssign" string-assign) sword (env :pointer) (err :pointer) (rhs :pointer)
+  (lhs :pointer))
+ (cffi:defcfun ("OCIDateSysDate" date-sys-date) sword (err :pointer) (sys_date :pointer))
+ (cffi:defcfun ("OCIDateCheck" date-check) sword (err :pointer) (date :pointer) (valid :pointer))
+ (cffi:defcfun ("OCIDateNextDay" date-next-day) sword (err :pointer) (date :pointer)
+  (day_p :pointer) (day_length ub-4) (next_day :pointer))
+ (cffi:defcfun ("OCIDateZoneToZone" date-zone-to-zone) sword (err :pointer) (date1 :pointer)
+  (zon1 :pointer) (zon1_length ub-4) (zon2 :pointer) (zon2_length ub-4) (date2 :pointer))
+ (cffi:defcfun ("OCIDateDaysBetween" date-days-between) sword (err :pointer) (date1 :pointer)
+  (date2 :pointer) (num_days :pointer))
+ (cffi:defcfun ("OCIDateLastDay" date-last-day) sword (err :pointer) (date :pointer)
+  (last_day :pointer))
+ (cffi:defcfun ("OCIDateAddDays" date-add-days) sword (err :pointer) (date :pointer)
+  (num_days sb-4) (result :pointer))
+ (cffi:defcfun ("OCIDateAddMonths" date-add-months) sword (err :pointer) (date :pointer)
+  (num_months sb-4) (result :pointer))
+ (cffi:defcfun ("OCIDateCompare" date-compare) sword (err :pointer) (date1 :pointer)
+  (date2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCIDateFromText" date-from-text) sword (err :pointer) (date_str :pointer)
+  (d_str_length ub-4) (fmt :pointer) (fmt_length ub-1) (lang_name :pointer) (lang_length ub-4)
+  (date :pointer))
+ (cffi:defcfun ("OCIDateToText" date-to-text) sword (err :pointer) (date :pointer) (fmt :pointer)
+  (fmt_length ub-1) (lang_name :pointer) (lang_length ub-4) (buf_size :pointer) (buf :pointer))
+ (cffi:defcfun ("OCIDateAssign" date-assign) sword (err :pointer) (from :pointer) (to :pointer))
+ (cffi:defcfun ("OCINumberLog" number-log) sword (err :pointer) (base :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberLn" number-ln) sword (err :pointer) (number :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberExp" number-exp) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberHypTan" number-hyp-tan) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberArcTan2" number-arc-tan-2) sword (err :pointer) (number1 :pointer)
+  (number2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberArcTan" number-arc-tan) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberTan" number-tan) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberHypCos" number-hyp-cos) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberArcCos" number-arc-cos) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberCos" number-cos) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberHypSin" number-hyp-sin) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberArcSin" number-arc-sin) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberSin" number-sin) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberPrec" number-prec) sword (err :pointer) (number :pointer) (nDigs eword)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberRound" number-round) sword (err :pointer) (number :pointer)
+  (decplace sword) (result :pointer))
+ (cffi:defcfun ("OCINumberPower" number-power) sword (err :pointer) (base :pointer)
+  (number :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberTrunc" number-trunc) sword (err :pointer) (number :pointer)
+  (decplace sword) (result :pointer))
+ (cffi:defcfun ("OCINumberSqrt" number-sqrt) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberFloor" number-floor) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberCeil" number-ceil) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberAbs" number-abs) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberAssign" number-assign) sword (err :pointer) (from :pointer)
+  (to :pointer))
+ (cffi:defcfun ("OCINumberIsInt" number-is-int) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberIsZero" number-is-zero) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberSign" number-sign) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberCmp" number-cmp) sword (err :pointer) (number1 :pointer)
+  (number2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberFromReal" number-from-real) sword (err :pointer) (rnum :pointer)
+  (rnum_length uword) (number :pointer))
+ (cffi:defcfun ("OCINumberToRealArray" number-to-real-array) sword (err :pointer) (number :pointer)
+  (elems uword) (rsl_length uword) (rsl :pointer))
+ (cffi:defcfun ("OCINumberToReal" number-to-real) sword (err :pointer) (number :pointer)
+  (rsl_length uword) (rsl :pointer))
+ (cffi:defcfun ("OCINumberFromInt" number-from-int) sword (err :pointer) (inum :pointer)
+  (inum_length uword) (inum_s_flag uword) (number :pointer))
+ (cffi:defcfun ("OCINumberToInt" number-to-int) sword (err :pointer) (number :pointer)
+  (rsl_length uword) (rsl_flag uword) (rsl :pointer))
+ (cffi:defcfun ("OCINumberFromText" number-from-text) sword (err :pointer) (str :pointer)
+  (str_length ub-4) (fmt :pointer) (fmt_length ub-4) (nls_params :pointer) (nls_p_length ub-4)
+  (number :pointer))
+ (cffi:defcfun ("OCINumberToText" number-to-text) sword (err :pointer) (number :pointer)
+  (fmt :pointer) (fmt_length ub-4) (nls_params :pointer) (nls_p_length ub-4) (buf_size :pointer)
+  (buf :pointer))
+ (cffi:defcfun ("OCINumberNeg" number-neg) sword (err :pointer) (number :pointer)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberShift" number-shift) sword (err :pointer) (number :pointer) (nDig sword)
+  (result :pointer))
+ (cffi:defcfun ("OCINumberIntPower" number-int-power) sword (err :pointer) (base :pointer)
+  (exp sword) (result :pointer))
+ (cffi:defcfun ("OCINumberMod" number-mod) sword (err :pointer) (number1 :pointer)
+  (number2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberDiv" number-div) sword (err :pointer) (number1 :pointer)
+  (number2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberMul" number-mul) sword (err :pointer) (number1 :pointer)
+  (number2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberSub" number-sub) sword (err :pointer) (number1 :pointer)
+  (number2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberAdd" number-add) sword (err :pointer) (number1 :pointer)
+  (number2 :pointer) (result :pointer))
+ (cffi:defcfun ("OCINumberSetPi" number-set-pi) :void (err :pointer) (num :pointer))
+ (cffi:defcfun ("OCINumberSetZero" number-set-zero) :void (err :pointer) (num :pointer))
+ (cffi:defcfun ("OCINumberDec" number-dec) sword (err :pointer) (number :pointer))
+ (cffi:defcfun ("OCINumberInc" number-inc) sword (err :pointer) (number :pointer))
  (cffi:defcfun ("OCIObjectGetNewOID" object-get-new-oid) sword (env :pointer) (err :pointer)
   (svc :pointer) (oid :pointer))
  (cffi:defcfun ("OCIObjectSetData" object-set-data) sword (env :pointer) (err :pointer)
@@ -2381,7 +2594,16 @@
  (cl:defconstant +typecode-nchar+ 286) (cl:defconstant +typecode-nvarchar-2+ 287)
  (cl:defconstant +typecode-nclob+ 288) (cl:defconstant +typecode-none+ 0)
  (cl:defconstant +typecode-errhp+ 283) (cl:defconstant +varray-maxsize+ 4000)
- (cl:defconstant +string-maxlen+ 4000) (cl:defconstant +extproc-success+ 0)
+ (cl:defconstant +string-maxlen+ 4000) (cl:defconstant +number-size+ 22)
+ (cl:defconstant +number-unsigned+ 0) (cl:defconstant +number-signed+ 2)
+ (cl:defconstant +date-invalid-day+ 1) (cl:defconstant +date-day-below-valid+ 2)
+ (cl:defconstant +date-invalid-month+ 4) (cl:defconstant +date-month-below-valid+ 8)
+ (cl:defconstant +date-invalid-year+ 16) (cl:defconstant +date-year-below-valid+ 32)
+ (cl:defconstant +date-invalid-hour+ 64) (cl:defconstant +date-hour-below-valid+ 128)
+ (cl:defconstant +date-invalid-minute+ 256) (cl:defconstant +date-minute-below-valid+ 512)
+ (cl:defconstant +date-invalid-second+ 1024) (cl:defconstant +date-second-below-valid+ 2048)
+ (cl:defconstant +date-day-missing-from-1582+ 4096) (cl:defconstant +date-year-zero+ 8192)
+ (cl:defconstant +date-invalid-format+ 32768) (cl:defconstant +extproc-success+ 0)
  (cl:defconstant +extproc-error+ 1) (cl:defconstant +dirpath-load+ 1)
  (cl:defconstant +dirpath-unload+ 2) (cl:defconstant +dirpath-convert+ 3)
  (cl:defconstant +dirpath-index-maint-single-row+ 1)

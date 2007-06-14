@@ -249,33 +249,24 @@
 
 (defun free-prepared-statement (statement)
   (oci-call (oci:handle-free (statement-handle-of statement) oci:+htype-stmt+))
+  (free-bindings (bindings-of statement))
   (cffi:foreign-free (statement-handle-pointer statement)))
 
 (defun execute-prepared-statement (transaction statement bindings visitor)
-  (declare (ignore bindings))
   (let ((iters (if (select-p statement) 0 1)))
 
-    ;; TODO binding
-
+    ;; make bindings
+    (setf (bindings-of statement) (make-bindings statement transaction bindings))
+    
+    ;; execute
     (oci-call (oci:stmt-execute (service-context-handle-of transaction)
                                 (statement-handle-of statement)
                                 (error-handle-of transaction)
                                 iters 0 null null oci:+default+)))
   
-  #+nil
-  (let ((column-count nil))
-    (setf column-count (get-statement-attribute
-                        statement
-                        oci:+attr-param-count+
-                        'oci:ub-2))
-    (log.dribble "Resultset has ~S columns" column-count)
-    (loop for column-idx :below column-count
-          do (progn
-               (get-column-value transaction statement column-idx))))
-  
   (cond
     ((select-p statement)
-     (let ((cursor (make-cursor statement transaction)))
+     (let ((cursor (make-oracle-cursor statement transaction)))
        (unwind-protect
             (if visitor
                 (loop for row = (fetch-row cursor)
@@ -288,34 +279,67 @@
     (t
      nil)))
 
-#+nil
-(defun get-column-value (transaction statement column-idx)
-  (let ((param-descriptor nil)
-        (column-name nil)
-        (column-type nil))
-    (cffi:with-foreign-object (param-descriptor-pointer :pointer)
-      (oci-call (oci:param-get (statement-handle-of statement)
-                               oci:+htype-stmt+
-                               (error-handle-of transaction)
-                               param-descriptor-pointer
-                               (1+ column-idx)))
-      (setf param-descriptor (cffi:mem-ref param-descriptor-pointer :pointer)))
 
-    (setf column-type (get-param-descriptor-attribute
-                       param-descriptor
-                       oci:+attr-data-type+
-                       'oci:ub-2))
+(defclass* oracle-binding ()
+  ((bind-handle-pointer)
+   (sql-type)
+   (typemap)
+   (data-pointer)
+   (data-size)
+   (indicator)))
 
-    (setf column-name (get-param-descriptor-attribute
-                       param-descriptor
-                       oci:+attr-name+ :string))
-                   
-    (log.dribble "Column type of ~S is ~A" column-name column-type)))
+(defun make-bindings (statement transaction bindings)
+  (loop for (type value) :on bindings :by #'cddr
+        for position :from 1
+        collect (make-binding statement transaction position type value)))
+
+(defun make-binding (statement transaction position sql-type value)
+  (let* ((statement-handle (statement-handle-of statement))
+         (error-handle (error-handle-of transaction))
+         (typemap (typemap-for-sql-type sql-type))
+         (oci-type-code (typemap-external-type typemap))
+         (converter (typemap-lisp-to-oci typemap))
+         (bind-handle-pointer (cffi:foreign-alloc :pointer :initial-element null))
+         (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if (eq value :null) -1 0)))) 
+    (multiple-value-bind (data-pointer data-size)
+        (if (eql value :null)
+            (values null 0)
+            (funcall converter value))
+      (oci-call (oci:bind-by-pos statement-handle
+                                 bind-handle-pointer
+                                 error-handle
+                                 position
+                                 data-pointer
+                                 data-size
+                                 oci-type-code
+                                 indicator
+                                 null               ; alenp
+                                 null               ; rcodep
+                                 null               ; maxarr_len
+                                 null               ; curelep
+                                 oci:+default+))
+      (make-instance 'oracle-binding
+                     :bind-handle-pointer bind-handle-pointer
+                     :sql-type sql-type
+                     :typemap typemap
+                     :data-pointer data-pointer
+                     :data-size data-size
+                     :indicator indicator))))
+
+(defun free-bindings (bindings)
+  (mapc 'free-binding bindings))
+
+(defun free-binding (binding)
+  (cffi:foreign-free (bind-handle-pointer-of binding))
+  (cffi:foreign-free (indicator-of binding))
+  (let ((data-pointer (data-pointer-of binding)))
+    (unless (cffi:null-pointer-p data-pointer)
+      (cffi:foreign-free data-pointer))))
 
 
 (defconstant +number-of-buffered-rows+ 200)
 
-(defclass* cursor ()
+(defclass* oracle-cursor ()
   ((statement)
    (transaction)
    (column-descriptors)
@@ -325,112 +349,129 @@
    (end-seen #f :type boolean)))
 
 (defclass* column-descriptor ()
-  ((name)
+  ((define-handle-pointer)
+   (name)
    (size)
    (buffer)
    (oci-data-type)
    (indicators)
    (return-codes)))
 
-(defun make-cursor (statement transaction)
-  (let ((cursor (make-instance 'cursor :statement statement :transaction transaction)))
-    (setf (column-descriptors-of cursor)
-          (make-column-descriptors statement transaction))
-    cursor))
+(defun make-oracle-cursor (statement transaction)
+  (make-instance 'oracle-cursor
+                 :statement statement
+                 :transaction transaction
+                 :column-descriptors (make-column-descriptors statement transaction)))
 
 (defun make-column-descriptors (statement transaction)
-  (let ((statement-handle (statement-handle-of statement))
-        (error-handle (error-handle-of transaction)))
-    (cffi:with-foreign-objects ((parmdp '(:pointer :void))
-                                (dtype-foreign  :unsigned-short)
-                                (precision :short)
-                                (scale :int8) ; :byte
-                                (colname '(:pointer :unsigned-char))
-                                (colnamelen 'oci:ub-4)
-                                (colsize 'oci:ub-2)
-                                (defnp '(:pointer :void)))
-      (do ((column-index 0 (1+ column-index))
-           (descriptors nil))
-          ((not (eql (oci:param-get statement-handle
-                                    oci:+htype-stmt+
-                                    error-handle
-                                    parmdp
-                                    (1+ column-index))
-                     oci:+success+))
-           (coerce (reverse descriptors) 'simple-vector))
+  (coerce (cffi:with-foreign-objects ((param-descriptor-pointer :pointer))
+            (loop for column-index from 1  ; OCI 1-based indexing
+                  while (eql (oci:param-get (statement-handle-of statement)
+                                            oci:+htype-stmt+
+                                            (error-handle-of transaction)
+                                            param-descriptor-pointer
+                                            column-index)
+                             oci:+success+)
+                  collect (make-column-descriptor statement
+                                                  transaction
+                                                  column-index
+                                                  (cffi:mem-ref param-descriptor-pointer :pointer))))
+          'simple-vector))
 
-        (labels ((%oci-attr-get (attribute-id attribute-pointer &optional (size-pointer null))
-                   (oci-call (oci:attr-get (cffi:mem-ref parmdp '(:pointer :void))
-                                           oci:+dtype-param+
-                                           attribute-pointer
-                                           size-pointer
-                                           attribute-id
-                                           error-handle)))
-                 (oci-attr-get (attribute-id cffi-type attribute-pointer)
-                   (%oci-attr-get attribute-id attribute-pointer)
-                   (cffi:mem-ref attribute-pointer cffi-type))
-                 (oci-string-attr-get (attribute-id attribute-pointer size-pointer)
-                   (%oci-attr-get attribute-id attribute-pointer size-pointer)
-                   (cffi:foreign-string-to-lisp
-                    (cffi:mem-ref attribute-pointer '(:pointer :unsigned-char))
-                    (cffi:mem-ref size-pointer 'oci:ub-4))))
+(defun oci-attr-get (param-descriptor
+                     attribute-id
+                     attribute-value        ; output
+                     attribute-value-length ; output
+                     error-handle)
+  "TODO"
+  (oci-call (oci:attr-get param-descriptor
+                          oci:+dtype-param+
+                          attribute-value
+                          attribute-value-length
+                          attribute-id
+                          error-handle)))
+
+(defun make-column-descriptor (statement transaction position param-descriptor)
+  (cffi:with-foreign-objects ((attribute-value :uint8 8) ; 8 byte buffer for attribute values
+                              (attribute-value-length 'oci:ub-4))
+    (flet ((oci-attr-get (attribute-id cffi-type)
+             (oci-attr-get param-descriptor attribute-id attribute-value
+                           attribute-value-length (error-handle-of transaction))
+             (cffi:mem-ref attribute-value cffi-type))
+           (oci-string-attr-get (attribute-id)
+             (oci-attr-get param-descriptor attribute-id attribute-value
+                           attribute-value-length (error-handle-of transaction))
+             (cffi:foreign-string-to-lisp
+              (cffi:mem-ref attribute-value '(:pointer :unsigned-char)) ; OraText*
+              (cffi:mem-ref attribute-value-length 'oci:ub-4))))
               
             
-          (let ((column-name (oci-string-attr-get oci:+attr-name+ colname colnamelen))
-                (dtype (oci-attr-get oci:+attr-data-type+ :unsigned-short dtype-foreign))
-                (size nil)
-                (buffer nil)
-                (return-codes (cffi:foreign-alloc :unsigned-short :count +number-of-buffered-rows+))
-                (indicators (cffi:foreign-alloc :short :count +number-of-buffered-rows+)))
-            (declare (fixnum dtype))
-            (case dtype
-              (#.oci:+sqlt-dat+
-               (setf buffer (cffi:foreign-alloc :unsigned-char
-                                                :count (* 32 +number-of-buffered-rows+))
-                     size 32
-                     dtype #.oci:+sqlt-dat+))
-              (#.oci:+sqlt-num+
-               (let ((*scale (oci-attr-get oci:+attr-scale+ :int8 scale))
-                     (*precision (oci-attr-get oci:+attr-precision+ :short precision)))
-                 (if (or (and (minusp *scale) (zerop *precision))
-                         (and (zerop *scale) (plusp *precision)))
-                     (setf buffer (cffi:foreign-alloc :int :count +number-of-buffered-rows+)
-                           size 4 ;; sizeof(int)
-                           dtype #.oci:+sqlt-int+)
-                     (setf buffer (cffi:foreign-alloc :double :count +number-of-buffered-rows+)
-                           size 8 ;; sizeof(double)
-                           dtype #.oci:+sqlt-flt+))))
-              ;; Default to SQLT-STR
-              (t
-               (setf (cffi:mem-ref colsize :unsigned-short) 0)
-               (let ((colsize-including-null
-                      (1+ (oci-attr-get oci:+attr-data-size+ :unsigned-short colsize))))
-                 (setf buffer (cffi:foreign-alloc
-                               :unsigned-char :count (* +number-of-buffered-rows+
-                                                        colsize-including-null))
-                       size colsize-including-null
-                       dtype #.oci:+sqlt-str+))))
+      (let ((column-name (oci-string-attr-get oci:+attr-name+))
+            (column-type (oci-attr-get oci:+attr-data-type+ 'oci:ub-2))
+            (column-size)
+            (precision)
+            (scale)
+            (define-handle-pointer (cffi:foreign-alloc :pointer :inital-element null))
+            (return-codes (cffi:foreign-alloc :unsigned-short :count +number-of-buffered-rows+))
+            (indicators (cffi:foreign-alloc :short :count +number-of-buffered-rows+)))
+        (declare (fixnum column-type))
 
-            (push (make-instance 'column-descriptor
-                                 :name column-name
-                                 :size size
-                                 :buffer buffer
-                                 :oci-data-type dtype
-                                 :return-codes return-codes
-                                 :indicators indicators)
-                  descriptors)
-            (oci:define-by-pos
-                statement-handle
-                defnp
-              error-handle
-              (1+ column-index)         ; OCI 1-based indexing again
-              buffer
-              size
-              dtype
-              indicators
-              null
-              return-codes
-              oci:+default+)))))))
+        (progn                          ; FIXME copy comment from clsql
+          (setf (cffi:mem-ref attribute-value :unsigned-short) 0)
+          (setf column-size (oci-attr-get oci:+attr-data-size+ 'oci:ub-4))) ; FIXME ub-2 in clsql
+        
+        (when (= column-type oci:+sqlt-num+)
+          (setf precision (oci-attr-get oci:+attr-precision+ 'oci:sb-2) ; FIXME 'ub-1 possible?
+                scale (oci-attr-get oci:+attr-scale+ 'oci:sb-1)))
+
+        (multiple-value-bind (buffer size external-type)
+            (allocate-buffer-for-column column-type column-size :precision precision :scale scale)
+          (oci:define-by-pos
+              (statement-handle-of statement)
+              define-handle-pointer
+            (error-handle-of transaction)
+            position
+            buffer
+            size
+            external-type
+            indicators
+            null
+            return-codes
+            oci:+default+)
+
+          (make-instance 'column-descriptor
+                         :define-handle-pointer define-handle-pointer
+                         :name column-name
+                         :size size
+                         :buffer buffer
+                         :oci-data-type external-type
+                         :return-codes return-codes
+                         :indicators indicators))))))
+
+(defun allocate-buffer-for-column (internal-type max-size &key precision scale)
+  "Returns buffer, buffer-size, external type"
+  (declare (fixnum internal-type))
+  (case internal-type
+    (#.oci:+sqlt-dat+
+     (values  (cffi:foreign-alloc :uint8
+                                  :count (* 32 +number-of-buffered-rows+))
+              32
+              #.oci:+sqlt-dat+))        ; FIXME
+    (#.oci:+sqlt-num+
+     (if (or (and (minusp scale) (zerop precision))
+             (and (zerop scale) (plusp precision)))
+         (values (cffi:foreign-alloc :int32 :count +number-of-buffered-rows+)
+                 4 ;; sizeof(int32)
+                 #.oci:+sqlt-int+)
+         (values  (cffi:foreign-alloc :double :count +number-of-buffered-rows+)
+                  8 ;; sizeof(double)
+                  #.oci:+sqlt-flt+)))
+    ;; Default to SQLT-STR
+    (t
+     (values (cffi:foreign-alloc :char :count (* +number-of-buffered-rows+
+                                                 (1+ max-size)))
+             (1+ max-size)              ; +1 for ending zero
+             #.oci:+sqlt-str+))))
 
 
 (defun refill-result-buffers (cursor)
@@ -499,4 +540,5 @@
         do (progn (cffi:foreign-free (buffer-of descriptor))
                   (cffi:foreign-free (indicators-of descriptor))
                   (cffi:foreign-free (return-codes-of descriptor)))))
+
 

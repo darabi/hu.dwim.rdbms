@@ -36,6 +36,7 @@
 
 (defclass* oracle-prepared-statement (prepared-statement)
   ((statement-handle-pointer nil :accessor statement-handle-pointer)
+   (bindings nil :type list)
    (select #f :type boolean)))
 
 (defun statement-handle-of (statement)
