@@ -118,7 +118,7 @@
 
 (defun transaction-timestamp ()
   (or (timestamp-of *transaction*)
-      (setf (timestamp-of *transaction*) (caar (execute "select now()")))))
+      (setf (timestamp-of *transaction*) (first* (first* (execute "select now()"))))))
 
 (defun in-transaction-p ()
   (and (boundp '*transaction*)
