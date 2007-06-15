@@ -37,7 +37,7 @@
 (deftest* test/connect ()
   (finishes
     (with-transaction
-      (execute "select now()"))
+      (execute "set transaction read only"))
     (ignore-errors
       (execute-ddl "DROP TABLE alma"))))
 

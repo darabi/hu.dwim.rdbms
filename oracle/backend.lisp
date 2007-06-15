@@ -66,51 +66,6 @@
                       (return))))
       ,@body)))
 
-(defun oci-call (code)
-  (declare (cl:type fixnum code))
-  (handle-oci-result code))
-
-(defun handle-oci-result (result)
-  (case result
-    (#.oci:+success+
-     result)
-    (#.oci:+error+
-     (handle-oci-error))
-    (#.oci:+no-data+
-     (simple-rdbms-error "OCI No data found"))
-    (#.oci:+success-with-info+
-     (simple-rdbms-error "Internal error: unexpected oci:+success-with-info+"))
-    (#.oci:+invalid-handle+
-     (simple-rdbms-error "OCI Invalid handle"))
-    (#.oci:+need-data+
-     (simple-rdbms-error "OCI Need data"))
-    (#.oci:+still-executing+
-     (error 'sql-temporary-error :format-control "OCI Still Executing"))
-    (#.oci:+continue+
-     (simple-rdbms-error "OCI Continue"))
-    (1804
-     (simple-rdbms-error "Check ORACLE_HOME and NLS settings"))
-    (t
-     (simple-rdbms-error "Unknown OCI error, code is ~A" result))))
-
-(defun handle-oci-error ()
-  (unless (error-handle-pointer *transaction*)
-    (simple-rdbms-error "OCI error in initialization stage, too early to query the actual error"))
-  (cffi:with-foreign-objects ((error-code 'oci:sb-4))
-    (cffi:with-foreign-pointer (error-buffer oci:+error-maxmsg-size+)
-      (setf (cffi:mem-ref error-buffer :char) 0)
-      (setf (cffi:mem-ref error-code 'oci:sb-4) 0)
-
-      (oci:error-get (error-handle-of *transaction*) 1
-                     null
-                     error-code
-                     error-buffer
-                     oci:+error-maxmsg-size+ oci:+htype-error+)
-
-      (let ((error-message (cffi:foreign-string-to-lisp error-buffer)))
-        (log.error "Signalling error: ~A" error-message)
-        (simple-rdbms-error "RDBMS error: ~A" error-message)))))
-
 (defun make-void-pointer ()
   (cffi:foreign-alloc '(:pointer :void)))
 
@@ -353,7 +308,7 @@
    (name)
    (size)
    (buffer)
-   (oci-data-type)
+   (typemap)
    (indicators)
    (return-codes)))
 
@@ -411,7 +366,8 @@
             (column-size)
             (precision)
             (scale)
-            (define-handle-pointer (cffi:foreign-alloc :pointer :inital-element null))
+            (typemap)
+            (define-handle-pointer (cffi:foreign-alloc :pointer :initial-element null))
             (return-codes (cffi:foreign-alloc :unsigned-short :count +number-of-buffered-rows+))
             (indicators (cffi:foreign-alloc :short :count +number-of-buffered-rows+)))
         (declare (fixnum column-type))
@@ -421,11 +377,18 @@
           (setf column-size (oci-attr-get oci:+attr-data-size+ 'oci:ub-4))) ; FIXME ub-2 in clsql
         
         (when (= column-type oci:+sqlt-num+)
-          (setf precision (oci-attr-get oci:+attr-precision+ 'oci:sb-2) ; FIXME 'ub-1 possible?
+          ;; the type of the precision attribute is 'oci:sb-2, because we
+          ;; use an implicit describe here (would be sb-1 for explicit describe)
+          (setf precision (oci-attr-get oci:+attr-precision+ 'oci:sb-2)
                 scale (oci-attr-get oci:+attr-scale+ 'oci:sb-1)))
 
-        (multiple-value-bind (buffer size external-type)
-            (allocate-buffer-for-column column-type column-size :precision precision :scale scale)
+        (setf typemap (typemap-for-internal-type column-type
+                                                 column-size
+                                                 :precision precision
+                                                 :scale scale))
+
+        (multiple-value-bind (buffer size)
+            (allocate-buffer-for-column typemap column-size +number-of-buffered-rows+)
           (oci:define-by-pos
               (statement-handle-of statement)
               define-handle-pointer
@@ -433,7 +396,7 @@
             position
             buffer
             size
-            external-type
+            (typemap-external-type typemap)
             indicators
             null
             return-codes
@@ -444,34 +407,16 @@
                          :name column-name
                          :size size
                          :buffer buffer
-                         :oci-data-type external-type
+                         :typemap typemap
                          :return-codes return-codes
                          :indicators indicators))))))
 
-(defun allocate-buffer-for-column (internal-type max-size &key precision scale)
-  "Returns buffer, buffer-size, external type"
-  (declare (fixnum internal-type))
-  (case internal-type
-    (#.oci:+sqlt-dat+
-     (values  (cffi:foreign-alloc :uint8
-                                  :count (* 32 +number-of-buffered-rows+))
-              32
-              #.oci:+sqlt-dat+))        ; FIXME
-    (#.oci:+sqlt-num+
-     (if (or (and (minusp scale) (zerop precision))
-             (and (zerop scale) (plusp precision)))
-         (values (cffi:foreign-alloc :int32 :count +number-of-buffered-rows+)
-                 4 ;; sizeof(int32)
-                 #.oci:+sqlt-int+)
-         (values  (cffi:foreign-alloc :double :count +number-of-buffered-rows+)
-                  8 ;; sizeof(double)
-                  #.oci:+sqlt-flt+)))
-    ;; Default to SQLT-STR
-    (t
-     (values (cffi:foreign-alloc :char :count (* +number-of-buffered-rows+
-                                                 (1+ max-size)))
-             (1+ max-size)              ; +1 for ending zero
-             #.oci:+sqlt-str+))))
+(defun allocate-buffer-for-column (typemap column-size number-of-rows)
+  "Returns buffer, buffer-size"
+  (let ((size (data-size-for (typemap-external-type typemap) column-size)))
+    (values
+     (cffi:foreign-alloc :uint8 :count (* size number-of-rows))
+     size)))
 
 
 (defun refill-result-buffers (cursor)
@@ -521,19 +466,14 @@
     (incf (current-row-index-of cursor))))
 
 (defun fetch-column-value (column-descriptor row-index)
-  (let* ((buffer (buffer-of column-descriptor))
-         (indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
+  (let* ((indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
     (if (= indicator -1)
         :null
-        (ecase (oci-data-type-of column-descriptor)
-          ((#.oci:+sqlt-str+ #.oci:+sqlt-dat+)
-           (cffi:foreign-string-to-lisp
-            (cffi:make-pointer
-             (+ (cffi:pointer-address buffer) (* row-index (size-of column-descriptor))))))
-          (#.oci:+sqlt-flt+
-           (cffi:mem-aref buffer :double row-index))
-          (#.oci:+sqlt-int+
-           (cffi:mem-aref buffer :int row-index))))))
+        (let* ((buffer (buffer-of column-descriptor))
+               (size (size-of column-descriptor))
+               (converter (typemap-oci-to-lisp (typemap-of column-descriptor))))
+          (funcall converter
+                   (cffi:inc-pointer buffer (* row-index size)))))))
 
 (defun free-cursor (cursor)
   (loop for descriptor across (column-descriptors-of cursor)
