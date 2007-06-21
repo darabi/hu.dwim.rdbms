@@ -8,10 +8,8 @@
 
 #.(file-header)
 
-(define-syntax-node sql-index (sql-syntax-node)
-  ((name
-    :type sql-identifier*)
-   (table-name
+(define-syntax-node sql-index (named-sql-syntax-node)
+  ((table-name
     :type sql-identifier*)
    (columns
     nil

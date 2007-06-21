@@ -11,6 +11,13 @@
 ;;;;;;;;;;;;;;;
 ;;; Syntax node
 
+(define-syntax-node named-sql-syntax-node (sql-syntax-node)
+  ((name nil
+    :type sql-identifier*)))
+
+(defprint-object (self named-sql-syntax-node)
+  (princ (name-of self)))
+
 (define-syntax-node sql-syntax-node ()
   ()
   (:documentation "Base class for all kind of SQL syntax elements.")
@@ -73,21 +80,15 @@
   (:method ((literal sql-literal) database)
            (format-sql-literal (value-of literal) database)))
 
-(define-syntax-node sql-binding-variable (sql-syntax-node)
-  ((name
-    :type (or string symbol))
-   (type nil
+(define-syntax-node sql-binding-variable (named-sql-syntax-node)
+  ((type nil
     :type sql-type)))
-
-(defprint-object (self sql-binding-variable)
-  (princ (name-of self)))
 
 ;;;;;;;;;;;;;;
 ;;; Identifier
 
-(define-syntax-node sql-identifier (sql-syntax-node)
-  ((name
-    :type (or string symbol)))
+(define-syntax-node sql-identifier (named-sql-syntax-node)
+  ()
   (:documentation "Represents an SQL identifier.")
   (:format-sql-syntax-node
    (format-sql-identifier self)))

@@ -40,10 +40,8 @@
                       (:preserve-rows "PRESERVE ROWS")
                       (:delete-rows "DELETE ROWS"))))))
 
-(define-syntax-node sql-column (sql-syntax-node)
-  ((name
-    :type string)
-   (type
+(define-syntax-node sql-column (named-sql-syntax-node)
+  ((type
     :type sql-type)
    (constraints
     nil

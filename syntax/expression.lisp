@@ -53,9 +53,8 @@
 ;;;;;;;;;;;;;
 ;;; Operators
 
-(define-syntax-node sql-operator (sql-expression)
-  ((name
-    :type sql-identifier*)))
+(define-syntax-node sql-operator (sql-expression named-sql-syntax-node)
+  ())
 
 (define-syntax-node sql-unary-operator (sql-operator)
   ((fix

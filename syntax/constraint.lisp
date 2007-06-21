@@ -2,10 +2,8 @@
 
 #.(file-header)
 
-(define-syntax-node sql-constraint (sql-syntax-node)
-  ((name
-    nil
-    :type string))
+(define-syntax-node sql-constraint (named-sql-syntax-node)
+  ()
   (:documentation "An SQL constraint."))
 
 (define-syntax-node sql-constraint-with-tablespace (sql-constraint)
