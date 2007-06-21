@@ -113,7 +113,7 @@
                                          :connection-specification
                                          '(:datasource \"(ADDRESS =
                                                            (PROTOCOL = TCP)
-                                                           (HOST = tomi137)
+                                                           (HOST = localhost)
                                                            (PORT = 1521))\"
                                            :user-name \"perec-test\"
                                            :password \"test123\"))"
