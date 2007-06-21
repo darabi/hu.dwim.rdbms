@@ -61,6 +61,7 @@
      (unless wait
        (format-string " NOWAIT")))))
 
+;; TODO shouldn't the NAME slot be called TABLE and be typed (or sql-identifier* sql-table)?
 (define-syntax-node sql-table-alias (sql-identifier)
   ((name
     :type sql-identifier*)

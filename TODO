@@ -1,0 +1,10 @@
+
+the create/alter/drop table AST should really be structured like (create (table :name ... :columns ...)) and (alter (table ...))
+where the (table ...) part is a shared table description. then a new format sub-protocols should be started for create and alter
+that works from the shared (table ...) ast node.
+
+same applies to sql-create-index, sql-drop-index, sql-create-sequence, sql-drop-sequence
+
+
+introduce a named-sql-syntax-node, add a print-object method for it.
+
