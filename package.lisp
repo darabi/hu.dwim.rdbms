@@ -29,6 +29,7 @@
    #:register-commit-hook
    #:transaction-with-commit-hooks-mixin
    #:transaction-timestamp
+   #:rdbms-name-for
 
    #:create-table
    #:drop-table

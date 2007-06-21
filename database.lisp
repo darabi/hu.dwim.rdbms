@@ -50,3 +50,12 @@
 (defmacro with-database (database &body body)
   `(let ((*database* ,database))
     ,@body))
+
+(defgeneric calculate-rdbms-name (database thing name)
+  (:documentation "May be specialized to take name length and character set limitations into account.")
+  (:method ((database database) thing name)
+           (string-downcase name)))
+
+(defun rdbms-name-for (name &optional thing)
+  (declare (cl:type (or null (member :table :index :column :sequence)) thing))
+  (calculate-rdbms-name *database* thing name))
