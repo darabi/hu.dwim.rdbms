@@ -87,10 +87,14 @@
        (let ((db (database-of tr)))
          (log.debug "Opening Postmodern connection the first time it was needed, using ~S" (remove-keywords (connection-specification-of db) :password))
          (aprog1
-             (setf (connection-of tr) (apply #'cl-postgres:open-database
-                                             (destructuring-bind (&key (host "localhost") (port 5432) database user-name (password ""))
-                                                 (connection-specification-of db)
-                                               (list database user-name password host port))))
+             (loop
+               (with-simple-restart (retry "Retry connecting")
+                 (return
+                   (setf (connection-of tr)
+                         (apply #'cl-postgres:open-database
+                                (destructuring-bind (&key (host "localhost") (port 5432) database user-name (password ""))
+                                    (connection-specification-of db)
+                                  (list database user-name password host port)))))))
            (log.debug "Succesfully opened Postmodern connection ~A for transaction ~A in database ~A"
                       it tr db)))))
 
