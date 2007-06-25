@@ -270,7 +270,7 @@
                                  indicator
                                  null               ; alenp
                                  null               ; rcodep
-                                 null               ; maxarr_len
+                                 0                  ; maxarr_len
                                  null               ; curelep
                                  oci:+default+))
       (make-instance 'oracle-binding
@@ -372,9 +372,13 @@
             (indicators (cffi:foreign-alloc :short :count +number-of-buffered-rows+)))
         (declare (fixnum column-type))
 
-        (progn                          ; FIXME copy comment from clsql
+        (progn
+          ; KLUDGE oci:+attr-data-size+ returned as ub-2, despite it is documented as ub-4
           (setf (cffi:mem-ref attribute-value :unsigned-short) 0)
-          (setf column-size (oci-attr-get oci:+attr-data-size+ 'oci:ub-4))) ; FIXME ub-2 in clsql
+          (setf column-size (oci-attr-get oci:+attr-data-size+ 'oci:ub-2)))
+
+        (log.dribble "Retrieving column: name=~W, type=~D, size=~D"
+                     column-name column-type column-size)
         
         (when (= column-type oci:+sqlt-num+)
           ;; the type of the precision attribute is 'oci:sb-2, because we
@@ -431,7 +435,8 @@
                        statement-handle
                        (error-handle-of transaction)
                        +number-of-buffered-rows+
-                       oci:+fetch-next+ oci:+default+)))
+                       oci:+fetch-next+
+                       oci:+default+)))
         (ecase oci-code
           (#.oci:+success+)
           (#.oci:+no-data+ (setf (end-seen-p cursor) #t))
@@ -448,22 +453,25 @@
 (defun fetch-row (cursor &optional (eof-errorp nil) eof-value)
   #+nil(log.debug "Fetching row, buffered rows: ~A, current row: ~A"
                   (buffered-row-count-of cursor) (current-row-index-of cursor))
-
-  (when (>= (current-row-index-of cursor)
+  (cond ((< (current-row-index-of cursor)
             (buffered-row-count-of cursor))
-    (if (end-seen-p cursor)
-        (if eof-errorp
-            (error 'simple-rdbms-error
-                   :format-control "no more rows available in ~S"
-                   :format-arguments (list cursor))
-            (return-from fetch-row eof-value))
-        (refill-result-buffers cursor)))
+         (aprog1
+             (loop with row-index = (current-row-index-of cursor)
+                   for descriptor across (column-descriptors-of cursor)
+                   collect (fetch-column-value descriptor row-index))
+           (incf (current-row-index-of cursor))))
 
-  (aprog1
-      (loop with row-index = (current-row-index-of cursor)
-            for descriptor across (column-descriptors-of cursor)
-            collect (fetch-column-value descriptor row-index))
-    (incf (current-row-index-of cursor))))
+        ((not (end-seen-p cursor))
+         (refill-result-buffers cursor)
+         (fetch-row cursor eof-errorp eof-value))
+
+        (eof-errorp
+         (error 'simple-rdbms-error
+                :format-control "no more rows available in ~S"
+                :format-arguments (list cursor)))
+        
+        (t
+         (return-from fetch-row eof-value))))
 
 (defun fetch-column-value (column-descriptor row-index)
   (let* ((indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
@@ -471,9 +479,22 @@
         :null
         (let* ((buffer (buffer-of column-descriptor))
                (size (size-of column-descriptor))
-               (converter (typemap-oci-to-lisp (typemap-of column-descriptor))))
-          (funcall converter
-                   (cffi:inc-pointer buffer (* row-index size)))))))
+               (converter (typemap-oci-to-lisp (typemap-of column-descriptor)))
+               result)
+          (log.dribble "Convert from ~D: " (typemap-external-type (typemap-of column-descriptor)))
+          (log.dribble "  ~A"
+                       (with-output-to-string (s)
+                                              (loop for i from 0 below size
+                                                    do (format s "~2,'0X " (cffi:mem-ref buffer :uint8 (+ (* row-index size) i))))))
+          
+          
+          (setf result(funcall converter
+                               (cffi:inc-pointer buffer (* row-index size))
+                               size))
+
+          (log.dribble "Converted to: ~S" result)
+
+          result))))
 
 (defun free-cursor (cursor)
   (loop for descriptor across (column-descriptors-of cursor)
