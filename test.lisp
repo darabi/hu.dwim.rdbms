@@ -44,7 +44,7 @@
 (deftest* test/create-table ()
   (finishes
     (unwind-protect
-         (execute-ddl "CREATE TABLE alma ()")
+         (execute-ddl "CREATE TABLE alma (name varchar(40))")
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 

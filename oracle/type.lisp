@@ -14,7 +14,7 @@
   oci-to-lisp)
 
 (defmacro deftypemap (name &rest args)
-  `(defvar ,name (make-typemap ,@args)))
+  `(defparameter ,name (make-typemap ,@args)))
 
 (deftypemap boolean/char
     :external-type oci:+sqlt-afc+

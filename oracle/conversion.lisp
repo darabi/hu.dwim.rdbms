@@ -151,9 +151,9 @@
    (cffi:foreign-string-alloc value)
    (1+ (length value))))
 
-(defun string-from-string (ptr len)
-  (declare (ignore len))
-  (cffi:foreign-string-to-lisp ptr))
+(defun string-from-string (ptr length)
+  (declare (ignore length))
+  (oci-string-to-lisp ptr))
 
 (defun string-to-long-varchar (str)
   (let* ((len (length str))
@@ -161,15 +161,16 @@
                                                              ; +1 for ending NULL character added
                                                              ; by cffi
     (setf (cffi:mem-ref ptr 'oci:sb-4) len)
-    (cffi:lisp-string-to-foreign str (cffi:inc-pointer ptr 4) len)
+    (cffi:lisp-string-to-foreign str
+                                 (cffi:inc-pointer ptr (cffi:foreign-type-size 'oci:sb-4))
+                                 len)
     (values ptr len)))
 
 (defun string-from-long-varchar (ptr len)
   (assert (>= len 4))
-  (cffi:foreign-string-to-lisp
-   (cffi:inc-pointer ptr 4)
-   (cffi:mem-ref ptr 'oci:sb-2)
-   #f))
+  (oci-string-to-lisp
+   (cffi:inc-pointer ptr (cffi:foreign-type-size 'oci:sb-4))
+   (cffi:mem-ref ptr 'oci:sb-4)))
 
 ;;;
 ;;; Binary data conversions
@@ -384,10 +385,8 @@
                          (cffi:mem-ref day 'oci:ub-1)
                          (cffi:mem-ref month 'oci:ub-1)
                          (cffi:mem-ref year 'oci:sb-2)
-                         :timezone (cffi:foreign-string-to-lisp
-                                    timezone-buffer
-                                    (cffi:mem-ref timezone-len 'oci:ub-4)
-                                    #f)))))
+                         :timezone (oci-string-to-lisp timezone-buffer
+                                                       (cffi:mem-ref timezone-len 'oci:ub-4))))))
 
 ;;;
 ;;; Helpers

@@ -17,12 +17,12 @@
 (defmethod commit-transaction ((database oracle) (transaction oracle-transaction))
   (oci-call (oci:trans-commit (service-context-handle-of transaction)
                               (error-handle-of transaction)
-                              oci:+default+)))
+                              *default-oci-flags*)))
 
 (defmethod rollback-transaction ((database oracle) (transaction oracle-transaction))
   (oci-call (oci:trans-rollback (service-context-handle-of transaction)
                                 (error-handle-of transaction)
-                                oci:+default+)))
+                                *default-oci-flags*)))
 
 (defmethod prepare-command ((database oracle)
                             (transaction oracle-transaction)
@@ -56,7 +56,6 @@
 ;;;
 ;;; the actual implementation
 ;;;
-(define-symbol-macro null (cffi:null-pointer))
 
 (defmacro ignore-errors* (&body body)
   `(block nil
@@ -65,9 +64,6 @@
                       (log.warn "Ignoring error: ~A" error)
                       (return))))
       ,@body)))
-
-(defun make-void-pointer ()
-  (cffi:foreign-alloc '(:pointer :void)))
 
 (defun ensure-connected (transaction)
   (when (cl:null (environment-handle-pointer transaction))
@@ -93,67 +89,44 @@
 
     (log.debug "Connecting in transaction ~A" transaction)
     (oci-call (oci:env-create (environment-handle-pointer transaction)
-                              oci:+default+ null null null null 0 null))
+                              (logior
+                               (ecase (connection-encoding-of (database-of *transaction*))
+                                 (:ascii 0)
+                                 (:utf-16 oci:+utf-16+))
+                               *default-oci-flags*)
+                              null null null null 0 null))
 
-    (oci-call (oci:handle-alloc (environment-handle-of transaction)
-                                (error-handle-pointer transaction)
-                                oci:+htype-error+ 0 null))
-
-    (oci-call (oci:handle-alloc (environment-handle-of transaction)
-                                (server-handle-pointer transaction)
-                                oci:+htype-server+ 0 null))
-
-    (oci-call (oci:handle-alloc (environment-handle-of transaction)
-                                (service-context-handle-pointer transaction)
-                                oci:+htype-svcctx+ 0 null))
+    (handle-alloc (error-handle-pointer transaction) oci:+htype-error+)
+    (handle-alloc (server-handle-pointer transaction) oci:+htype-server+)
+    (handle-alloc (service-context-handle-pointer transaction) oci:+htype-svcctx+)
 
     (log.debug "Logging on in transaction ~A" transaction)
-    (cffi:with-foreign-string (c-user-name user-name) ;; TODO CFFI mapping should use :string
-      (cffi::with-foreign-string (c-password password)
-        (cffi:with-foreign-string (c-datasource datasource)
-          (cffi:with-foreign-string (c-empty-string "")
-            (oci-call (oci:server-attach (server-handle-of transaction)
-                                         (error-handle-of transaction)
-                                         c-datasource
-                                         (length datasource) 0))
+    (server-attach datasource)
 
-            (oci-call (oci:attr-set (service-context-handle-of transaction)
-                                    oci:+htype-svcctx+
-                                    (server-handle-of transaction)
-                                    0
-                                    oci:+attr-server+
-                                    (error-handle-of transaction)))
+    (oci-call (oci:attr-set (service-context-handle-of transaction)
+                            oci:+htype-svcctx+
+                            (server-handle-of transaction)
+                            0
+                            oci:+attr-server+
+                            (error-handle-of transaction)))
             
-            (oci-call (oci:handle-alloc (environment-handle-of transaction)
-                                        (session-handle-pointer transaction)
-                                        oci:+htype-session+ 0 null))
+    (handle-alloc (session-handle-pointer transaction) oci:+htype-session+)
 
-            (oci-call (oci:attr-set (session-handle-of transaction)
-                                    oci:+htype-session+
-                                    c-user-name
-                                    (length user-name)
-                                    oci:+attr-username+
-                                    (error-handle-of transaction)))
+    (set-session-string-attribute oci:+attr-username+ user-name)
+    (set-session-string-attribute oci:+attr-password+ password)
 
-            (oci-call (oci:attr-set (session-handle-of transaction)
-                                    oci:+htype-session+
-                                    c-password
-                                    (length password)
-                                    oci:+attr-password+
-                                    (error-handle-of transaction)))
+    (oci-call (oci:session-begin (service-context-handle-of transaction)
+                                 (error-handle-of transaction)
+                                 (session-handle-of transaction)
+                                 oci:+cred-rdbms+
+                                 oci:+default+))
 
-            (oci-call (oci:session-begin (service-context-handle-of transaction)
-                                         (error-handle-of transaction)
-                                         (session-handle-of transaction)
-                                         oci:+cred-rdbms+
-                                         oci:+default+))
-
-            (oci-call (oci:attr-set (service-context-handle-of transaction)
-                                    oci:+htype-svcctx+
-                                    (session-handle-of transaction)
-                                    0
-                                    oci:+attr-session+
-                                    (error-handle-of transaction)))))))))
+    (oci-call (oci:attr-set (service-context-handle-of transaction)
+                            oci:+htype-svcctx+
+                            (session-handle-of transaction)
+                            0
+                            oci:+attr-session+
+                            (error-handle-of transaction)))))
 
 (defun disconnect (transaction)
   (assert (environment-handle-pointer transaction))
@@ -185,15 +158,8 @@
                                   :name name
                                   :statement-handle-pointer (make-void-pointer)
                                   :query command)))
-    (oci-call (oci:handle-alloc (environment-handle-of transaction)
-                                (statement-handle-pointer statement)
-                                oci:+htype-stmt+ 0 null))
-    (cffi:with-foreign-string (c-command command)
-      (oci-call (oci:stmt-prepare (statement-handle-of statement)
-                                  (error-handle-of transaction)
-                                  c-command
-                                  (length command)
-                                  oci:+ntv-syntax+ oci:+default+)))
+    (handle-alloc (statement-handle-pointer statement) oci:+htype-stmt+)
+    (stmt-prepare statement command)
     (log.dribble "Statement is allocated")
     (setf (select-p statement) (= (get-statement-attribute
                                    statement
@@ -217,7 +183,11 @@
     (oci-call (oci:stmt-execute (service-context-handle-of transaction)
                                 (statement-handle-of statement)
                                 (error-handle-of transaction)
-                                iters 0 null null oci:+default+)))
+                                iters
+                                0
+                                null
+                                null
+                                *default-oci-flags*)))
   
   (cond
     ((select-p statement)
@@ -272,7 +242,7 @@
                                  null               ; rcodep
                                  0                  ; maxarr_len
                                  null               ; curelep
-                                 oci:+default+))
+                                 *default-oci-flags*))
       (make-instance 'oracle-binding
                      :bind-handle-pointer bind-handle-pointer
                      :sql-type sql-type
@@ -356,7 +326,7 @@
            (oci-string-attr-get (attribute-id)
              (oci-attr-get param-descriptor attribute-id attribute-value
                            attribute-value-length (error-handle-of transaction))
-             (cffi:foreign-string-to-lisp
+             (oci-string-to-lisp
               (cffi:mem-ref attribute-value '(:pointer :unsigned-char)) ; OraText*
               (cffi:mem-ref attribute-value-length 'oci:ub-4))))
               
@@ -404,7 +374,7 @@
             indicators
             null
             return-codes
-            oci:+default+)
+            *default-oci-flags*)
 
           (make-instance 'column-descriptor
                          :define-handle-pointer define-handle-pointer
@@ -436,7 +406,7 @@
                        (error-handle-of transaction)
                        +number-of-buffered-rows+
                        oci:+fetch-next+
-                       oci:+default+)))
+                       *default-oci-flags*)))
         (ecase oci-code
           (#.oci:+success+)
           (#.oci:+no-data+ (setf (end-seen-p cursor) #t))
@@ -481,16 +451,13 @@
                (size (size-of column-descriptor))
                (converter (typemap-oci-to-lisp (typemap-of column-descriptor)))
                result)
-          (log.dribble "Convert from ~D: " (typemap-external-type (typemap-of column-descriptor)))
-          (log.dribble "  ~A"
+          (log.dribble "Convert from ~D, size is ~D, content:~%~A" (typemap-external-type (typemap-of column-descriptor)) size
                        (with-output-to-string (s)
-                                              (loop for i from 0 below size
-                                                    do (format s "~2,'0X " (cffi:mem-ref buffer :uint8 (+ (* row-index size) i))))))
-          
-          
-          (setf result(funcall converter
-                               (cffi:inc-pointer buffer (* row-index size))
-                               size))
+                         (loop for i from 0 below size
+                               do (format s "~2,'0X " (cffi:mem-ref buffer :uint8 (+ (* row-index size) i))))))
+          (setf result (funcall converter
+                                (cffi:inc-pointer buffer (* row-index size))
+                                size))
 
           (log.dribble "Converted to: ~S" result)
 

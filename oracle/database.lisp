@@ -9,7 +9,9 @@
 #.(file-header)
 
 (defclass* oracle (database)
-  ())
+  ((connection-encoding
+    :utf-16
+    :type (member :ascii :utf-16))))
 
 (defmethod transaction-mixin-class list ((db oracle))
   'oracle-transaction)
@@ -75,8 +77,6 @@
     (simple-rdbms-error "OCI error in initialization stage, too early to query the actual error"))
   (cffi:with-foreign-objects ((error-code 'oci:sb-4))
     (cffi:with-foreign-pointer (error-buffer oci:+error-maxmsg-size+)
-      (setf (cffi:mem-ref error-buffer :char) 0)
-      (setf (cffi:mem-ref error-code 'oci:sb-4) 0)
 
       (oci:error-get (error-handle-of *transaction*) 1
                      (cffi:null-pointer)
@@ -84,6 +84,6 @@
                      error-buffer
                      oci:+error-maxmsg-size+ oci:+htype-error+)
 
-      (let ((error-message (cffi:foreign-string-to-lisp error-buffer)))
+      (let ((error-message (oci-string-to-lisp error-buffer)))
         (log.error "Signalling error: ~A" error-message)
         (simple-rdbms-error "RDBMS error: ~A" error-message)))))
