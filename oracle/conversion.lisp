@@ -18,17 +18,17 @@
 ;;;
 
 (defun boolean-to-char (value)
-  (values
-   (cffi::foreign-alloc :char :initial-element (if value #\T #\F))
-   1))
+  (foreign-oci-string-alloc (if value "T" "F") :null-terminated-p #f))
 
 (defun boolean-from-char (ptr len)
-  (assert (= len 1))
-  (let ((ch (cffi:mem-aref ptr :char)))
-    (case ch
-      (#\T #t)
-      (#\F #f)
-      (t ch)))) ; KLUDGE real char(1), not a boolean
+  (assert (= len (oci-char-width)))
+  (let ((str (oci-string-to-lisp ptr len)))
+    (assert (= (length str) 1))
+    (let ((ch (char str 0)))
+      (case ch
+        (#\T #t)
+        (#\F #f)
+        (t ch)))))                ; KLUDGE real char(1), not a boolean
 
 ;;;
 ;;; Integer conversions
@@ -147,12 +147,10 @@
 ;;;
 
 (defun string-to-string (value)
-  (values
-   (cffi:foreign-string-alloc value)
-   (1+ (length value))))
+  (foreign-oci-string-alloc value))
 
 (defun string-from-string (ptr length)
-  (declare (ignore length))
+  (declare (ignore length)) ; null terminated
   (oci-string-to-lisp ptr))
 
 (defun string-to-long-varchar (str)
@@ -228,7 +226,8 @@
                        hour
                        day
                        month
-                       (+ (* 100 century) year))))
+                       (+ (* 100 century) year)
+                       :timezone +utc-zone+)))
 
 (defun local-time-to-oci-date (local-time)
   ;; FIXME using fields of the opaque OCIDate structure, because the OCIDateSetDate and
@@ -264,18 +263,19 @@
                        hour
                        day
                        month
-                       year)))
+                       year
+                       :timezone +utc-zone+)))
 
-(defun local-time-to-timestamp (local-time environment-handle error-handle)
+(defun local-time-to-timestamp (local-time)
   (let ((oci-date-time-pointer (cffi::foreign-alloc :pointer)))
-    (oci-call (oci:handle-alloc environment-handle
+    (oci-call (oci:handle-alloc (environment-handle-of *transaction*)
                                 oci-date-time-pointer
                                 oci:+dtype-timestamp+
                                 0
                                 (cffi:null-pointer)))
     (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
-      (oci-call (oci:date-time-construct environment-handle
-                                         error-handle
+      (oci-call (oci:date-time-construct (environment-handle-of *transaction*)
+                                         (error-handle-of *transaction*)
                                          (cffi:mem-ref oci-date-time-pointer :pointer)
                                          year
                                          month
@@ -290,39 +290,43 @@
      (cffi:mem-ref oci-date-time-pointer 'oci:date-time)
      (cffi:foreign-type-size 'oci:date-time))))
 
-(defun local-time-from-timestamp (ptr len environment-handle error-handle)
+(defun local-time-from-timestamp (ptr len)
   (declare (ignore len))
-  (cffi:with-foreign-objects ((year 'oci:sb-2)
-                              (month 'oci:ub-1)
-                              (day 'oci:ub-1)
-                              (hour 'oci:ub-1)
-                              (min 'oci:ub-1)
-                              (sec 'oci:ub-1)
-                              (fsec 'oci:ub-4))
-    (let* ((oci-date-time (cffi:mem-ref ptr 'oci:date-time)))
-      (oci-call (oci:date-time-get-date environment-handle
-                                        error-handle
-                                        oci-date-time
-                                        year
-                                        month
-                                        day))
-      (oci-call (oci:date-time-get-time environment-handle
-                                        error-handle
-                                        oci-date-time
-                                        hour
-                                        min
-                                        sec
-                                        fsec))
-      (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
-                         (cffi:mem-ref sec 'oci:ub-1)
-                         (cffi:mem-ref min 'oci:ub-1)
-                         (cffi:mem-ref hour 'oci:ub-1)
-                         (cffi:mem-ref day 'oci:ub-1)
-                         (cffi:mem-ref month 'oci:ub-1)
-                         (cffi:mem-ref year 'oci:sb-2)))))
+  (let ((environment-handle (environment-handle-of *transaction*))
+        (error-handle (error-handle-of *transaction*)))
+    (cffi:with-foreign-objects ((year 'oci:sb-2)
+                               (month 'oci:ub-1)
+                               (day 'oci:ub-1)
+                               (hour 'oci:ub-1)
+                               (min 'oci:ub-1)
+                               (sec 'oci:ub-1)
+                               (fsec 'oci:ub-4))
+     (let* ((oci-date-time (cffi:mem-ref ptr 'oci:date-time)))
+       (oci-call (oci:date-time-get-date environment-handle
+                                         error-handle
+                                         oci-date-time
+                                         year
+                                         month
+                                         day))
+       (oci-call (oci:date-time-get-time environment-handle
+                                         error-handle
+                                         oci-date-time
+                                         hour
+                                         min
+                                         sec
+                                         fsec))
+       (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
+                          (cffi:mem-ref sec 'oci:ub-1)
+                          (cffi:mem-ref min 'oci:ub-1)
+                          (cffi:mem-ref hour 'oci:ub-1)
+                          (cffi:mem-ref day 'oci:ub-1)
+                          (cffi:mem-ref month 'oci:ub-1)
+                          (cffi:mem-ref year 'oci:sb-2))))))
 
-(defun local-time-to-timestamp-tz (local-time environment-handle error-handle)
-  (let ((oci-date-time-pointer (cffi::foreign-alloc :pointer))
+(defun local-time-to-timestamp-tz (local-time)
+  (let ((environment-handle (environment-handle-of *transaction*))
+        (error-handle (error-handle-of *transaction*))
+        (oci-date-time-pointer (cffi::foreign-alloc :pointer))
         (timezone-str (timezone-as-HHMM-string local-time)))
     (oci-call (oci:handle-alloc environment-handle
                                 oci-date-time-pointer
@@ -346,47 +350,49 @@
      (cffi:mem-ref oci-date-time-pointer 'oci:date-time)
      (cffi:foreign-type-size 'oci:date-time))))
 
-(defun local-time-from-timestamp-tz (ptr len environment-handle error-handle)
+(defun local-time-from-timestamp-tz (ptr len)
   (declare (ignore len))
-  (cffi:with-foreign-objects ((year 'oci:sb-2)
-                              (month 'oci:ub-1)
-                              (day 'oci:ub-1)
-                              (hour 'oci:ub-1)
-                              (min 'oci:ub-1)
-                              (sec 'oci:ub-1)
-                              (fsec 'oci:ub-4)
-                              (timezone-buffer 'oci:ub-1 10) ; TODO check this size enough
-                              (timezone-len 'oci:ub-4))
-    (let* ((oci-date-time (cffi:mem-ref ptr 'oci:date-time)))
-      (oci-call (oci:date-time-get-date environment-handle
-                                        error-handle
-                                        oci-date-time
-                                        year
-                                        month
-                                        day))
-      (oci-call (oci:date-time-get-time environment-handle
-                                        error-handle
-                                        oci-date-time
-                                        hour
-                                        min
-                                        sec
-                                        fsec))
-      (setf (cffi:mem-ref timezone-len 'oci:ub-4) 10)
-      (oci-call (oci:date-time-get-time-zone-name environment-handle
-                                                  error-handle
-                                                  oci-date-time
-                                                  timezone-buffer
-                                                  timezone-len))
+  (let ((environment-handle (environment-handle-of *transaction*))
+        (error-handle (error-handle-of *transaction*)))
+    (cffi:with-foreign-objects ((year 'oci:sb-2)
+                               (month 'oci:ub-1)
+                               (day 'oci:ub-1)
+                               (hour 'oci:ub-1)
+                               (min 'oci:ub-1)
+                               (sec 'oci:ub-1)
+                               (fsec 'oci:ub-4)
+                               (timezone-buffer 'oci:ub-1 10) ; TODO check this size enough
+                               (timezone-len 'oci:ub-4))
+     (let* ((oci-date-time (cffi:mem-ref ptr 'oci:date-time)))
+       (oci-call (oci:date-time-get-date environment-handle
+                                         error-handle
+                                         oci-date-time
+                                         year
+                                         month
+                                         day))
+       (oci-call (oci:date-time-get-time environment-handle
+                                         error-handle
+                                         oci-date-time
+                                         hour
+                                         min
+                                         sec
+                                         fsec))
+       (setf (cffi:mem-ref timezone-len 'oci:ub-4) 10)
+       (oci-call (oci:date-time-get-time-zone-name environment-handle
+                                                   error-handle
+                                                   oci-date-time
+                                                   timezone-buffer
+                                                   timezone-len))
 
-      (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
-                         (cffi:mem-ref sec 'oci:ub-1)
-                         (cffi:mem-ref min 'oci:ub-1)
-                         (cffi:mem-ref hour 'oci:ub-1)
-                         (cffi:mem-ref day 'oci:ub-1)
-                         (cffi:mem-ref month 'oci:ub-1)
-                         (cffi:mem-ref year 'oci:sb-2)
-                         :timezone (oci-string-to-lisp timezone-buffer
-                                                       (cffi:mem-ref timezone-len 'oci:ub-4))))))
+       (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
+                          (cffi:mem-ref sec 'oci:ub-1)
+                          (cffi:mem-ref min 'oci:ub-1)
+                          (cffi:mem-ref hour 'oci:ub-1)
+                          (cffi:mem-ref day 'oci:ub-1)
+                          (cffi:mem-ref month 'oci:ub-1)
+                          (cffi:mem-ref year 'oci:sb-2)
+                          :timezone (oci-string-to-lisp timezone-buffer
+                                                        (cffi:mem-ref timezone-len 'oci:ub-4)))))))
 
 ;;;
 ;;; Helpers

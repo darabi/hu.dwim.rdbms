@@ -37,9 +37,7 @@
 (deftest* test/connect ()
   (finishes
     (with-transaction
-      (execute "set transaction read only"))
-    (ignore-errors
-      (execute-ddl "DROP TABLE alma"))))
+      (execute "set transaction read only"))))
 
 (deftest* test/create-table ()
   (finishes
@@ -116,6 +114,74 @@
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))
 
+(defmacro define-type-test (name type &body values)
+  `(deftest ,name ()
+    (unwind-protect
+         (let* ((values (list ,@values))
+                (literals (mapcar
+                           (lambda (value)
+                             (sql-literal :value value
+                                          :type (cl-rdbms::compile-sql-type ',type)))
+                           values)))
+           (with-transaction
+             (execute-ddl (sql `(create table alma ((a ,',type)))))
+             (loop for literal in literals
+                   do (execute (sql `(insert alma (a) (,literal)))))
+             (is
+              (equal
+               (apply #'nconc (execute (sql `(select (a) alma))))
+               values))))
+    
+      (ignore-errors
+        (execute-ddl "DROP TABLE alma")))))
+
+(define-type-test test/boolean boolean
+  t
+  nil)
+
+(define-type-test test/char (char 10)
+  "1234567890"
+  "áéíóöőúüű ")
+
+(define-type-test test/varchar (varchar 10)
+  "1234567890"
+  "áéíóöőúüű")
+
+(define-type-test test/int8 (integer 8)
+  0
+  1
+  -1
+  127
+  -128)
+
+(define-type-test test/int16 (integer 16)
+  0
+  1
+  -1
+  32767
+  -32768)
+
+(define-type-test test/int32 (integer 32)
+  0
+  1
+  -1
+  2147483647
+  -2147483648)
+
+(define-type-test test/integer integer
+  0
+  1
+  -1
+  12345678901234567890123456789012345678
+  -12345678901234567890123456789012345678)
+
+(define-type-test test/date date
+  (local-time:today))
+
+(define-type-test test/timestamp timestamp
+  (local-time:now))
+
+
 (deftest* test/terminal-action ()
   (unwind-protect
        (progn
@@ -165,12 +231,15 @@
 (defmacro defsyntaxtest* (name sexp-p &body body)
   `(deftest ,name ()
     (with-database *test-database*
-      ,@ (loop for (sql string) :on body :by #'cddr
+      ,@ (loop for (sql string-or-case-body) :on body :by #'cddr
                collect `(is (equalp
                              (format-sql-to-string ,(if sexp-p
                                                         `(sql ,sql)
                                                         sql))
-                             ,string))))))
+                             ,(if (stringp string-or-case-body)
+                                  string-or-case-body
+                                  `(typecase *database*
+                                    ,@string-or-case-body))))))))
 
 (defmacro defsyntaxtest (name &body body)
   `(defsyntaxtest* ,name #t ,@body))
@@ -189,24 +258,28 @@
   (make-instance 'sql-create-table
                  :name "a"
                  :columns (list (make-instance 'sql-column :name "a" :type (make-instance 'sql-integer-type))))
-  "CREATE TABLE a (a NUMERIC)"
+  ((oracle "CREATE TABLE a (a NUMBER)")
+   (t "CREATE TABLE a (a NUMERIC)"))
 
   (make-instance 'sql-create-table
                  :temporary :drop
                  :name "a"
                  :columns (list (make-instance 'sql-column :name "a" :type (make-instance 'sql-integer-type))))
-  "CREATE TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")
+  ((oracle "CREATE TEMPORARY TABLE a (a NUMBER) ON COMMIT DROP")
+   (t "CREATE TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")))
 
 (defasttest test/alter-table-syntax
   (make-instance 'sql-alter-table
                  :name "a"
                  :actions (list (make-instance 'sql-add-column-action :name "a" :type (make-instance 'sql-integer-type))))
-  "ALTER TABLE a ADD a NUMERIC"
+  ((oracle "ALTER TABLE a ADD (a NUMBER)")
+   (t "ALTER TABLE a ADD a NUMERIC"))
 
   (make-instance 'sql-alter-table
                  :name "a"
                  :actions (list (make-instance 'sql-alter-column-type-action :name "a" :type (make-instance 'sql-integer-type))))
-  "ALTER TABLE a ALTER COLUMN a TYPE NUMERIC"
+  ((oracle "ALTER TABLE a ALTER COLUMN a TYPE NUMBER")
+   (t "ALTER TABLE a ALTER COLUMN a TYPE NUMERIC"))
 
   (make-instance 'sql-alter-table
                  :name "a"
@@ -329,7 +402,9 @@
   "SELECT foo.column, bar FROM alma alma_alias"
 
   `(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
-  "CREATE TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP"
+  ((oracle "CREATE TEMPORARY TABLE alma (col1 VARCHAR2, col2 NUMBER(10)) ON COMMIT DROP")
+   (t "CREATE TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP"))
 
   `(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
-  "CREATE TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")
+  ((oracle "CREATE TEMPORARY TABLE alma (col2 NUMBER(10)) ON COMMIT DELETE ROWS")
+   (t "CREATE TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")))

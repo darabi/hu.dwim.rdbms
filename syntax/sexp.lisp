@@ -166,15 +166,36 @@
                   body))
         (type-args (when (consp body)
                      (rest body))))
-    (cond ((sql-symbol-equal name "varchar")
+    (cond ((sql-symbol-equal name "char")
+           (make-instance 'sql-character-type :size (when type-args
+                                                      (first type-args))))
+          ((sql-symbol-equal name "varchar")
            (make-instance 'sql-character-varying-type :size (when type-args
                                                               (first type-args))))
           ((sql-symbol-equal name "integer")
            (make-instance 'sql-integer-type :bit-size (when type-args
                                                         (first type-args))))
+          ((sql-symbol-equal name "float")
+           (make-instance 'sql-float-type :bit-size (when type-args
+                                                      (first type-args))))
+          ((sql-symbol-equal name "numeric")
+           (make-instance 'sql-numeric-type))
           ((or (sql-symbol-equal name "boolean")
                (sql-symbol-equal name "bool"))
            (make-instance 'sql-boolean-type))
+          ((sql-symbol-equal name "date")
+           (make-instance 'sql-date-type))
+          ((sql-symbol-equal name "time")
+           (make-instance 'sql-time-type))
+          ((sql-symbol-equal name "timestamp")
+           (make-instance 'sql-timestamp-type :with-timezone (when type-args
+                                                               (first type-args))))
+          ((sql-symbol-equal name "clob")
+           (make-instance 'sql-character-large-object-type :size (when type-args
+                                                                   (first type-args))))
+          ((sql-symbol-equal name "blob")
+           (make-instance 'sql-binary-large-object-type :size (when type-args
+                                                                (first type-args))))
           (t (sql-compile-error body)))))
 
 (defun compile-sql-column (body)

@@ -230,6 +230,9 @@
         (if (eql value :null)
             (values null 0)
             (funcall converter value))
+
+      (log.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
+      
       (oci-call (oci:bind-by-pos statement-handle
                                  bind-handle-pointer
                                  error-handle
@@ -389,7 +392,7 @@
   "Returns buffer, buffer-size"
   (let ((size (data-size-for (typemap-external-type typemap) column-size)))
     (values
-     (cffi:foreign-alloc :uint8 :count (* size number-of-rows))
+     (cffi:foreign-alloc :uint8 :count (* size number-of-rows) :initial-element 0)
      size)))
 
 
@@ -451,10 +454,19 @@
                (size (size-of column-descriptor))
                (converter (typemap-oci-to-lisp (typemap-of column-descriptor)))
                result)
-          (log.dribble "Convert from ~D, size is ~D, content:~%~A" (typemap-external-type (typemap-of column-descriptor)) size
+          #+nil
+          (log.dribble "Buffer:~%~A"
+                       (with-output-to-string (s)
+                                              (loop for i from 0 below (* size +number-of-buffered-rows+)
+                               do (format s "~2,'0X "
+                                          (cffi:mem-ref buffer :uint8 i)))))
+          (log.dribble "Convert from ~D, size is ~D, content:~%~A"
+                       (typemap-external-type (typemap-of column-descriptor)) size
                        (with-output-to-string (s)
                          (loop for i from 0 below size
-                               do (format s "~2,'0X " (cffi:mem-ref buffer :uint8 (+ (* row-index size) i))))))
+                               do (format s "~2,'0X "
+                                          (cffi:mem-ref buffer :uint8 (+ (* row-index size) i))))))
+
           (setf result (funcall converter
                                 (cffi:inc-pointer buffer (* row-index size))
                                 size))
@@ -468,5 +480,7 @@
         do (progn (cffi:foreign-free (buffer-of descriptor))
                   (cffi:foreign-free (indicators-of descriptor))
                   (cffi:foreign-free (return-codes-of descriptor)))))
+
+
 
 

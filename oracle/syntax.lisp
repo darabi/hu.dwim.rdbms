@@ -14,6 +14,20 @@
         do (format t "~2,'0x" el))
   (format-string "')"))
 
+(defmethod format-sql-literal ((value (eql nil)) (database oracle))
+  (format-string "'F'"))
+
+(defmethod format-sql-literal ((value (eql t)) (database oracle))
+  (format-string "'T'"))
+
+(defmethod format-sql-literal ((literal sql-literal) (database oracle))
+  (if (type-of literal)
+      (progn
+        (vector-push-extend literal *binding-entries*)
+        (format-string ":")
+        (format-string (princ-to-string (length *binding-entries*))))
+      (call-next-method)))
+
 (defmethod format-sql-syntax-node ((variable sql-binding-variable) (database oracle))
   (vector-push-extend variable *binding-entries*)
   (format-string ":")
@@ -21,6 +35,16 @@
 
 (defmethod format-sql-syntax-node ((self sql-boolean-type) (database oracle))
   (format-string "CHAR(1)"))
+
+(defmethod format-sql-syntax-node ((self sql-character-type) (database oracle))
+  ;; signal an error when char(1) type is used
+  ;; because it would be interpreted as boolean and 'T' and 'F' would be mapped to t/nil
+  (with-slots (size) self
+    (if (and size (= size 1))
+        (error "CHAR(1) is reserved for booleans in Oracle mapping")
+        (progn
+          (format-string "CHAR")
+          (format-character-size size)))))
 
 (defmethod format-sql-syntax-node ((self sql-float-type) (database oracle))
   (with-slots (bit-size) self
@@ -41,7 +65,7 @@
 (defmethod format-sql-syntax-node ((self sql-character-varying-type) (database oracle))
   (with-slots (size) self
     (format-string "VARCHAR2")
-    (format-size size)))
+    (format-character-size size)))
 
 (defmethod format-sql-syntax-node ((self sql-character-large-object-type) (database oracle))
   (format-string "CLOB")) ; size ignored
@@ -54,6 +78,12 @@
 
 (defmethod format-sql-syntax-node ((self sql-binary-large-object-type) (database oracle))
   (format-string "BLOB")) ; size ignored
+
+(defun format-character-size (size)
+  (when size
+    (format-string "(")
+    (format-number size)
+    (format-string " CHAR)")))
 
 
 

@@ -43,17 +43,13 @@
   (:documentation "Formats an SQL literal into *sql-stream*.")
 
   (:method ((literal null) database)
-           (format-string "NULL"))
+           (format-string "FALSE"))
 
   (:method ((literal (eql :null)) database)
            (format-string "NULL"))
 
   (:method ((literal (eql t)) database)
-           (format-string "true"))
-
-  ;; TODO: what about boolean false? how to distinguish from null?
-  #+nil(:method ((literal (eql nil)) database)
-                (format-string "false"))
+           (format-string "TRUE"))
 
   (:method ((literal number) database)
            (format-number literal))

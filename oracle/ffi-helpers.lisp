@@ -47,15 +47,24 @@
                (error-handle-of transaction)))
     (dereference-foreign-pointer data-pointer ,type size-pointer)))
 
-(defmacro with-foreign-oci-string ((string c-string c-size) &body body)
+(defmacro with-foreign-oci-string ((string c-string c-size &key (null-terminated-p #f)) &body body)
   `(cffi:with-foreign-string (,c-string ,string :byte-size-variable ,c-size
                               :encoding (connection-encoding-of (database-of *transaction*))
-                              :null-terminated-p #f)
+                              :null-terminated-p ,null-terminated-p)
     ,@body))
+
+(defmacro foreign-oci-string-alloc (string &rest args)
+  `(cffi:foreign-string-alloc
+    ,string
+    :encoding (connection-encoding-of (database-of *transaction*))
+    ,@args))
 
 (defun oci-string-to-lisp (pointer &optional size)
   (cffi:foreign-string-to-lisp pointer :count size
                                :encoding (connection-encoding-of (database-of *transaction*))))
+
+(defun oci-char-width ()
+  (cffi::null-terminator-len (connection-encoding-of (database-of *transaction*)))) ;; FIXME using internal fn
 
 (defun set-session-string-attribute (attribute value)
   (with-foreign-oci-string (value c-string c-size)
@@ -89,5 +98,11 @@
                               handle-type
                               0
                               null)))
+
+(defun dump-c-byte-array (ptr size)
+  (with-output-to-string (s)
+                         (loop for i from 0 below size
+                               do (format s "~2,'0X "
+                                          (cffi:mem-ref ptr :uint8 i)))))
 
 

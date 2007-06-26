@@ -13,6 +13,7 @@
   lisp-to-oci
   oci-to-lisp)
 
+;; TODO add a naming convention, maybe *foo*?
 (defmacro deftypemap (name &rest args)
   `(defparameter ,name (make-typemap ,@args)))
 
@@ -74,7 +75,7 @@
 (deftypemap local-time/oci-date
     :external-type oci:+sqlt-odt+
     :lisp-to-oci #'local-time-to-oci-date
-    :oci-to-lisp 'local-time-from-oci-date)
+    :oci-to-lisp #'local-time-from-oci-date)
 
 (deftypemap local-time/timestamp
     :external-type oci:+sqlt-timestamp+
@@ -146,7 +147,7 @@
            string/long-varchar)
 
   (:method ((type sql-date-type))
-           local-time/oci-date)
+           local-time/date)
 
   (:method ((type sql-time-type))
            local-time/timestamp)
@@ -202,15 +203,15 @@
 (defun data-size-for (external-type column-size)
   (declare (fixnum external-type))
   (ecase external-type
-     (#.oci:+sqlt-afc+ column-size)
-     (#.oci:+sqlt-int+ 4)
-     (#.oci:+sqlt-vnu+ 22)
-     (#.oci:+sqlt-bfloat+ 4)
-     (#.oci:+sqlt-bdouble+ 8)
-     (#.oci:+sqlt-str+ (1+ column-size))
-     (#.oci:+sqlt-lvc+ (min (+ column-size 4) 8000))
-     (#.oci:+sqlt-dat+ 7)
-     (#.oci:+sqlt-odt+ (cffi:foreign-type-size 'oci:date))
-     (#.oci:+sqlt-timestamp+ (cffi:foreign-type-size 'oci:date-time))
-     (#.oci:+sqlt-timestamp-tz+ (cffi:foreign-type-size 'oci:date-time))
-     (#.oci:+sqlt-lvb+ (min (+ column-size 4) 8000))))
+    (#.oci:+sqlt-afc+ (* (oci-char-width) column-size))
+    (#.oci:+sqlt-int+ 4)
+    (#.oci:+sqlt-vnu+ 22)
+    (#.oci:+sqlt-bfloat+ 4)
+    (#.oci:+sqlt-bdouble+ 8)
+    (#.oci:+sqlt-str+ (* (oci-char-width) (1+ column-size)))
+    (#.oci:+sqlt-lvc+ (min (+ column-size 4) 8000)) ; FIXME
+    (#.oci:+sqlt-dat+ 7)
+    (#.oci:+sqlt-odt+ (cffi:foreign-type-size 'oci:date))
+    (#.oci:+sqlt-timestamp+ (cffi:foreign-type-size 'oci:date-time))
+    (#.oci:+sqlt-timestamp-tz+ (cffi:foreign-type-size 'oci:date-time))
+    (#.oci:+sqlt-lvb+ (min (+ column-size 4) 8000)))) ; FIXME
