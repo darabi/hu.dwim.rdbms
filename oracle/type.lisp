@@ -178,9 +178,26 @@
           (subseq str 0 it)             ; TODO ???
           str))))
 
-(defun sql-type-for-internal-type (type)
-  (declare (ignore type))
-  nil) ; TODO
+(defun sql-type-for-internal-type (data-type data-length precision scale)
+  (ecase data-type
+    ("NUMBER" (if (zerop scale)
+                  (case precision
+                    (5 (sql-integer-type :bit-size 16)) ; KLUDGE
+                    (10 (sql-integer-type :bit-size 32)) ; KLUDGE
+                    (19 (sql-integer-type :bit-size 64)) ; KLUDGE
+                    (t (sql-integer-type))) ; FIXME bit-size lost
+                  (sql-numeric-type))) ; FIXME scale, precision?
+    ("BINARY_FLOAT" (sql-float-type :bit-size 32))
+    ("BINARY_DOUBLE" (sql-float-type :bit-size 64))
+    ("CHAR" (if (= data-length 1)
+                (sql-boolean-type) ; KLUDGE: boolean as CHAR(1)
+                (sql-character-type :size data-length)))
+    ("VARCHAR2" (sql-character-varying-type :size data-length))
+    ("CLOB" (sql-character-large-object-type)) ; FIXME size not mapped
+    ("BLOB" (sql-binary-large-object-type)) ; FIXME size not mapped
+    ("DATE" (sql-date-type))
+    ("TIMESTAMP(6)" (sql-time-type)) ; FIXME sql-timestamp-type?
+    ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-type :with-timezone #t))))
 
 
 (defun external-type-for-sql-type (type)

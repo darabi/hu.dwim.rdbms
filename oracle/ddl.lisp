@@ -15,14 +15,19 @@
   (mapcar #'first (execute "select table_name from user_tables")))
 
 (defmethod database-list-table-columns (name (database oracle))
-  (mapcar
+  (map 'list
    (lambda (column)
      (make-instance 'sql-column
-                    :name (first* column)
-                    :type (sql-type-for-internal-type (subseq column 1))))
+                    :name (svref column 0)
+                    :type (sql-type-for-internal-type
+                           (svref column 1)
+                           (svref column 2)
+                           (svref column 3)
+                           (svref column 4))))
    (execute
-    (format nil "select column_name, data_type, data_length, data_scale, nullable from user_tab_columns where table_name = '~A'"
-            (string-downcase name)))))
+    (format nil "select column_name, data_type, data_length, data_precision, data_scale from user_tab_columns where table_name = '~A'"
+            name)
+    :result-type 'vector)))
 
 (defmethod database-list-table-indices (name (database oracle))
   (mapcar
