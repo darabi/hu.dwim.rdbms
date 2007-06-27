@@ -265,7 +265,7 @@
       (cffi:foreign-free data-pointer))))
 
 
-(defconstant +number-of-buffered-rows+ 200)
+(defconstant +number-of-buffered-rows+ 1)
 
 (defclass* oracle-cursor ()
   ((statement)

@@ -118,7 +118,7 @@
                                            :user-name \"perec-test\"
                                            :password \"test123\"))"
   :description "cl-rdbms with Oracle backend"
-  :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime)
+  :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
   :default-component-class local-cl-source-file
   :components
   ((:module "oracle"

@@ -154,15 +154,20 @@
   (oci-string-to-lisp ptr))
 
 (defun string-to-long-varchar (str)
-  (let* ((len (length str))
-         (ptr (cffi::foreign-alloc :char :count (+ len 5)))) ; +4 for length,
-                                                             ; +1 for ending NULL character added
-                                                             ; by cffi
-    (setf (cffi:mem-ref ptr 'oci:sb-4) len)
+  (let* ((encoding (connection-encoding-of (database-of *transaction*)))
+         (character-width (cffi::null-terminator-len encoding))
+         (str-len (* character-width (length str)))
+         (ptr (cffi::foreign-alloc :char
+                                   :count (+ (cffi:foreign-type-size 'oci:sb-4) ; length field
+                                             str-len
+                                             character-width ; for terminating null added by the cffi call
+                                             ))))
+    (setf (cffi:mem-ref ptr 'oci:sb-4) str-len)
     (cffi:lisp-string-to-foreign str
                                  (cffi:inc-pointer ptr (cffi:foreign-type-size 'oci:sb-4))
-                                 len)
-    (values ptr len)))
+                                 (+ str-len character-width)
+                                 :encoding encoding)
+    (values ptr (+ str-len 4))))
 
 (defun string-from-long-varchar (ptr len)
   (assert (>= len 4))
@@ -174,14 +179,14 @@
 ;;; Binary data conversions
 ;;;
 (defun byte-array-to-long-varraw (ba)
-  (assert (typep ba '(vector unsigned-byte)))
+  (assert (typep ba '(vector (unsigned-byte 8))))
   (let* ((len (length ba))
          (ptr (cffi::foreign-alloc 'oci:ub-1 :count (+ len 4))))
     (setf (cffi:mem-ref ptr :int32) len)
     (loop for byte across ba
           for i from 4
           do (setf (cffi:mem-aref ptr 'oci:ub-1 i) byte))
-    (values ptr len)))
+    (values ptr (+ len 4))))
 
 (defun byte-array-from-long-varraw (ptr len)
   (assert (>= len 4))

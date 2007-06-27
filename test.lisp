@@ -23,6 +23,7 @@
 (defsuite* test)
 
 ;; e.g. (make-instance 'postgresql-postmodern :connection-specification '(:database "dwim" :user-name "root" :password "admin123"))
+
 (defvar *test-database*)
 
 (defmacro with-test-transaction (&body body)
@@ -133,7 +134,7 @@
                          (apply #'nconc (execute (sql `(select (a) alma))))
                          values))
                  (is
-                  (equal
+                  (equalp
                    (apply #'nconc (execute (sql `(select (a) alma))))
                    values)))))
     
@@ -149,6 +150,10 @@
   "áéíóöőúüű ")
 
 (define-type-test test/varchar (varchar 10)
+  "1234567890"
+  "áéíóöőúüű")
+
+(define-type-test test/clob clob
   "1234567890"
   "áéíóöőúüű")
 
@@ -185,6 +190,9 @@
 
 (define-type-test test/timestamp timestamp
   (local-time:now))
+
+(define-type-test test/blob blob
+  #(1 2 3 4 5 6 7 8 9 0))
 
 
 (deftest* test/terminal-action ()
