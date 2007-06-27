@@ -105,4 +105,29 @@
                                do (format s "~2,'0X "
                                           (cffi:mem-ref ptr :uint8 i)))))
 
+(defun descriptor-alloc (descriptor-ptr-ptr descriptor-type)
+  (oci-call (oci:descriptor-alloc (environment-handle-of *transaction*)
+                                  descriptor-ptr-ptr
+                                  descriptor-type
+                                  0
+                                  null)))
+
+(defun allocate-oci-date-time (descriptor-ptr-ptr)
+  (descriptor-alloc descriptor-ptr-ptr oci:+dtype-timestamp+))
+
+(defun allocate-oci-date-time-tz (descriptor-ptr-ptr)
+  (descriptor-alloc descriptor-ptr-ptr oci:+dtype-timestamp-tz+))
+
+
+(defun descriptor-free (descriptor-ptr descriptor-type)
+  (oci-call (oci:descriptor-free descriptor-ptr
+                                 descriptor-type)))
+
+(defun free-oci-date-time (descriptor-ptr)
+  (descriptor-free descriptor-ptr oci:+dtype-timestamp+))
+
+(defun free-oci-date-time-tz (descriptor-ptr)
+  (descriptor-free descriptor-ptr oci:+dtype-timestamp-tz+))
+
+
 

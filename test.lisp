@@ -127,10 +127,15 @@
              (execute-ddl (sql `(create table alma ((a ,',type)))))
              (loop for literal in literals
                    do (execute (sql `(insert alma (a) (,literal)))))
-             (is
-              (equal
-               (apply #'nconc (execute (sql `(select (a) alma))))
-               values))))
+             (if (and values (typep (first values) 'local-time:local-time))
+                 (is
+                  (every #'local-time:local-time=
+                         (apply #'nconc (execute (sql `(select (a) alma))))
+                         values))
+                 (is
+                  (equal
+                   (apply #'nconc (execute (sql `(select (a) alma))))
+                   values)))))
     
       (ignore-errors
         (execute-ddl "DROP TABLE alma")))))

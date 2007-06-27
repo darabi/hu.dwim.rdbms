@@ -390,10 +390,25 @@
 
 (defun allocate-buffer-for-column (typemap column-size number-of-rows)
   "Returns buffer, buffer-size"
-  (let ((size (data-size-for (typemap-external-type typemap) column-size)))
+  (let* ((external-type (typemap-external-type typemap))
+         (size (data-size-for external-type column-size))
+         (ptr (cffi:foreign-alloc :uint8 :count (* size number-of-rows) :initial-element 0))
+         (constructor (typemap-allocate-instance typemap)))
+
+    (when constructor
+      (loop for i from 0 below number-of-rows
+            do (funcall constructor (cffi:inc-pointer ptr (* i size)))))
+    
     (values
-     (cffi:foreign-alloc :uint8 :count (* size number-of-rows) :initial-element 0)
+     ptr
      size)))
+
+(defun free-buffer-of-column (ptr typemap size number-of-rows)
+  (let ((destructor (typemap-free-instance typemap)))
+    (when destructor
+      (loop for i from 0 below number-of-rows
+            do (funcall destructor (cffi:mem-ref ptr :pointer (* i size)))))
+    (cffi:foreign-free ptr)))
 
 
 (defun refill-result-buffers (cursor)
@@ -477,9 +492,14 @@
 
 (defun free-cursor (cursor)
   (loop for descriptor across (column-descriptors-of cursor)
-        do (progn (cffi:foreign-free (buffer-of descriptor))
+        do (progn (free-buffer-of-column (buffer-of descriptor)
+                                         (typemap-of descriptor)
+                                         (size-of descriptor)
+                                         +number-of-buffered-rows+)
                   (cffi:foreign-free (indicators-of descriptor))
                   (cffi:foreign-free (return-codes-of descriptor)))))
+
+
 
 
 

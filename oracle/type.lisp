@@ -11,7 +11,9 @@
 (defstruct typemap
   external-type
   lisp-to-oci
-  oci-to-lisp)
+  oci-to-lisp
+  allocate-instance
+  free-instance)
 
 ;; TODO add a naming convention, maybe *foo*?
 (defmacro deftypemap (name &rest args)
@@ -80,12 +82,16 @@
 (deftypemap local-time/timestamp
     :external-type oci:+sqlt-timestamp+
     :lisp-to-oci #'local-time-to-timestamp
-    :oci-to-lisp #'local-time-from-timestamp)
+    :oci-to-lisp #'local-time-from-timestamp
+    :allocate-instance #'allocate-oci-date-time
+    :free-instance #'free-oci-date-time)
 
 (deftypemap local-time/timestamp-tz
     :external-type oci:+sqlt-timestamp-tz+
     :lisp-to-oci #'local-time-to-timestamp-tz
-    :oci-to-lisp #'local-time-from-timestamp-tz)
+    :oci-to-lisp #'local-time-from-timestamp-tz
+    :allocate-instance #'allocate-oci-date-time-tz
+    :free-instance #'free-oci-date-time-tz)
 
 (deftypemap byte-array/long-varraw
     :external-type oci:+sqlt-lvb+
@@ -195,8 +201,8 @@
     (#.oci:+sqlt-dat+ local-time/date)
     (#.oci:+sqlt-ibfloat+ float/bfloat)
     (#.oci:+sqlt-ibdouble+ double/bdouble)
-    (180 local-time/timestamp)    ; timestamp
-    (181 local-time/timestamp-tz) ; timestamp with timezone
+    (#.oci:+sqlt-timestamp+ local-time/timestamp)    ; CHECK: was 180
+    (#.oci:+sqlt-timestamp-tz+ local-time/timestamp-tz) ; CHECK: was 181
     (#.oci:+sqlt-clob+ string/long-varchar)
     (#.oci:+sqlt-blob+ byte-array/long-varraw)))
 
@@ -212,6 +218,6 @@
     (#.oci:+sqlt-lvc+ (min (+ column-size 4) 8000)) ; FIXME
     (#.oci:+sqlt-dat+ 7)
     (#.oci:+sqlt-odt+ (cffi:foreign-type-size 'oci:date))
-    (#.oci:+sqlt-timestamp+ (cffi:foreign-type-size 'oci:date-time))
-    (#.oci:+sqlt-timestamp-tz+ (cffi:foreign-type-size 'oci:date-time))
+    (#.oci:+sqlt-timestamp+ (cffi:foreign-type-size :pointer))
+    (#.oci:+sqlt-timestamp-tz+ (cffi:foreign-type-size :pointer))
     (#.oci:+sqlt-lvb+ (min (+ column-size 4) 8000)))) ; FIXME

@@ -268,11 +268,11 @@
 
 (defun local-time-to-timestamp (local-time)
   (let ((oci-date-time-pointer (cffi::foreign-alloc :pointer)))
-    (oci-call (oci:handle-alloc (environment-handle-of *transaction*)
-                                oci-date-time-pointer
-                                oci:+dtype-timestamp+
-                                0
-                                (cffi:null-pointer)))
+    (oci-call (oci:descriptor-alloc (environment-handle-of *transaction*)
+                                    oci-date-time-pointer
+                                    oci:+dtype-timestamp+
+                                    0
+                                    null))
     (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
       (oci-call (oci:date-time-construct (environment-handle-of *transaction*)
                                          (error-handle-of *transaction*)
@@ -287,11 +287,11 @@
                                          (cffi:null-pointer)
                                          0)))
     (values
-     (cffi:mem-ref oci-date-time-pointer 'oci:date-time)
-     (cffi:foreign-type-size 'oci:date-time))))
+     oci-date-time-pointer
+     (cffi:foreign-type-size :pointer))))
 
 (defun local-time-from-timestamp (ptr len)
-  (declare (ignore len))
+  (assert (= len (cffi:foreign-type-size :pointer)))
   (let ((environment-handle (environment-handle-of *transaction*))
         (error-handle (error-handle-of *transaction*)))
     (cffi:with-foreign-objects ((year 'oci:sb-2)
@@ -301,7 +301,8 @@
                                (min 'oci:ub-1)
                                (sec 'oci:ub-1)
                                (fsec 'oci:ub-4))
-     (let* ((oci-date-time (cffi:mem-ref ptr 'oci:date-time)))
+     (let* ((oci-date-time-pointer (cffi:mem-ref ptr '(:pointer oci:date-time)))
+            (oci-date-time (cffi:mem-ref oci-date-time-pointer 'oci:date-time)))
        (oci-call (oci:date-time-get-date environment-handle
                                          error-handle
                                          oci-date-time
@@ -328,11 +329,11 @@
         (error-handle (error-handle-of *transaction*))
         (oci-date-time-pointer (cffi::foreign-alloc :pointer))
         (timezone-str (timezone-as-HHMM-string local-time)))
-    (oci-call (oci:handle-alloc environment-handle
-                                oci-date-time-pointer
-                                oci:+dtype-timestamp-tz+
-                                0
-                                (cffi:null-pointer)))
+    (oci-call (oci:descriptor-alloc environment-handle
+                                    oci-date-time-pointer
+                                    oci:+dtype-timestamp-tz+
+                                    0
+                                    null))
     (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
       (oci-call (oci:date-time-construct environment-handle
                                          error-handle
@@ -347,8 +348,8 @@
                                          (cffi:foreign-string-alloc timezone-str) ;FIXME freeing?
                                          (1+ (length timezone-str)))))
     (values
-     (cffi:mem-ref oci-date-time-pointer 'oci:date-time)
-     (cffi:foreign-type-size 'oci:date-time))))
+     oci-date-time-pointer
+     (cffi:foreign-type-size :pointer))))
 
 (defun local-time-from-timestamp-tz (ptr len)
   (declare (ignore len))
@@ -363,7 +364,8 @@
                                (fsec 'oci:ub-4)
                                (timezone-buffer 'oci:ub-1 10) ; TODO check this size enough
                                (timezone-len 'oci:ub-4))
-     (let* ((oci-date-time (cffi:mem-ref ptr 'oci:date-time)))
+     (let* ((oci-date-time-pointer (cffi:mem-ref ptr :pointer))
+            (oci-date-time (cffi:mem-ref oci-date-time-pointer 'oci:date-time)))
        (oci-call (oci:date-time-get-date environment-handle
                                          error-handle
                                          oci-date-time
