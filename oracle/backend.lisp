@@ -100,33 +100,43 @@
     (handle-alloc (server-handle-pointer transaction) oci:+htype-server+)
     (handle-alloc (service-context-handle-pointer transaction) oci:+htype-svcctx+)
 
-    (log.debug "Logging on in transaction ~A" transaction)
-    (server-attach datasource)
+    (loop connecting
+      (let ((success #f))
+        (unwind-protect
+             (with-simple-restart (retry "Retry connecting to Oracle")
+               (log.debug "Logging on in transaction ~A" transaction)
+               (server-attach datasource)
 
-    (oci-call (oci:attr-set (service-context-handle-of transaction)
-                            oci:+htype-svcctx+
-                            (server-handle-of transaction)
-                            0
-                            oci:+attr-server+
-                            (error-handle-of transaction)))
-            
-    (handle-alloc (session-handle-pointer transaction) oci:+htype-session+)
+               (oci-call (oci:attr-set (service-context-handle-of transaction)
+                                       oci:+htype-svcctx+
+                                       (server-handle-of transaction)
+                                       0
+                                       oci:+attr-server+
+                                       (error-handle-of transaction)))
 
-    (set-session-string-attribute oci:+attr-username+ user-name)
-    (set-session-string-attribute oci:+attr-password+ password)
+               (handle-alloc (session-handle-pointer transaction) oci:+htype-session+)
 
-    (oci-call (oci:session-begin (service-context-handle-of transaction)
-                                 (error-handle-of transaction)
-                                 (session-handle-of transaction)
-                                 oci:+cred-rdbms+
-                                 oci:+default+))
+               (set-session-string-attribute oci:+attr-username+ user-name)
+               (set-session-string-attribute oci:+attr-password+ password)
 
-    (oci-call (oci:attr-set (service-context-handle-of transaction)
-                            oci:+htype-svcctx+
-                            (session-handle-of transaction)
-                            0
-                            oci:+attr-session+
-                            (error-handle-of transaction)))))
+               (oci-call (oci:session-begin (service-context-handle-of transaction)
+                                            (error-handle-of transaction)
+                                            (session-handle-of transaction)
+                                            oci:+cred-rdbms+
+                                            oci:+default+))
+
+               (oci-call (oci:attr-set (service-context-handle-of transaction)
+                                       oci:+htype-svcctx+
+                                       (session-handle-of transaction)
+                                       0
+                                       oci:+attr-session+
+                                       (error-handle-of transaction)))
+               (setf success #t)
+               (return-from connecting))
+          (unless success
+            (awhen (session-handle-pointer transaction)
+              (cffi:foreign-free it)
+              (setf (session-handle-pointer transaction) nil))))))))
 
 (defun disconnect (transaction)
   (assert (environment-handle-pointer transaction))
