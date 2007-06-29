@@ -71,6 +71,14 @@
                             :columns (process-sql-syntax-list #'compile-sql-column (pop body)))))
           (t (sql-compile-error whole-body body)))))
 
+(defun compile-sql-drop (body)
+  (let ((whole-body body)
+        (what (pop body)))
+    (cond ((sql-symbol-equal what "table")
+           (make-instance 'sql-drop-table
+                          :name (pop body)))
+          (t (sql-compile-error whole-body body)))))
+
 (defun compile-sql-insert (body)
   (let ((whole-body body))
     (prog1
