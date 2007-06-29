@@ -179,7 +179,7 @@
 ;;; Binary data conversions
 ;;;
 (defun byte-array-to-long-varraw (ba)
-  (assert (typep ba '(vector (unsigned-byte 8))))
+  (assert (typep ba 'vector)) ; '(vector (unsigned-byte 8))
   (let* ((len (length ba))
          (ptr (cffi::foreign-alloc 'oci:ub-1 :count (+ len 4))))
     (setf (cffi:mem-ref ptr :int32) len)
