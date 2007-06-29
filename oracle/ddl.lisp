@@ -9,10 +9,10 @@
 #.(file-header)
 
 (defmethod database-list-sequences ((database oracle))
-  (mapcar #'first (execute "select sequence_name from user_sequences")))
+  (mapcar #'first (execute "select sequence_name from user_sequences" :result-type 'list)))
 
 (defmethod database-list-tables ((database oracle))
-  (mapcar #'first (execute "select table_name from user_tables")))
+  (mapcar #'first (execute "select table_name from user_tables" :result-type 'list)))
 
 (defmethod database-list-table-columns (name (database oracle))
   (map 'list
@@ -25,7 +25,7 @@
                            (svref column 3)
                            (svref column 4))))
    (execute
-    (format nil "select column_name, data_type, data_length, data_precision, data_scale from user_tab_columns where table_name = '~A'"
+    (format nil "select column_name, data_type, char_length, data_precision, data_scale from user_tab_columns where table_name = '~A'"
             name)
     :result-type 'vector)))
 
@@ -37,4 +37,5 @@
                     :table-name name))
    (execute
     (format nil "select index_name from user_indexes where table_name = '~A'"
-            (string-downcase name)))))
+            (string-downcase name))
+    :result-type 'list)))

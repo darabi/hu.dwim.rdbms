@@ -178,26 +178,34 @@
           (subseq str 0 it)             ; TODO ???
           str))))
 
-(defun sql-type-for-internal-type (data-type data-length precision scale)
-  (ecase data-type
-    ("NUMBER" (if (zerop scale)
-                  (case precision
-                    (5 (sql-integer-type :bit-size 16)) ; KLUDGE
-                    (10 (sql-integer-type :bit-size 32)) ; KLUDGE
-                    (19 (sql-integer-type :bit-size 64)) ; KLUDGE
-                    (t (sql-integer-type))) ; FIXME bit-size lost
-                  (sql-numeric-type))) ; FIXME scale, precision?
-    ("BINARY_FLOAT" (sql-float-type :bit-size 32))
-    ("BINARY_DOUBLE" (sql-float-type :bit-size 64))
-    ("CHAR" (if (= data-length 1)
-                (sql-boolean-type) ; KLUDGE: boolean as CHAR(1)
-                (sql-character-type :size data-length)))
-    ("VARCHAR2" (sql-character-varying-type :size data-length))
-    ("CLOB" (sql-character-large-object-type)) ; FIXME size not mapped
-    ("BLOB" (sql-binary-large-object-type)) ; FIXME size not mapped
-    ("DATE" (sql-date-type))
-    ("TIMESTAMP(6)" (sql-time-type)) ; FIXME sql-timestamp-type?
-    ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-type :with-timezone #t))))
+(defun sql-type-for-internal-type (data-type char-length precision scale)
+  (macrolet ((estringcase (keyform &body clauses)
+               `(cond
+                 ,@(mapcar (lambda (clause)
+                             `((string= ,(first clause) ,keyform) ,@(rest clause)))
+                           clauses)
+                 (t (error "Falling through estringcase: ~S" ,keyform)))))
+    (estringcase data-type
+     ("NUMBER" (if (or (eq scale :null) (zerop scale))
+                   (if precision
+                       (case precision
+                         (5 (sql-integer-type :bit-size 16)) ; KLUDGE
+                         (10 (sql-integer-type :bit-size 32)) ; KLUDGE
+                         (19 (sql-integer-type :bit-size 64)) ; KLUDGE
+                         (t (sql-integer-type)))  ; FIXME bit-size lost
+                       (sql-integer-type))
+                   (sql-numeric-type)))      ; FIXME scale, precision?
+     ("BINARY_FLOAT" (sql-float-type :bit-size 32))
+     ("BINARY_DOUBLE" (sql-float-type :bit-size 64))
+     ("CHAR" (if (= char-length 1)
+                 (sql-boolean-type)     ; KLUDGE: boolean as CHAR(1)
+                 (sql-character-type :size char-length)))
+     ("VARCHAR2" (sql-character-varying-type :size char-length))
+     ("CLOB" (sql-character-large-object-type)) ; FIXME size not mapped
+     ("BLOB" (sql-binary-large-object-type)) ; FIXME size not mapped
+     ("DATE" (sql-date-type))
+     ("TIMESTAMP(6)" (sql-time-type))   ; FIXME sql-timestamp-type?
+     ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-type :with-timezone #t)))))
 
 
 (defun external-type-for-sql-type (type)
