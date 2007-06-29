@@ -92,7 +92,7 @@
 (defun compile-sql-delete (body)
   (destructuring-bind (table &optional where) body
     (make-instance 'sql-delete
-                   :table (process-sql-syntax-list #'compile-sql-table-alias table)
+                   :table (process-sql-syntax-node #'compile-sql-table-alias table)
                    :where where)))
 
 (defun sql-function-name-p (thing)

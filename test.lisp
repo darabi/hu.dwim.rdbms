@@ -63,9 +63,9 @@
          (with-transaction
            (execute-ddl (sql `(create table alma ((name (varchar 50))))))
            (execute (sql `(insert alma (name) ((,unicode-text varchar)))))
-           (is (string= (first* (first* (execute "SELECT * FROM alma"))) unicode-text)))
+           (is (string= (first* (first* (execute (sql '(select * alma))))) unicode-text)))
       (ignore-errors
-        (execute-ddl "DROP TABLE alma")))))
+        (execute-ddl (sql '(drop table alma)))))))
 
 (deftest* test/binding ()
   (let* ((columns (compile-sql-columns `((a (integer 32))
@@ -113,7 +113,7 @@
                                                            binding-literals
                                                            (list (compile-sql-literal '(? named2 (integer 32))))))))))
       (ignore-errors
-        (execute-ddl "DROP TABLE alma")))))
+        (execute-ddl (sql '(drop table alma)))))))
 
 (defmacro define-type-test (name type &body values)
   `(deftest ,name ()
@@ -131,11 +131,11 @@
              (if (and values (typep (first values) 'local-time:local-time))
                  (is
                   (every #'local-time:local-time=
-                         (apply #'nconc (execute (sql `(select (a) alma)) :result-type 'list))
+                         (apply #'nconc (execute (sql `(select * alma)) :result-type 'list))
                          values))
                  (is
                   (equalp
-                   (apply #'nconc (execute (sql `(select (a) alma)) :result-type 'list))
+                   (apply #'nconc (execute (sql `(select * alma)) :result-type 'list))
                    values)))))
     
       (ignore-errors
@@ -224,7 +224,7 @@
              (is (= (elt row 0) 1))
              (is (string= (elt row 1) "alma")))))
     (ignore-errors
-      (execute-ddl "DROP TABLE alma"))))
+      (execute-ddl (sql '(drop table alma))))))
 
 (deftest* test/update-records ()
   (unwind-protect
@@ -233,13 +233,13 @@
                          (b (varchar 50))))))
          (create-table 'alma columns)
          (with-transaction
-           (execute "insert into alma values (NULL, NULL)")
+           (execute (sql '(insert alma (a b) (:null :null))))
            (update-records 'alma columns (list 1 "alma"))
            (let ((row (first* (select-records columns '(alma)))))
              (is (= (elt row 0) 1))
              (is (string= (elt row 1) "alma")))))
     (ignore-errors
-      (execute-ddl "DROP TABLE alma"))))
+      (execute-ddl (sql '(drop table alma))))))
 
 (defmacro defsyntaxtest* (name sexp-p &body body)
   `(deftest ,name ()
@@ -392,19 +392,23 @@
 
   (make-instance 'sql-select
                  :columns (list (make-instance 'sql-sequence-nextval-column :name "a")))
-  "SELECT NEXTVAL('a')")
+  ((oracle "SELECT a.nextval FROM dual ")
+   (t "SELECT NEXTVAL('a')")))
 
 (defsyntaxtest test/sexp-syntax
   `(select "bar" table)
-  "SELECT bar FROM table"
+  ((oracle "SELECT bar FROM \"table\"")
+   (t "SELECT bar FROM table"))
 
-  `(select (count *) table)
-  "SELECT count(*) FROM table"
+  `(select (count *) _table)
+  ((oracle "SELECT count(*) FROM \"_table\"")
+   (t "SELECT count(*) FROM _table"))
 
   `(select
     ((foo.col1 "col1_alias") "bar")
     table)
-  "SELECT foo.col1 AS col1_alias, bar FROM table"
+  ((oracle "SELECT foo.col1 AS col1_alias, bar FROM \"table\"")
+   (t "SELECT foo.col1 AS col1_alias, bar FROM table"))
 
   `(select
     (foo.column "bar")
@@ -412,7 +416,8 @@
       (list (make-instance 'sql-table-alias
                            :name "alma"
                            :alias "alma_alias"))))
-  "SELECT foo.column, bar FROM alma alma_alias"
+  ((oracle "SELECT foo.\"column\", bar FROM alma alma_alias")
+   (t "SELECT foo.column, bar FROM alma alma_alias"))
 
   `(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
   ((oracle "CREATE TEMPORARY TABLE alma (col1 VARCHAR2, col2 NUMBER(10)) ON COMMIT DROP")

@@ -103,7 +103,7 @@
            (format-string identifier))
 
   (:method ((identifier symbol) database)
-           (format-string (string-downcase identifier)))
+           (format-sql-identifier (string-downcase identifier) database))
 
   (:method ((identifier sql-identifier) database)
            (format-sql-identifier (name-of identifier) database)))

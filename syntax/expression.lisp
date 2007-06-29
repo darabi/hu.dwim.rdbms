@@ -279,4 +279,4 @@
 ;;; Count(*)
 
 (defun sql-count-* ()
-  (sql-count (sql-identifier :name '*)))
+  (sql-count (sql-all-columns)))
