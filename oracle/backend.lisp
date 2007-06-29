@@ -10,6 +10,10 @@
 
 (publish-backend-symbol 'oracle)
 
+;;;----------------------------------------------------------------------------
+;;; Backend API
+;;;
+
 (defmethod begin-transaction ((database oracle) (transaction oracle-transaction))
   ;; nop, because oracle implicitly has transactions
   )
@@ -30,40 +34,36 @@
                             &key &allow-other-keys)
   (ensure-connected transaction)
   (log.debug "Preparing command: ~S" command)
-  (make-prepared-statemenet transaction command))
+  (make-prepared-statement command))
 
 (defmethod execute-command ((database oracle)
                             (transaction oracle-transaction)
                             (command string)
-                            &key visitor bindings &allow-other-keys)
+                            &key visitor bindings result-type start-row row-limit
+                            &allow-other-keys)
   (log.debug "Executing ~S" command)
   (let ((statement (prepare-command database transaction command)))
     (unwind-protect
-         (execute-prepared-statement transaction statement bindings visitor)
+         (execute-prepared-statement transaction statement bindings visitor result-type
+                                     :start-row start-row :row-limit row-limit)
       (free-prepared-statement statement))))
 
 (defmethod execute-command ((database oracle)
                             (transaction oracle-transaction)
                             (prepared-statement prepared-statement)
-                            &key visitor bindings &allow-other-keys)
-  (execute-prepared-statement transaction prepared-statement bindings visitor))
+                            &key visitor bindings result-type start-row row-limit
+                            &allow-other-keys)
+  (execute-prepared-statement transaction prepared-statement bindings visitor result-type
+                              :start-row start-row :row-limit row-limit))
 
 (defmethod cleanup-transaction ((transaction oracle-transaction))
   (when (environment-handle-pointer transaction)
     (log.debug "Cleaning up Oracle transaction ~A to database ~A" transaction (database-of transaction))
     (disconnect transaction)))
 
+;;;----------------------------------------------------------------------------
+;;; Connection
 ;;;
-;;; the actual implementation
-;;;
-
-(defmacro ignore-errors* (&body body)
-  `(block nil
-    (handler-bind ((serious-condition
-                    (lambda (error)
-                      (log.warn "Ignoring error: ~A" error)
-                      (return))))
-      ,@body)))
 
 (defun ensure-connected (transaction)
   (when (cl:null (environment-handle-pointer transaction))
@@ -134,6 +134,14 @@
             (oci-call (oci:handle-free (session-handle-of transaction) oci:+htype-session+))
             (setf (session-handle-of transaction) null)))))
 
+(defmacro ignore-errors* (&body body)
+  `(block nil
+    (handler-bind ((serious-condition
+                    (lambda (error)
+                      (log.warn "Ignoring error: ~A" error)
+                      (return))))
+      ,@body)))
+
 (defun disconnect (transaction)
   (assert (environment-handle-pointer transaction))
   
@@ -159,7 +167,11 @@
      service-context-handle
      session-handle)))
 
-(defun make-prepared-statemenet (transaction command &optional (name ""))
+;;;----------------------------------------------------------------------------
+;;; Prepared statement
+;;;
+
+(defun make-prepared-statement (command &optional (name ""))
   (let ((statement (make-instance 'oracle-prepared-statement
                                   :name name
                                   :statement-handle-pointer (make-void-pointer)
@@ -179,38 +191,41 @@
   (free-bindings (bindings-of statement))
   (cffi:foreign-free (statement-handle-pointer statement)))
 
-(defun execute-prepared-statement (transaction statement bindings visitor)
-  (let ((iters (if (select-p statement) 0 1)))
+(defun execute-prepared-statement (transaction statement bindings visitor result-type
+                                               &key (start-row 0) row-limit)
 
+  (let ((needs-scrollable-cursor-p (and start-row (> start-row 0))))
     ;; make bindings
     (setf (bindings-of statement) (make-bindings statement transaction bindings))
     
     ;; execute
-    (oci-call (oci:stmt-execute (service-context-handle-of transaction)
-                                (statement-handle-of statement)
-                                (error-handle-of transaction)
-                                iters
-                                0
-                                null
-                                null
-                                *default-oci-flags*)))
+    (stmt-execute statement
+                  (if needs-scrollable-cursor-p
+                      (logior *default-oci-flags* oci:+stmt-scrollable-readonly+)
+                      *default-oci-flags*))
   
-  (cond
-    ((select-p statement)
-     (let ((cursor (make-oracle-cursor statement transaction)))
-       (unwind-protect
-            (if visitor
-                (loop for row = (fetch-row cursor)
-                      while row
-                      do (funcall visitor row))
-                (loop for row = (fetch-row cursor)
-                      while row
-                      collect row))
-         (free-cursor cursor))))
-    (t
-     nil)))
+    ;; fetch
+    (cond
+      ((select-p statement)
+       (let* ((cursor (make-cursor transaction
+                                   :statement statement
+                                   :result-type result-type
+                                   :random-access-p needs-scrollable-cursor-p)))
+         (unwind-protect
+              (if visitor
+                  (for-each-row visitor cursor
+                                :start-position start-row
+                                :row-count row-limit)
+                  (collect-rows cursor
+                                :start-position start-row
+                                :row-count row-limit))
+           (close-cursor cursor))))
+      (t
+       nil))))
 
-
+;;;----------------------------------------------------------------------------
+;;; Binding
+;;;
 (defclass* oracle-binding ()
   ((bind-handle-pointer)
    (sql-type)
@@ -270,17 +285,11 @@
     (unless (cffi:null-pointer-p data-pointer)
       (cffi:foreign-free data-pointer))))
 
-
-(defconstant +number-of-buffered-rows+ 1)
-
-(defclass* oracle-cursor ()
-  ((statement)
-   (transaction)
-   (column-descriptors)
-   (cumulative-row-count 0)
-   (buffered-row-count 0)
-   (current-row-index 0)
-   (end-seen #f :type boolean)))
+;;;----------------------------------------------------------------------------
+;;; Cursor
+;;;
+(defconstant +number-of-buffered-rows+ 1) ; TODO prefetching rows probably superfluous,
+                                          ; because OCI does that
 
 (defclass* column-descriptor ()
   ((define-handle-pointer)
@@ -291,12 +300,145 @@
    (indicators)
    (return-codes)))
 
-(defun make-oracle-cursor (statement transaction)
-  (make-instance 'oracle-cursor
-                 :statement statement
-                 :transaction transaction
-                 :column-descriptors (make-column-descriptors statement transaction)))
+(defun allocate-buffer-for-column (typemap column-size number-of-rows)
+  "Returns buffer, buffer-size"
+  (let* ((external-type (typemap-external-type typemap))
+         (size (data-size-for external-type column-size))
+         (ptr (cffi:foreign-alloc :uint8 :count (* size number-of-rows) :initial-element 0))
+         (constructor (typemap-allocate-instance typemap)))
 
+    (when constructor
+      (loop for i from 0 below number-of-rows
+            do (funcall constructor (cffi:inc-pointer ptr (* i size)))))
+    
+    (values
+     ptr
+     size)))
+
+(defun free-column-descriptor (descriptor)
+  (with-slots (size typemap buffer indicators return-codes) descriptor
+    (let ((destructor (typemap-free-instance typemap)))
+      (when destructor
+        (loop for i from 0 below +number-of-buffered-rows+
+              do (funcall destructor (cffi:mem-ref buffer :pointer (* i size))))))
+    (cffi:foreign-free buffer)
+    (cffi:foreign-free indicators)
+    (cffi:foreign-free return-codes)))
+
+(defclass* oracle-cursor (cursor)
+  ((statement)
+   (column-descriptors)
+   (current-position 0)
+   (buffer-start-position 0)
+   (buffer-end-position 0)))
+
+(defgeneric column-descriptor-of (cursor index)
+  (:method ((cursor oracle-cursor) index)
+           (svref (column-descriptors-of cursor) index)))
+
+(defclass* oracle-sequential-access-cursor (oracle-cursor sequential-access-cursor)
+  ((end-seen #f :type boolean)))
+
+(defclass* oracle-random-access-cursor (oracle-cursor random-access-cursor)
+  ((row-count nil)))
+
+
+;;
+;; Cursor API
+;;
+(defmethod make-cursor ((transaction oracle-transaction)
+                        &key statement random-access-p &allow-other-keys)
+  (if random-access-p
+      (aprog1 (make-instance 'oracle-random-access-cursor
+                             :statement statement
+                             :column-descriptors (make-column-descriptors statement transaction))
+        (row-count it)  ; TODO This positions to the last row so the response
+                            ;      time can be high. Try to delay this computation
+        (log.dribble "Count of rows: ~D" (row-count-of it)))
+      (make-instance 'oracle-sequential-access-cursor
+                     :statement statement
+                     :column-descriptors (make-column-descriptors statement transaction))))
+
+(defmethod close-cursor ((cursor oracle-cursor))
+  (loop for descriptor across (column-descriptors-of cursor)
+        do (free-column-descriptor descriptor)))
+
+(defmethod cursor-position ((cursor oracle-sequential-access-cursor))
+  (unless (end-seen-p cursor)
+    (current-position-of cursor)))
+
+(defmethod cursor-position ((cursor oracle-random-access-cursor))
+  (with-slots (current-position row-count) cursor
+    (when (and (<= 0 current-position) (< current-position row-count))
+      current-position)))
+
+(defmethod (setf cursor-position) (where (cursor oracle-sequential-access-cursor))
+  (ecase where
+    (:first (setf (current-position-of cursor) 0))
+    (:next (incf (current-position-of cursor))))
+  (ensure-current-position-is-buffered cursor)) ; TODO delay this call
+
+(defmethod (setf cursor-position) (where (cursor oracle-random-access-cursor))
+  (if (integerp where)
+      (incf (current-position-of cursor) where)
+      (ecase where
+        (:first (setf (current-position-of cursor) 0))
+        (:last (setf (current-position-of cursor) (1- (row-count cursor))))
+        (:previous (decf (current-position-of cursor)))
+        (:next (incf (current-position-of cursor))))))
+
+(defmethod absolute-cursor-position ((cursor oracle-cursor))
+  (current-position-of cursor)) ; FIXME always the same as (cursor-position cursor) ?
+
+(defmethod (setf absolute-cursor-position) (where (cursor oracle-random-access-cursor))
+  (setf (current-position-of cursor) where))
+
+(defmethod row-count ((cursor oracle-sequential-access-cursor))
+  (error "Row count not supported by ~S" cursor))
+
+(defmethod row-count ((cursor oracle-random-access-cursor))
+  (with-slots (row-count statement buffer-start-position buffer-end-position) cursor
+    (unless row-count
+      (if (stmt-fetch-last statement)
+          (setf row-count (get-row-count-attribute statement)
+                buffer-start-position (1- row-count)
+                buffer-end-position row-count)
+          (setf row-count 0)))
+    row-count))
+
+(defmethod column-count ((cursor oracle-cursor))
+  (length (column-descriptors-of cursor)))
+
+(defmethod column-name ((cursor oracle-cursor) index)
+  (name-of (column-descriptor-of cursor index)))
+
+(defmethod column-type ((cursor oracle-cursor) index)
+  nil) ; TODO
+
+(defmethod column-value ((cursor oracle-cursor) index)
+  (when (ensure-current-position-is-buffered cursor)
+    (fetch-column-value (column-descriptor-of cursor index)
+                        (- (current-position-of cursor)
+                           (buffer-start-position-of cursor)))))
+
+#|
+(defun current-row (cursor &key result-type)
+  (when (ensure-current-position-is-buffered cursor)
+    (with-slots (column-descriptors current-position buffer-start-position default-result-type) cursor
+      (let ((row-index (- current-position buffer-start-position)))
+        (ecase (or result-type default-result-type)
+          (vector (aprog1 (make-array (length column-descriptors))
+                    (loop for descriptor across column-descriptors
+                          for column-index from 0
+                          do (setf (svref it column-index)
+                                   (fetch-column-value descriptor row-index)))))
+          (list (loop for descriptor across column-descriptors
+                      collect (fetch-column-value descriptor row-index))))))))
+|#
+
+;;;
+;;; Cursor helpers
+;;;
 (defun make-column-descriptors (statement transaction)
   (coerce (cffi:with-foreign-objects ((param-descriptor-pointer :pointer))
             (loop for column-index from 1  ; OCI 1-based indexing
@@ -312,29 +454,14 @@
                                                   (cffi:mem-ref param-descriptor-pointer :pointer))))
           'simple-vector))
 
-(defun oci-attr-get (param-descriptor
-                     attribute-id
-                     attribute-value        ; output
-                     attribute-value-length ; output
-                     error-handle)
-  "TODO"
-  (oci-call (oci:attr-get param-descriptor
-                          oci:+dtype-param+
-                          attribute-value
-                          attribute-value-length
-                          attribute-id
-                          error-handle)))
-
 (defun make-column-descriptor (statement transaction position param-descriptor)
   (cffi:with-foreign-objects ((attribute-value :uint8 8) ; 8 byte buffer for attribute values
                               (attribute-value-length 'oci:ub-4))
     (flet ((oci-attr-get (attribute-id cffi-type)
-             (oci-attr-get param-descriptor attribute-id attribute-value
-                           attribute-value-length (error-handle-of transaction))
+             (oci-attr-get param-descriptor attribute-id attribute-value attribute-value-length)
              (cffi:mem-ref attribute-value cffi-type))
            (oci-string-attr-get (attribute-id)
-             (oci-attr-get param-descriptor attribute-id attribute-value
-                           attribute-value-length (error-handle-of transaction))
+             (oci-attr-get param-descriptor attribute-id attribute-value attribute-value-length)
              (oci-string-to-lisp
               (cffi:mem-ref attribute-value '(:pointer :unsigned-char)) ; OraText*
               (cffi:mem-ref attribute-value-length 'oci:ub-4))))
@@ -394,116 +521,65 @@
                          :return-codes return-codes
                          :indicators indicators))))))
 
-(defun allocate-buffer-for-column (typemap column-size number-of-rows)
-  "Returns buffer, buffer-size"
-  (let* ((external-type (typemap-external-type typemap))
-         (size (data-size-for external-type column-size))
-         (ptr (cffi:foreign-alloc :uint8 :count (* size number-of-rows) :initial-element 0))
-         (constructor (typemap-allocate-instance typemap)))
+(defgeneric ensure-current-position-is-buffered (cursor)
+  (:method ((cursor oracle-sequential-access-cursor))
+           (with-slots (statement current-position
+                                  buffer-start-position buffer-end-position end-seen) cursor
+             (cond
+               ((< current-position buffer-start-position)
+                (if (zerop current-position)
+                    nil                 ; TODO reexecute statement
+                    (error "Trying to go backwards with a sequential cursor: ~S" cursor)))
+               (t
+                (loop until (or (> buffer-end-position current-position)
+                                end-seen)
+                  do (if (stmt-fetch-next statement +number-of-buffered-rows+)
+                         (setf buffer-start-position buffer-end-position
+                               buffer-end-position (get-row-count-attribute statement))
+                         (setf end-seen #t))
+                  finally (return-from ensure-current-position-is-buffered (not end-seen)))))))
 
-    (when constructor
-      (loop for i from 0 below number-of-rows
-            do (funcall constructor (cffi:inc-pointer ptr (* i size)))))
-    
-    (values
-     ptr
-     size)))
-
-(defun free-buffer-of-column (ptr typemap size number-of-rows)
-  (let ((destructor (typemap-free-instance typemap)))
-    (when destructor
-      (loop for i from 0 below number-of-rows
-            do (funcall destructor (cffi:mem-ref ptr :pointer (* i size)))))
-    (cffi:foreign-free ptr)))
-
-
-(defun refill-result-buffers (cursor)
-  (log.debug "Fill SQL result buffer")
-  (let* ((transaction (transaction-of cursor))
-         (statement (statement-of cursor))
-         (statement-handle (statement-handle-of statement)))
-    (setf (current-row-index-of cursor) 0
-          (buffered-row-count-of cursor) 0)
-    (unless (end-seen-p cursor)
-      (let ((oci-code (oci:stmt-fetch
-                       statement-handle
-                       (error-handle-of transaction)
-                       +number-of-buffered-rows+
-                       oci:+fetch-next+
-                       *default-oci-flags*)))
-        (ecase oci-code
-          (#.oci:+success+)
-          (#.oci:+no-data+ (setf (end-seen-p cursor) #t))
-          (#.oci:+error+ (handle-oci-error))))
-      (let ((row-count (get-statement-attribute statement oci:+attr-row-count+ 'oci:ub-4)))
-        (setf (buffered-row-count-of cursor)
-              (- row-count (cumulative-row-count-of cursor)))
-        (when (< (buffered-row-count-of cursor) +number-of-buffered-rows+)
-          (setf (end-seen-p cursor) #t))
-        (setf (cumulative-row-count-of cursor)
-              row-count)))
-    (values)))
-
-(defun fetch-row (cursor &optional (eof-errorp nil) eof-value)
-  #+nil(log.debug "Fetching row, buffered rows: ~A, current row: ~A"
-                  (buffered-row-count-of cursor) (current-row-index-of cursor))
-  (cond ((< (current-row-index-of cursor)
-            (buffered-row-count-of cursor))
-         (aprog1
-             (loop with row-index = (current-row-index-of cursor)
-                   for descriptor across (column-descriptors-of cursor)
-                   collect (fetch-column-value descriptor row-index))
-           (incf (current-row-index-of cursor))))
-
-        ((not (end-seen-p cursor))
-         (refill-result-buffers cursor)
-         (fetch-row cursor eof-errorp eof-value))
-
-        (eof-errorp
-         (error 'simple-rdbms-error
-                :format-control "no more rows available in ~S"
-                :format-arguments (list cursor)))
-        
-        (t
-         (return-from fetch-row eof-value))))
+  (:method ((cursor oracle-random-access-cursor))
+           (with-slots (statement current-position buffer-start-position buffer-end-position
+                                  row-count) cursor
+             (cond
+               ((or (< current-position 0)
+                    (>= current-position row-count))
+                #f)
+               ((>= current-position buffer-end-position) ; forward
+                (stmt-fetch-2 statement +number-of-buffered-rows+
+                              oci:+fetch-absolute+ (1+ current-position)) ; OCI 1-based indexing
+                (setf buffer-start-position current-position
+                      buffer-end-position (min (+ current-position +number-of-buffered-rows+)
+                                               row-count)))
+               ((< current-position buffer-start-position) ; backward
+                (stmt-fetch-2 statement +number-of-buffered-rows+ oci:+fetch-absolute+
+                              (1+ (max (- (1+ current-position) +number-of-buffered-rows+) 0))) ; 1-based
+                (setf buffer-start-position (max (- (1+ current-position) +number-of-buffered-rows+) 0)
+                      buffer-end-position (1+ current-position)))
+               (t
+                #t)))))
 
 (defun fetch-column-value (column-descriptor row-index)
-  (let* ((indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
-    (if (= indicator -1)
-        :null
-        (let* ((buffer (buffer-of column-descriptor))
-               (size (size-of column-descriptor))
-               (converter (typemap-oci-to-lisp (typemap-of column-descriptor)))
-               result)
-          #+nil
-          (log.dribble "Buffer:~%~A"
-                       (with-output-to-string (s)
-                                              (loop for i from 0 below (* size +number-of-buffered-rows+)
-                               do (format s "~2,'0X "
-                                          (cffi:mem-ref buffer :uint8 i)))))
-          (log.dribble "Convert from ~D, size is ~D, content:~%~A"
-                       (typemap-external-type (typemap-of column-descriptor)) size
-                       (with-output-to-string (s)
-                         (loop for i from 0 below size
-                               do (format s "~2,'0X "
-                                          (cffi:mem-ref buffer :uint8 (+ (* row-index size) i))))))
+  (log.debug "Fetching ~S from buffer at index ~D" (column-name-of column-descriptor) row-index)
+  (aprog1 (let* ((indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
+            (if (= indicator -1)
+                :null
+                (let* ((buffer (buffer-of column-descriptor))
+                       (size (size-of column-descriptor))
+                       (converter (typemap-oci-to-lisp (typemap-of column-descriptor))))
+                  #+nil
+                  (log.dribble "Buffer:~%~A"
+                               (dump-c-byte-array buffer (* size +number-of-buffered-rows+)))
+                  (log.dribble "Convert from ~D, size is ~D, content:~%~A"
+                               (typemap-external-type (typemap-of column-descriptor)) size
+                               (dump-c-byte-array (cffi:inc-pointer buffer (* row-index size))
+                                                  size))
 
-          (setf result (funcall converter
-                                (cffi:inc-pointer buffer (* row-index size))
-                                size))
-
-          (log.dribble "Converted to: ~S" result)
-
-          result))))
-
-(defun free-cursor (cursor)
-  (loop for descriptor across (column-descriptors-of cursor)
-        do (progn (free-buffer-of-column (buffer-of descriptor)
-                                         (typemap-of descriptor)
-                                         (size-of descriptor)
-                                         +number-of-buffered-rows+)
-                  (cffi:foreign-free (indicators-of descriptor))
-                  (cffi:foreign-free (return-codes-of descriptor)))))
+                  (funcall converter
+                           (cffi:inc-pointer buffer (* row-index size))
+                           size))))
+    (log.debug "Fetched: ~S" it)))
 
 
 

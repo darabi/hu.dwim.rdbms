@@ -131,15 +131,15 @@
              (if (and values (typep (first values) 'local-time:local-time))
                  (is
                   (every #'local-time:local-time=
-                         (apply #'nconc (execute (sql `(select (a) alma))))
+                         (apply #'nconc (execute (sql `(select (a) alma)) :result-type 'list))
                          values))
                  (is
                   (equalp
-                   (apply #'nconc (execute (sql `(select (a) alma))))
+                   (apply #'nconc (execute (sql `(select (a) alma)) :result-type 'list))
                    values)))))
     
       (ignore-errors
-        (execute-ddl "DROP TABLE alma")))))
+        (execute-ddl (sql '(drop table alma)))))))
 
 (define-type-test test/boolean boolean
   t

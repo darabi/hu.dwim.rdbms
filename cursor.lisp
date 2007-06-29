@@ -98,8 +98,9 @@
         result)))
 
 (defun for-each-row (function cursor &key row-count start-position (result-type (default-result-type-of cursor)))
-  (when start-position
-    (setf (cursor-position cursor) start-position))
+  (if (and start-position (> start-position 0))
+      (setf (cursor-position cursor) start-position)
+      (setf (cursor-position cursor) :first))
   (loop for row = (current-row cursor :result-type result-type)
         while (and row
                    (or (not row-count)

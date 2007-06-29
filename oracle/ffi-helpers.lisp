@@ -25,6 +25,17 @@
         :encoding (connection-encoding-of (database-of *transaction*)))
       `(cffi:mem-ref ,data-pointer ,type)))
 
+(defun oci-attr-get (param-descriptor
+                     attribute-id
+                     attribute-value         ; output
+                     attribute-value-length) ; output
+  (oci-call (oci:attr-get param-descriptor
+                          oci:+dtype-param+
+                          attribute-value
+                          attribute-value-length
+                          attribute-id
+                          (error-handle-of *transaction*))))
+
 (defmacro get-param-descriptor-attribute (param-descriptor attribute type)
   `(cffi:with-foreign-objects ((data-pointer ,type)
                                (size-pointer 'oci:ub-4))
@@ -44,8 +55,11 @@
                data-pointer
                size-pointer
                ,attribute
-               (error-handle-of transaction)))
+               (error-handle-of *transaction*)))
     (dereference-foreign-pointer data-pointer ,type size-pointer)))
+
+(defmacro get-row-count-attribute (statement)
+  `(get-statement-attribute ,statement oci:+attr-row-count+ 'oci:ub-4))
 
 (defmacro with-foreign-oci-string ((string c-string c-size &key (null-terminated-p #f)) &body body)
   `(cffi:with-foreign-string (,c-string ,string :byte-size-variable ,c-size
@@ -91,6 +105,34 @@
                                 c-size
                                 oci:+ntv-syntax+
                                 *default-oci-flags*))))
+
+(defun stmt-execute (statement mode)
+  (oci-call (oci:stmt-execute (service-context-handle-of *transaction*)
+                              (statement-handle-of statement)
+                              (error-handle-of *transaction*)
+                              (if (select-p statement) 0 1)
+                              0
+                              null
+                              null
+                              mode)))
+
+(defun stmt-fetch-2 (statement number-of-rows orientation offset)
+  (let ((status (oci:stmt-fetch-2 (statement-handle-of statement)
+                                  (error-handle-of *transaction*)
+                                  number-of-rows
+                                  orientation
+                                  offset
+                                  *default-oci-flags*)))
+    (case status
+      (#.oci:+success+ #t)
+      (#.oci:+no-data+ #f)
+      (t (handle-oci-error)))))
+
+(defun stmt-fetch-last (statement)
+  (stmt-fetch-2 statement 1 oci:+fetch-last+ 0))
+
+(defun stmt-fetch-next (statement number-of-rows)
+  (stmt-fetch-2 statement number-of-rows oci:+fetch-next+ 0))
 
 (defun handle-alloc (handle-ptr handle-type)
   (oci-call (oci:handle-alloc (environment-handle-of *transaction*)
