@@ -26,8 +26,8 @@
 (macrolet ((def (&rest names)
                `(progn
                  ,@(loop for name in names
-                         collect `(defun ,(concatenate-symbol name "-of") (transaction)
-                                   (cffi:mem-ref (,(concatenate-symbol name "-pointer") transaction)
+                         collect `(defmacro ,(concatenate-symbol name "-of") (transaction)
+                                   `(cffi:mem-ref (,',(concatenate-symbol name "-pointer") ,transaction)
                                     '(:pointer :void)))))))
   (def
     environment-handle

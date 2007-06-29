@@ -11,7 +11,7 @@
 (define-symbol-macro null (cffi:null-pointer))
 
 (defun make-void-pointer ()
-  (cffi:foreign-alloc '(:pointer :void)))
+  (cffi:foreign-alloc '(:pointer :void) :initial-element null))
 
 (defparameter *default-oci-flags* (logior oci:+threaded+ oci:+new-length-semantics+))
 
@@ -33,7 +33,7 @@
                data-pointer
                size-pointer
                ,attribute
-               (error-handle-of transaction)))
+               (error-handle-of *transaction*)))
     (dereference-foreign-pointer data-pointer ,type size-pointer)))
 
 (defmacro get-statement-attribute (statement attribute type)
