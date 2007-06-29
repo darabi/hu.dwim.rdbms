@@ -59,3 +59,21 @@
 (defun rdbms-name-for (name &optional thing)
   (declare (cl:type (or null (member :table :index :column :sequence)) thing))
   (calculate-rdbms-name *database* thing name))
+
+(defun calculate-rdbms-name-with-utf-8-length-limit (name limit)
+  "Cuts off the end of names that are too long and appends the SXHASH of the original name."
+  (assert (>= limit 8))
+  (let ((name-as-string (string-downcase name)))
+    (iter (for char :in-sequence "*\\/-")
+          (nsubstitute #\_ char name-as-string :test #'char=))
+    (let ((name-as-bytes (string-to-octets name-as-string :utf-8)))
+      (when (> (length name-as-bytes)
+               limit)
+        (let ((hash (logand (sxhash name-as-string) #.(1- (expt 2 32)))))
+          (iter (while (> (length name-as-bytes)
+                          (- limit 8)))
+                (setf name-as-string (subseq name-as-string 0 (1- (length name-as-string))))
+                (setf name-as-bytes (string-to-octets name-as-string :utf-8)))
+          (setf name-as-string
+                (strcat name-as-string (format nil "~8,'0X" hash)))))
+      name-as-string)))
