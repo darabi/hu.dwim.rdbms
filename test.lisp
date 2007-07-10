@@ -191,7 +191,13 @@
 (define-type-test test/time time
   (local-time:parse-timestring "06:06:06Z"))
 
-(define-type-test test/timestamp timestamp
+(define-type-test test/timestamp (timestamp #f)
+  (local-time:parse-timestring "2006-06-06T06:06:06Z"))
+
+(define-type-test test/timestamp-tz (timestamp #t)
+  (local-time:parse-timestring "2006-06-06T06:06:06Z")
+  (local-time:parse-timestring "2006-06-06T06:06:06-01:30")
+  (local-time:parse-timestring "2006-06-06T06:06:06+01:25")
   (local-time:now))
 
 (define-type-test test/blob blob

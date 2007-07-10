@@ -160,8 +160,8 @@
 
   (:method ((type sql-timestamp-type))
            (if (with-timezone-p type)
-               local-time/timestamp
-               local-time/timestamp-tz))
+               local-time/timestamp-tz
+               local-time/timestamp))
 
   (:method ((type sql-binary-large-object-type))
            ;; binary values stored as BLOB internally

@@ -341,18 +341,19 @@
                                     0
                                     null))
     (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
-      (oci-call (oci:date-time-construct environment-handle
-                                         error-handle
-                                         (cffi:mem-ref oci-date-time-pointer :pointer)
-                                         year
-                                         month
-                                         day
-                                         hh
-                                         mm
-                                         ss
-                                         (* 1000 ms)
-                                         (cffi:foreign-string-alloc timezone-str) ;FIXME freeing?
-                                         (1+ (length timezone-str)))))
+      (with-foreign-oci-string (timezone-str c-timezone-ptr c-timezone-size)
+       (oci-call (oci:date-time-construct environment-handle
+                                          error-handle
+                                          (cffi:mem-ref oci-date-time-pointer :pointer)
+                                          year
+                                          month
+                                          day
+                                          hh
+                                          mm
+                                          ss
+                                          (* 1000 ms)
+                                          c-timezone-ptr
+                                          c-timezone-size))))
     (values
      oci-date-time-pointer
      (cffi:foreign-type-size :pointer))))
@@ -362,45 +363,45 @@
   (let ((environment-handle (environment-handle-of *transaction*))
         (error-handle (error-handle-of *transaction*)))
     (cffi:with-foreign-objects ((year 'oci:sb-2)
-                               (month 'oci:ub-1)
-                               (day 'oci:ub-1)
-                               (hour 'oci:ub-1)
-                               (min 'oci:ub-1)
-                               (sec 'oci:ub-1)
-                               (fsec 'oci:ub-4)
-                               (timezone-buffer 'oci:ub-1 10) ; TODO check this size enough
-                               (timezone-len 'oci:ub-4))
-     (let* ((oci-date-time-pointer (cffi:mem-ref ptr :pointer))
-            (oci-date-time (cffi:mem-ref oci-date-time-pointer 'oci:date-time)))
-       (oci-call (oci:date-time-get-date environment-handle
-                                         error-handle
-                                         oci-date-time
-                                         year
-                                         month
-                                         day))
-       (oci-call (oci:date-time-get-time environment-handle
-                                         error-handle
-                                         oci-date-time
-                                         hour
-                                         min
-                                         sec
-                                         fsec))
-       (setf (cffi:mem-ref timezone-len 'oci:ub-4) 10)
-       (oci-call (oci:date-time-get-time-zone-name environment-handle
-                                                   error-handle
-                                                   oci-date-time
-                                                   timezone-buffer
-                                                   timezone-len))
+                                (month 'oci:ub-1)
+                                (day 'oci:ub-1)
+                                (hour 'oci:ub-1)
+                                (min 'oci:ub-1)
+                                (sec 'oci:ub-1)
+                                (fsec 'oci:ub-4)
+                                (offset-hour 'oci:sb-1)
+                                (offset-minute 'oci:sb-1))
+      (let* ((oci-date-time-pointer (cffi:mem-ref ptr :pointer))
+             (oci-date-time (cffi:mem-ref oci-date-time-pointer 'oci:date-time)))
+        (oci-call (oci:date-time-get-date environment-handle
+                                          error-handle
+                                          oci-date-time
+                                          year
+                                          month
+                                          day))
+        (oci-call (oci:date-time-get-time environment-handle
+                                          error-handle
+                                          oci-date-time
+                                          hour
+                                          min
+                                          sec
+                                          fsec))
+        (oci-call (oci:date-time-get-time-zone-offset environment-handle
+                                                      error-handle
+                                                      oci-date-time
+                                                      offset-hour
+                                                      offset-minute))
 
-       (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
-                          (cffi:mem-ref sec 'oci:ub-1)
-                          (cffi:mem-ref min 'oci:ub-1)
-                          (cffi:mem-ref hour 'oci:ub-1)
-                          (cffi:mem-ref day 'oci:ub-1)
-                          (cffi:mem-ref month 'oci:ub-1)
-                          (cffi:mem-ref year 'oci:sb-2)
-                          :timezone (oci-string-to-lisp timezone-buffer
-                                                        (cffi:mem-ref timezone-len 'oci:ub-4)))))))
+        (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
+                           (cffi:mem-ref sec 'oci:ub-1)
+                           (cffi:mem-ref min 'oci:ub-1)
+                           (cffi:mem-ref hour 'oci:ub-1)
+                           (cffi:mem-ref day 'oci:ub-1)
+                           (cffi:mem-ref month 'oci:ub-1)
+                           (cffi:mem-ref year 'oci:sb-2)
+                           :timezone (make-timezone
+                                      (cffi:mem-ref offset-hour 'oci:sb-1)
+                                      (cffi:mem-ref offset-minute 'oci:sb-1)))))))
 
 ;;;
 ;;; Helpers
@@ -466,9 +467,27 @@ digit is the first or NIL for 0."
 (defun timezone-as-HHMM-string (local-time)
   "Returns the time-zone of LOCAL-TIME in [+-]HH:MM format."
   (let ((offset (timezone local-time))) 
-    (multiple-value-bind (hour min) (floor (abs offset) 3600)
+    (multiple-value-bind (hour sec) (floor (abs offset) 3600)
       (format nil "~C~2,'0D:~2,'0D"
               (if (> offset 0) #\+ #\-)
               hour
-              min))))
+              (floor sec 60)))))
+
+(defun timezone-from-HHMM-string (timezone-string)
+  "Parses the timezone from [+-]HH:MM format."
+  (assert (= (length timezone-string) 6))
+  (let ((sign (ecase (char timezone-string 0) (#\- -1) (#\+ 1)))
+        (hours (parse-integer timezone-string :start 1 :end 3))
+        (minutes (parse-integer timezone-string :start 4 :end 6)))
+    (make-timezone (* sign hours) (* sign minutes))))
+
+;; FIXME: this should be in local-time
+(defun make-timezone (hours minutes)
+  (let ((offset-in-sec (* (+ (* 60 hours) minutes) 60)))
+      (if (and (= minutes 0)
+               (= hours 0))
+          +utc-zone+
+          (local-time::make-timezone :subzones `((,offset-in-sec nil "anonymous" nil nil))
+                         :name "anonymous"
+                         :loaded t))))
 
