@@ -561,7 +561,7 @@
                 #t)))))
 
 (defun fetch-column-value (column-descriptor row-index)
-  (log.debug "Fetching ~S from buffer at index ~D" (column-name-of column-descriptor) row-index)
+  (log.debug "Fetching ~S from buffer at index ~D" (name-of column-descriptor) row-index)
   (aprog1 (let* ((indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
             (if (= indicator -1)
                 :null
