@@ -188,6 +188,9 @@
 (define-type-test test/date date
   (local-time:today))
 
+(define-type-test test/time time
+  (local-time:parse-timestring "06:06:06Z"))
+
 (define-type-test test/timestamp timestamp
   (local-time:now))
 

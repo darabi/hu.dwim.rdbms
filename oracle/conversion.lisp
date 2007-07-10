@@ -327,7 +327,8 @@
                           (cffi:mem-ref hour 'oci:ub-1)
                           (cffi:mem-ref day 'oci:ub-1)
                           (cffi:mem-ref month 'oci:ub-1)
-                          (cffi:mem-ref year 'oci:sb-2))))))
+                          (cffi:mem-ref year 'oci:sb-2)
+                          :timezone +utc-zone+)))))
 
 (defun local-time-to-timestamp-tz (local-time)
   (let ((environment-handle (environment-handle-of *transaction*))
