@@ -181,6 +181,36 @@
     ((or symbol string sql-column sql-column-alias) (format-sql-identifier column database))
     (t (format-sql-syntax-node column database))))
 
+;;;----------------------------------------------------------------------------
+;;; Expressions
+;;;
+(defmethod format-sql-syntax-node ((regexp-like sql-regexp-like) (database oracle))
+  (format-string "REGEXP_LIKE(")
+  (format-sql-syntax-node (string-of regexp-like) database)
+  (format-string ", ")
+  (format-sql-syntax-node (pattern-of regexp-like) database)
+  (format-string ", ")
+  (format-string (if (case-sensitive-p regexp-like) "'c'" "'i'"))
+  (format-char ")"))
+
+#+nil
+(defmethod format-sql-syntax-node ((self sql-case) (database oracle))
+  (with-slots (clauses) self
+    (if (or (/= (length clauses) 2)
+            (not (eq (first (second clauses)) t)))
+        (call-next-method)
+        (let ((cond (first (first clauses)))
+              (then (second (first clauses)))
+              (else (second (second clauses))))
+          (progn
+            (format-string "sql_if(")
+            (format-sql-syntax-node cond database)
+            (format-char ",")
+            (format-sql-syntax-node then database)
+            (format-char ",")
+            (format-sql-syntax-node else database)
+            (format-string ")"))))))
+
 
 
 

@@ -42,3 +42,12 @@
   (awhen (type-of variable)
     (format-string "::")
     (format-sql-syntax-node (type-of variable) database)))
+
+(defmethod format-sql-syntax-node ((regexp-like sql-regexp-like) (database postgresql))
+  (format-char "(")
+  (format-sql-syntax-node (string-of regexp-like) database)
+  (format-char " ")
+  (format-sql-name (if (case-sensitive-p regexp-like) "~" "~*"))
+  (format-char " ")
+  (format-sql-syntax-node (pattern-of regexp-like) database)
+  (format-char ")"))

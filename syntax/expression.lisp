@@ -192,7 +192,10 @@
 
 (define-binary-operator like)
 
-(define-binary-operator ~)
+(define-syntax-node sql-regexp-like (sql-expression)
+  ((string)
+   (pattern)
+   (case-sensitive #t :type boolean)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Case expressions
