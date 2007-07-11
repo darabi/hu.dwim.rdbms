@@ -108,6 +108,17 @@
   (:method ((identifier sql-identifier) database)
            (format-sql-identifier (name-of identifier) database)))
 
+;;;
+;;; Names
+;;;
+(defgeneric format-sql-name (name)
+  (:method ((name string))
+           (format-string name))
+
+  (:method ((name symbol))
+           (format-string (string-downcase name))))
+
+
 ;;;;;;;;;;;;;
 ;;; Statement
 
