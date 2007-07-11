@@ -168,11 +168,9 @@
            ;; their external format is LONG VARRAW allowing max 2^31-5 bytes
            byte-array/long-varraw))
 
-
-(defvar *oracle-database* (make-instance 'oracle)) ; TODO use class prototype
-
 (defun internal-type-for-sql-type (type)
-  (let ((str (format-sql-to-string type :database *oracle-database*)))
+  (assert (typep *database* 'oracle))
+  (let ((str (format-sql-to-string type *database*)))
     (string-downcase
      (aif (position #\( str :test #'char=)
           (subseq str 0 it)             ; TODO ???

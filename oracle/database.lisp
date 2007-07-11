@@ -13,6 +13,16 @@
     :utf-16
     :type (member :ascii :utf-16))))
 
+(defparameter *oci-foreign-library-loaded-p* #f)
+
+(defmethod initialize-instance :before ((self oracle) &key &allow-other-keys)
+  (unless *oci-foreign-library-loaded-p*
+    (setf *oci-foreign-library-loaded-p* #t)
+    (let ((cffi:*foreign-library-directories*
+           (list #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")))
+      ;; TODO let the user control version, path and stuff through initargs
+      (cffi:load-foreign-library 'oracle-oci))))
+
 (defmethod transaction-mixin-class list ((db oracle))
   'oracle-transaction)
 

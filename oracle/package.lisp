@@ -31,7 +31,4 @@
   (:windows "libocixe.dll")
   (t (:default "libocixe")))
 
-(let ((cffi:*foreign-library-directories*
-       (list #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")))
-  (cffi:load-foreign-library 'oracle-oci))
 
