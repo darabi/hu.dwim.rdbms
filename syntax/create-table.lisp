@@ -24,21 +24,21 @@
   (:format-sql-syntax-node
    (format-string "CREATE")
    (when temporary
-     (format-string " TEMPORARY"))
+     (format-string " GLOBAL TEMPORARY"))
    (format-string " TABLE ")
    (format-sql-identifier name)
    (format-string " (")
    (format-comma-separated-list columns)
    (format-char ")")
-   (when as
-     (format-string " AS ")
-     (format-sql-syntax-node as))
    (when (and temporary (not (eq temporary #t)) (not as))
      (format-string " ON COMMIT ")
      (format-string (ecase temporary
                       (:drop "DROP")
                       (:preserve-rows "PRESERVE ROWS")
-                      (:delete-rows "DELETE ROWS"))))))
+                      (:delete-rows "DELETE ROWS"))))
+   (when as
+     (format-string " AS ")
+     (format-sql-syntax-node as))))
 
 (define-syntax-node sql-column (named-sql-syntax-node)
   ((type
