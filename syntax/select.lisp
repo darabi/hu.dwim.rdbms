@@ -104,7 +104,7 @@
    (format-char "(")
    (format-sql-syntax-node left)
    (format-char " ")
-   (format-sql-identifier kind)
+   (format-string (string-upcase kind))
    (format-string " JOIN ")
    (format-sql-syntax-node right)
    (when on
