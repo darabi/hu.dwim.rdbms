@@ -102,6 +102,13 @@
 ;;;
 
 (defmethod format-sql-identifier :around ((identifier string) (database oracle))
+  (progn
+    (write-char #\" *sql-stream*)
+    (call-next-method)
+    (write-char #\" *sql-stream*)))
+
+#+nil
+(defmethod format-sql-identifier :around ((identifier string) (database oracle))
   (if (and (alpha-char-p (char identifier 0))
            (not (reserved-word-p identifier))
            (every #L(or (alphanumericp !1)
