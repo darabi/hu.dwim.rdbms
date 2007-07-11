@@ -18,15 +18,16 @@
   (map 'list
    (lambda (column)
      (make-instance 'sql-column
-                    :name (svref column 0)
+                    :name (aref column 0)
                     :type (sql-type-for-internal-type
-                           (svref column 1)
-                           (svref column 2)
-                           (svref column 3)
-                           (svref column 4))))
+                           (aref column 1)
+                           (aref column 2)
+                           (aref column 3)
+                           (aref column 4))))
    (execute
-    (format nil "select column_name, data_type, char_length, data_precision, data_scale from user_tab_columns where table_name = '~A'"
-            name)
+    (format nil "select column_name, data_type, char_length, data_precision, data_scale from user_tab_columns where lower(table_name) = '~A'"
+            (string-downcase name)) ;; FIXME should be case sensitive, but perec
+                                    ;; does not use case consistently
     :result-type 'vector)))
 
 (defmethod database-list-table-indices (name (database oracle))
@@ -36,6 +37,7 @@
                     :name (first column)
                     :table-name name))
    (execute
-    (format nil "select index_name from user_indexes where table_name = '~A'"
-            (string-downcase name))
+    (format nil "select index_name from user_indexes where lower(table_name) = '~A'"
+            (string-downcase name)) ;; FIXME see prev
     :result-type 'list)))
+
