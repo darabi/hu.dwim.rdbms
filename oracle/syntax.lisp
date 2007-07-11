@@ -15,7 +15,7 @@
 (defmethod format-sql-literal ((literal vector) (database oracle))
   (format-string "to_Blob('")
   (loop for el across literal
-        do (format t "~2,'0x" el))
+        do (format *sql-stream* "~2,'0x" el))
   (format-string "')"))
 
 (defmethod format-sql-literal ((value (eql nil)) (database oracle))
