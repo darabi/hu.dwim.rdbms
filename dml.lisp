@@ -18,7 +18,7 @@
                                   :type (type-of column))))
        columns values))
 
-(defun insert-records (table columns values)
+(defun insert-record (table columns values)
   (execute (make-instance 'sql-insert
                           :table table
                           :columns columns

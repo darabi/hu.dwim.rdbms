@@ -72,7 +72,7 @@
    #:mark-transaction-for-commit-only
    #:mark-transaction-for-rollback-only
 
-   #:insert-records
+   #:insert-record
    #:update-records
    #:delete-records
    #:select-records

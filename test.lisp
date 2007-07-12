@@ -221,14 +221,14 @@
     (ignore-errors
       (execute-ddl "DROP TABLE alma"))))
 
-(deftest* test/insert-records ()
+(deftest* test/insert-record ()
   (unwind-protect
        (let ((columns (compile-sql-columns
                        `((a (integer 32))
                          (b (varchar 50))))))
          (create-table 'alma columns)
          (with-transaction
-           (insert-records 'alma columns (list 1 "alma"))
+           (insert-record 'alma columns (list 1 "alma"))
            (let ((row (first* (select-records columns '(alma)))))
              (is (= (elt row 0) 1))
              (is (string= (elt row 1) "alma")))))
