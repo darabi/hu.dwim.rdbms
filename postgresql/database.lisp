@@ -24,17 +24,4 @@
 ;; this name mapping is not injective, different lisp names _may_ be mapped to the same rdbms name
 (defmethod calculate-rdbms-name ((db postgresql) thing name)
   "Cuts off the end of names that are too long and appends the SXHASH of the original name."
-  (let ((name-as-string (strcat "_" (string-downcase name))))
-    (iter (for char :in-sequence "*\\/-")
-          (nsubstitute #\_ char name-as-string :test #'char=))
-    (let ((name-as-bytes (string-to-octets name-as-string :utf-8)))
-      (when (> (length name-as-bytes)
-               +maximum-rdbms-name-length+)
-        (iter (while (> (length name-as-bytes)
-                        (- +maximum-rdbms-name-length+ 8)))
-              (setf name-as-string (subseq name-as-string 0 (1- (length name-as-string))))
-              (setf name-as-bytes (string-to-octets name-as-string :utf-8)))
-        (setf name-as-string
-              (strcat name-as-string (format nil "~8,'0X" (logand (sxhash name-as-string)
-                                                                  #.(1- (expt 2 32)))))))
-      name-as-string)))
+  (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+ :prefix "_"))
