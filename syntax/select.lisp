@@ -21,6 +21,9 @@
    (where
     nil
     :type sql-expression)
+   (group-by
+    nil
+    :type (list sql-expression))
    (order-by
     nil
     :type list)                         ; TODO: element type
@@ -46,6 +49,9 @@
      (format-string " FROM ")
      (format-comma-separated-list tables database format-sql-table-reference))
    (format-where where)
+   (when group-by
+     (format-string " GROUP BY ")
+     (format-comma-separated-list group-by))
    (when order-by
      (format-string " ORDER BY ")
      (format-comma-separated-list order-by))
