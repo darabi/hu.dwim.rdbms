@@ -10,9 +10,13 @@
   (:use :cl :asdf)
   (:export
    #:optimize-declaration
+   #:project-relative-pathname
    #:*load-with-debug-p*))
 
 (in-package #:cl-rdbms-system)
+
+(defun project-relative-pathname (path)
+  (merge-pathnames path (component-pathname (find-system :cl-rdbms))))
 
 (defparameter *load-with-debug-p* t)
 
