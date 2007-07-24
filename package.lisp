@@ -15,6 +15,10 @@
 
   (:export
    #:database
+   #:oracle
+   #:postgresql
+   #:postgresql-pg
+   #:postgresql-postmodern
    #:*database*
    #:with-database
    #:transaction
@@ -118,13 +122,6 @@
                           #:log))
 
 (in-package :cl-rdbms)
-
-(defun publish-backend-symbol (symbol)
-  ;; export from the current package
-  (export symbol)
-  ;; and export from :cl-rdbms, too
-  (import symbol :cl-rdbms)
-  (export symbol :cl-rdbms))
 
 (deflogger log ()
   :level +warn+

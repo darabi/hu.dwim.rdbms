@@ -8,12 +8,6 @@
 
 #.(file-header)
 
-(defclass* postgresql-pg (postgresql)
-  ((native-encoding
-    :type string)))
-
-(publish-backend-symbol 'postgresql-pg)
-
 (defmethod initialize-instance :after ((database postgresql-pg) &key encoding &allow-other-keys)
   ;; trigger our custom accessor below
   (setf (encoding-of database) (or encoding (encoding-of database))))

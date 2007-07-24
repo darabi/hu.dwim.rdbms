@@ -8,11 +8,6 @@
 
 #.(file-header)
 
-(defclass* postgresql-postmodern (postgresql)
-  ((muffle-warnings #f :type boolean)))
-
-(publish-backend-symbol 'postgresql-postmodern)
-
 (defclass* postgresql-postmodern-transaction (transaction)
   ((connection
     nil

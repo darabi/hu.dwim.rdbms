@@ -13,7 +13,7 @@
   (:use :cl :iterate :arnesi :defclass-star :cl-rdbms-system :cl-rdbms)
 
   (:export
-   #:postgresql))
+   ))
 
 (in-package :cl-rdbms.postgresql)
 

@@ -77,3 +77,42 @@
           (setf name-as-string
                 (strcat name-as-string (format nil "~8,'0X" hash)))))
       name-as-string)))
+
+
+(defclass* oracle (database)
+  ((connection-encoding
+    :utf-16
+    :type (member :ascii :utf-16))))
+
+(let ((loaded-p #f))
+  (defmethod initialize-instance :before ((self oracle) &key &allow-other-keys)
+    (unless loaded-p
+      (asdf:operate 'asdf:load-op :cl-rdbms.oracle)
+      (eval (read-from-string
+             ;; TODO let the user control version, path and stuff through initargs
+             "(let ((cffi:*foreign-library-directories*
+                   (list #P\"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/\")))
+              (cffi:load-foreign-library 'oracle-oci))"))
+      (setf loaded-p #t))))
+
+(defclass* postgresql (database)
+  ())
+
+(defclass* postgresql-postmodern (postgresql)
+  ((muffle-warnings #f :type boolean)))
+
+(let ((loaded-p #f))
+  (defmethod initialize-instance :before ((self postgresql-postmodern) &key &allow-other-keys)
+    (unless loaded-p
+      (asdf:operate 'asdf:load-op :cl-rdbms.postmodern)
+      (setf loaded-p #t))))
+
+(defclass* postgresql-pg (postgresql)
+  ((native-encoding
+    :type string)))
+
+(let ((loaded-p #f))
+  (defmethod initialize-instance :before ((self postgresql-pg) &key &allow-other-keys)
+    (unless loaded-p
+      (asdf:operate 'asdf:load-op :cl-rdbms.pg)
+      (setf loaded-p #t))))

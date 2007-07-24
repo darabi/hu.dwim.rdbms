@@ -8,9 +8,6 @@
 
 #.(file-header)
 
-(defclass* postgresql (database)
-  ())
-
 (defclass* postgresql-transaction ()
   ())
 

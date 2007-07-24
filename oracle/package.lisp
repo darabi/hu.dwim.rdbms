@@ -16,7 +16,7 @@
    #:null)
 
   (:export
-   #:oracle))
+   ))
 
 (in-package :cl-rdbms.oracle)
 
