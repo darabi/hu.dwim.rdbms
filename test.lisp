@@ -201,7 +201,7 @@
   (local-time:now))
 
 (define-type-test test/blob blob
-  #(1 2 3 4 5 6 7 8 9 0))
+  (coerce #(1 2 3 4 5 6 7 8 9 0) '(vector (unsigned-byte 8))))
 
 
 (deftest* test/terminal-action ()
