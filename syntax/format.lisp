@@ -85,8 +85,8 @@
                       self
                     ,@(rest it)))))
       (pushnew ',name *sql-constructor-names*)
-      (defun ,name (&rest args)
-        (apply #'make-instance ',name args))
+      (defmacro ,name (&body args)
+        `(make-instance ',',name ,@args))
       (find-class ',name))))
 
 (defmacro format-comma-separated-identifiers (nodes)

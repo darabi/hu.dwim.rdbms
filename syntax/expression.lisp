@@ -282,4 +282,5 @@
 ;;; Count(*)
 
 (defun sql-count-* ()
-  (sql-count (sql-all-columns)))
+  ;; TODO the sql-all-columns ctor macro is not yet defined here (select.lisp)
+  (sql-count (make-instance 'sql-all-columns)))
