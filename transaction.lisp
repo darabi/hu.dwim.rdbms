@@ -86,8 +86,9 @@
            (progn
              (setf *transaction* (apply #'make-transaction *database* :terminal-action ,default-terminal-action ,args))
              (multiple-value-prog1
-                 (progn
-                   ,@body)
+                 (with-simple-restart (continue "Ignore condition and continue transaction with terminal action which may be a commit or a rollback")
+                   (progn
+                     ,@body))
                (setf ,body-finished-p #t)
                (ecase (terminal-action-of *transaction*)
                  ((:commit :marked-for-commit-only)
