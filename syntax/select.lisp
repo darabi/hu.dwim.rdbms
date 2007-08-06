@@ -24,6 +24,9 @@
    (group-by
     nil
     :type (list sql-expression))
+   (having
+    nil
+    :type sql-expression)
    (order-by
     nil
     :type list)                         ; TODO: element type
@@ -52,6 +55,9 @@
    (when group-by
      (format-string " GROUP BY ")
      (format-comma-separated-list group-by))
+   (when having
+     (format-string " HAVING ")
+     (format-sql-syntax-node having))
    (when order-by
      (format-string " ORDER BY ")
      (format-comma-separated-list order-by))
