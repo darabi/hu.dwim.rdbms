@@ -30,8 +30,8 @@
    #:in-transaction-p
    #:transaction-in-progress-p
    #:transaction-valid-p
-   #:register-commit-hook
-   #:transaction-with-commit-hooks-mixin
+   #:register-hook
+   #:transaction-with-hooks-mixin
    #:transaction-timestamp
    #:rdbms-name-for
 

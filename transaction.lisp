@@ -69,39 +69,46 @@
 (defun current-delete-counter ()
   (delete-counter-of (command-counter-of *transaction*)))
 
-(defmacro with-transaction (&body body)
+(defmacro with-transaction (&body forms)
   `(with-transaction* ()
-    ,@body))
+    ,@forms))
 
 (defmacro with-transaction* ((&rest args &key database (default-terminal-action :commit) &allow-other-keys)
-                             &body body)
-  (remf-keywords args :database :default-terminal-action)
-  (with-unique-names (body-finished-p)
-    `(let* (,@(when database `((*database* ,database)))
-            (*transaction* nil)
-            (,body-finished-p #f))
-      (unless (boundp '*database*)
-        (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction"))
-      (unwind-protect
-           (progn
-             (setf *transaction* (apply #'make-transaction *database* :terminal-action ,default-terminal-action ,args))
-             (multiple-value-prog1
-                 (with-simple-restart (continue "Ignore condition and continue transaction with terminal action which may be a commit or a rollback")
-                   (progn
-                     ,@body))
-               (setf ,body-finished-p #t)
-               (ecase (terminal-action-of *transaction*)
-                 ((:commit :marked-for-commit-only)
-                  (commit-transaction *database* *transaction*))
-                 ((:rollback :marked-for-rollback-only)
-                  (rollback-transaction *database* *transaction*)))))
-        (when *transaction*
-          (unless ,body-finished-p
-            (handler-case
-                (rollback-transaction *database* *transaction*)
-              (serious-condition (condition)
-                (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
-          (cleanup-transaction *transaction*))))))
+                             &body forms)
+  (declare (ignore database default-terminal-action))
+  `(funcall-with-transaction
+    (lambda ()
+      ,@forms)
+    ,@args))
+
+(defun funcall-with-transaction (function &rest args &key (default-terminal-action :commit) database &allow-other-keys)
+  (unless (or database (boundp '*database*))
+    (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction*"))
+  (let* ((*database* (or database *database*))
+         (*transaction* nil)
+         (body-finished-p #f))
+    (unwind-protect
+         (progn
+           (setf *transaction*
+                 (apply #'make-transaction *database*
+                        :terminal-action default-terminal-action
+                        (remf-keywords args :database :default-terminal-action)))
+           (multiple-value-prog1
+               (with-simple-restart (continue "Ignore condition and continue transaction with terminal action which may be a commit or a rollback")
+                 (funcall function))
+             (setf body-finished-p #t)
+             (ecase (terminal-action-of *transaction*)
+               ((:commit :marked-for-commit-only)
+                (commit-transaction *database* *transaction*))
+               ((:rollback :marked-for-rollback-only)
+                (rollback-transaction *database* *transaction*)))))
+      (when *transaction*
+        (unless body-finished-p
+          (handler-case
+              (rollback-transaction *database* *transaction*)
+            (serious-condition (condition)
+                               (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
+        (cleanup-transaction *transaction*)))))
 
 (defmethod (setf terminal-action-of) :before (new-value (transaction transaction))
   (when (and (member (terminal-action-of *transaction*) '(:marked-for-rollback-only :marked-for-commit-only))
@@ -254,26 +261,44 @@
                     (incf (delete-counter-of command-counter)))))))
 
 
-(defclass* transaction-with-commit-hooks-mixin ()
-  ((after-commit-hooks '() :type list)))
+(defclass* transaction-with-hooks-mixin ()
+  ((hooks nil :type list)))
 
-(defcondition* commit-hook-execution-error (transaction-error)
-  ((condition)))
+(defclass* transaction-hook ()
+  ((function :type (or symbol function))
+   (when :type (member :before :after))
+   (action :type (member :commit :rollback :always))))
 
-(defmethod commit-transaction :after (database (transaction transaction-with-commit-hooks-mixin))
-  (loop for hook :in (after-commit-hooks-of transaction) do
-        (block calling
-          (handler-bind
-              ((serious-condition (lambda (c)
-                                    (cerror "Continue" 'commit-hook-execution-error :condition c)
-                                    (return-from calling))))
-            (funcall hook)))))
+(defun funcall-transaction-hooks (transaction when action)
+  (loop for hook :in (hooks-of transaction) do
+        (let ((hook-action (action-of hook)))
+          (when (and (eq when (when-of hook))
+                     (or (eq :always hook-action)
+                         (eq action hook-action)))
+            (funcall (function-of hook))))))
 
-(defun register-commit-hook (hook &key (type :after) &allow-other-keys)
-  (register-commit-hook-in-transaction *transaction* hook :type type))
+(defmethod commit-transaction :around (database (transaction transaction-with-hooks-mixin))
+  ;; this must be an around method because the default around does not
+  ;; do call-next-method when begin-transaction was not executed
+  (prog2 (funcall-transaction-hooks transaction :before :commit)
+      (call-next-method)
+    (funcall-transaction-hooks transaction :after :commit)))
 
-(defgeneric register-commit-hook-in-transaction (transaction hook &key type &allow-other-keys)
-  (:method ((transaction transaction-with-commit-hooks-mixin) (hook function) &key (type :after) &allow-other-keys)
-           (assert (eq type :after) () "Only :after commit hooks are supported for now")
-           (push hook (after-commit-hooks-of transaction))))
+(defmethod rollback-transaction :around (database (transaction transaction-with-hooks-mixin))
+  ;; this must be an around method because the default around does not
+  ;; do call-next-method when begin-transaction was not executed
+  (prog2 (funcall-transaction-hooks transaction :before :rollback)
+      (call-next-method)
+    (funcall-transaction-hooks transaction :after :rollback)))
 
+(defun register-hook (when action function)
+  (register-hook-in-transaction *transaction* when action function))
+
+(defgeneric register-hook-in-transaction (transaction when action function)
+  (:method ((transaction transaction-with-hooks-mixin) when action (function function))
+           (prog1-bind hook
+               (make-instance 'transaction-hook
+                              :function function
+                              :when when
+                              :action action)
+             (push hook (hooks-of transaction)))))
