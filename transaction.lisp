@@ -291,7 +291,7 @@
       (call-next-method)
     (funcall-transaction-hooks transaction :after :rollback)))
 
-(defun register-hook (when action function)
+(defun register-transaction-hook (when action function)
   (register-hook-in-transaction *transaction* when action function))
 
 (defgeneric register-hook-in-transaction (transaction when action function)
