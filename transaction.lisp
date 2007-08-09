@@ -94,7 +94,7 @@
                         :terminal-action default-terminal-action
                         (remf-keywords args :database :default-terminal-action)))
            (multiple-value-prog1
-               (with-simple-restart (continue "Ignore condition and continue transaction with terminal action which may be a commit or a rollback")
+               (with-simple-restart (exit-transaction "Terminate the transaction with the terminal action ~S" (terminal-action-of *transaction*))
                  (funcall function))
              (setf body-finished-p #t)
              (ecase (terminal-action-of *transaction*)
