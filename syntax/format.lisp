@@ -119,15 +119,15 @@
            (elt character 0))
          character) *sql-stream*))
 
-(defun lisp-number-to-sql-number (number)
-  (if (typep number 'ratio)
-      (coerce number 'float)
-      number))
+(defun print-number-to-sql-string (number)
+  (etypecase number
+    (integer (princ-to-string number))
+    (ratio (format nil "~F" (coerce number 'double-float)))
+    (float (format nil "~F" number))))
 
 (defmacro format-number (number)
   (rebinding (number)
-    `(write (lisp-number-to-sql-number ,number)
-      :stream *sql-stream*)))
+    `(write-string (print-number-to-sql-string ,number) *sql-stream*)))
 
 (defmacro format-where (where &optional database)
   (rebinding (where)

@@ -40,10 +40,10 @@
                                                          sql-string-type
                                                          sql-float-type
                                                          sql-integer-type)
-                                                     (princ-to-string
-                                                      (if (numberp value)
-                                                          (lisp-number-to-sql-number value)
-                                                          value)))))))
+                                                     ;; TODO: push down to postmodern backend
+                                                     (if (numberp value)
+                                                         (rdbms::print-number-to-sql-string value)
+                                                         (princ-to-string value)))))))
                              (if visitor
                                  (cl-postgres:row-reader (fields)
                                    (loop with row = (ecase result-type
