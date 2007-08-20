@@ -76,12 +76,19 @@
 (defmacro with-transaction* ((&rest args &key database (default-terminal-action :commit) &allow-other-keys)
                              &body forms)
   (declare (ignore database default-terminal-action))
-  `(funcall-with-transaction
+  `(call-with-transaction
     (lambda ()
       ,@forms)
     ,@args))
 
-(defun funcall-with-transaction (function &rest args &key (default-terminal-action :commit) database &allow-other-keys)
+(defgeneric call-in-transaction (database transaction function)
+  (:documentation "Extension point for with-transaction macro.")
+
+  (:method (database transaction function)
+           (declare (ignore database transaction))
+           (funcall function)))
+
+(defun call-with-transaction (function &rest args &key (default-terminal-action :commit) database &allow-other-keys)
   (unless (or database (boundp '*database*))
     (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction*"))
   (let* ((*database* (or database *database*))
@@ -95,7 +102,7 @@
                         (remf-keywords args :database :default-terminal-action)))
            (multiple-value-prog1
                (with-simple-restart (exit-transaction "Terminate the transaction with the terminal action ~S" (terminal-action-of *transaction*))
-                 (funcall function))
+                 (call-in-transaction *database* *transaction* function))
              (setf body-finished-p #t)
              (ecase (terminal-action-of *transaction*)
                ((:commit :marked-for-commit-only)
@@ -190,6 +197,8 @@
   'transaction)
   
 (defgeneric make-transaction (database &key &allow-other-keys)
+  (:documentation "Extension point for with-transaction.")
+
   (:method :before (database &key &allow-other-keys)
            (log.debug "About to BEGIN transaction in database ~A" database))
 
@@ -201,10 +210,14 @@
                   args)))
 
 (defgeneric begin-transaction (database transaction)
+  (:documentation "Extension point for with-transaction and begin.")
+
   (:method (database transaction)
            (execute-command database transaction "BEGIN")))
 
 (defgeneric commit-transaction (database transaction)
+  (:documentation "Extension point for with-transaction and commit.")
+
   (:method :around (database transaction)
            (log.debug "About to COMMIT transaction ~A" transaction)
            (when (begin-was-executed-p transaction)
@@ -216,6 +229,8 @@
            (execute-command database transaction "COMMIT")))
 
 (defgeneric rollback-transaction (database transaction)
+  (:documentation "Extension point for with-transaction and rollback.")
+
   (:method :around (database transaction)
            (log.dribble "About to ROLLBACK transaction ~A" transaction)
            (when (begin-was-executed-p transaction)
@@ -226,7 +241,8 @@
   (:method (database transaction)
            (execute-command database transaction "ROLLBACK")))
 
-(defgeneric cleanup-transaction (transaction))
+(defgeneric cleanup-transaction (transaction)
+  (:documentation "Extension point with-transaction and commit/rollback."))
 
 (defgeneric prepare-command (database transaction command &key name)
   (:documentation "Sends a query to the database for parsing and returns a handler (a prepared-statement CLOS object) that can be used as a command for EXECUTE-COMMAND."))

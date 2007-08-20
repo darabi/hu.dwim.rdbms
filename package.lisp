@@ -25,8 +25,15 @@
    #:*transaction*
    #:execute
    #:execute-ddl
+
    #:with-transaction
    #:with-transaction*
+   #:call-in-transaction
+   #:make-transaction
+   #:begin-transaction
+   #:commit-transaction
+   #:rollback-transaction
+   #:cleanup-transaction
    #:in-transaction-p
    #:transaction-in-progress-p
    #:transaction-valid-p
