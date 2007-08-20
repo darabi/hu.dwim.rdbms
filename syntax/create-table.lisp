@@ -24,6 +24,7 @@
   (:format-sql-syntax-node
    (format-string "CREATE")
    (when temporary
+     ;; TODO global always?
      (format-string " GLOBAL TEMPORARY"))
    (format-string " TABLE ")
    (format-sql-identifier name)

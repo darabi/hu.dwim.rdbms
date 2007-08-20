@@ -111,6 +111,7 @@
 ;;;
 ;;; Names
 ;;;
+;; TODO delme, names are strings, period. basically format-sql-identifier.
 (defgeneric format-sql-name (name)
   (:method ((name string))
            (format-string name))
