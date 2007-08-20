@@ -19,22 +19,22 @@
        columns values))
 
 (defun insert-record (table columns values)
-  (execute (make-instance 'sql-insert
-                          :table table
-                          :columns columns
-                          :values (sql-literal-values-for columns values))))
+  (nth-value 1 (execute (make-instance 'sql-insert
+                                       :table table
+                                       :columns columns
+                                       :values (sql-literal-values-for columns values)))))
 
 (defun update-records (table columns values &optional where)
-  (execute (make-instance 'sql-update
-                          :table table
-                          :columns columns
-                          :values (sql-literal-values-for columns values)
-                          :where where)))
+  (nth-value 1 (execute (make-instance 'sql-update
+                                       :table table
+                                       :columns columns
+                                       :values (sql-literal-values-for columns values)
+                                       :where where))))
 
 (defun delete-records (table &optional where)
-  (execute (make-instance 'sql-delete
-                          :table table
-                          :where where)))
+  (nth-value 1 (execute (make-instance 'sql-delete
+                                       :table table
+                                       :where where))))
 
 (defun select-records (columns tables &optional where order-by)
   (execute (make-instance 'sql-select
