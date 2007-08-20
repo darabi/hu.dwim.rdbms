@@ -19,6 +19,8 @@
   (import *sql-constructor-names* package))
 
 (defvar *sql-stream*)
+(defvar *sql-stream-elements*)
+(defvar *binding-entries*)
 
 (defgeneric format-sql-syntax-node (node database)
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
@@ -26,7 +28,28 @@
   (:method (node database)
            (format-sql-literal node database)))
 
-(defvar *binding-entries*)
+(defun expand-sql-ast-into-lambda-form (syntax-node &key (database *database*))
+  (let ((*sql-stream* (make-string-output-stream))
+        (*sql-stream-elements* (make-array 8 :adjustable #t :fill-pointer 0))
+        (*database* database)
+        (*binding-entries* (make-array 16 :adjustable #t :fill-pointer 0)))
+    (format-sql-syntax-node syntax-node database)
+    `(lambda ()
+      (let ((*binding-entries* ,(let ((length (length *binding-entries*)))
+                                  (if (and (zerop length)
+                                           (every 'stringp *sql-stream-elements*))
+                                      #()
+                                      `(make-array ,length :adjustable #t :fill-pointer ,length
+                                                   :initial-contents ,*binding-entries*)))))
+        ,@(iter (for element :in-vector *sql-stream-elements*)
+                (collect (if (stringp element)
+                             (unless (zerop (length element))
+                               `(write-string ,element *sql-stream*))
+                             element)))
+        ,(let ((last-chunk (get-output-stream-string *sql-stream*)))
+           (unless (zerop (length last-chunk))
+             `(write-string ,last-chunk *sql-stream*)))
+        *binding-entries*))))
 
 (defun format-sql (statement &key (stream t) (database *database*))
   "Formats the given SQL statement into the stream."

@@ -262,6 +262,13 @@
                                                   collect (format nil "$~A = ~A as ~A" i el (format-sql-to-string type))))))
              (sql-log.info "; ~A" command)))
 
+  (:method :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
+           (assert (not bindings) () "You may not specify bindings when using command factories")
+           (let* ((bindings)
+                  (command (with-output-to-string (*sql-stream*)
+                             (setf bindings (funcall command)))))
+             (apply #'call-next-method database transaction command :bindings bindings args)))
+
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
            (apply #'call-next-method database transaction command :result-type result-type args))
 

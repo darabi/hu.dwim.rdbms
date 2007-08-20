@@ -120,6 +120,28 @@
 
 
 ;;;;;;;;;;;;;
+;;; Backquote
+
+(define-syntax-node sql-backquote (sql-syntax-node)
+  ((form nil))
+  (:format-sql-syntax-node
+   (expand-sql-backquote self 'format-sql-syntax-node)))
+
+(defun expand-sql-backquote (node formatter)
+  (vector-push-extend (get-output-stream-string *sql-stream*) *sql-stream-elements*)
+  (vector-push-extend `(,formatter ,(form-of node) *database*) *sql-stream-elements*)
+  (setf *sql-stream* (make-string-output-stream)))
+
+(defmethod format-sql-literal :before ((literal sql-literal) database)
+  (assert (not (typep (value-of literal) 'sql-backquote)) () "SQL-BACKQUOTE is not allowed in SQL-LITERAL"))
+
+(defmethod format-sql-literal ((node sql-backquote) database)
+  (expand-sql-backquote node 'format-sql-literal))
+
+(defmethod format-sql-identifier ((node sql-backquote) database)
+  (expand-sql-backquote node 'format-sql-identifier))
+
+;;;;;;;;;;;;;
 ;;; Statement
 
 (defclass* sql-statement (sql-syntax-node)
