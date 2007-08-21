@@ -248,6 +248,9 @@
   (:documentation "Sends a query to the database for parsing and returns a handler (a prepared-statement CLOS object) that can be used as a command for EXECUTE-COMMAND."))
 
 (defgeneric execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
+  (:method (database transaction command &key &allow-other-keys)
+           (error "Default method should not be reached"))
+
   (:method :before (database transaction command &key bindings &allow-other-keys)
            (unless (begin-was-executed-p transaction)
              (setf (begin-was-executed-p transaction) #t)
@@ -267,7 +270,7 @@
            (let* ((bindings)
                   (command (with-output-to-string (*sql-stream*)
                              (setf bindings (funcall command)))))
-             (apply #'call-next-method database transaction command :bindings bindings args)))
+             (apply #'execute-command database transaction command :bindings bindings args)))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
            (apply #'call-next-method database transaction command :result-type result-type args))
