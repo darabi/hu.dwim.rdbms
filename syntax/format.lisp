@@ -53,15 +53,17 @@
 
 (defun format-sql (syntax-node &key (stream t) (database *database*))
   "Formats the given SQL syntax node into the stream."
-  (let ((*sql-stream* stream)
-        (*database* database)
-        (*binding-entries* (make-array 16 :adjustable #t :fill-pointer 0)))
+  (let* ((*print-pretty* #f)
+         (*sql-stream* stream)
+         (*database* database)
+         (*binding-entries* (make-array 16 :adjustable #t :fill-pointer 0)))
     (format-sql-syntax-node syntax-node database)
     (values stream *binding-entries*)))
 
 (defun format-sql-to-string (syntax-node &rest args &key &allow-other-keys)
   "Formats the given SQL syntax node into a string."
-  (let* ((bindings)
+  (let* ((*print-pretty* #f)
+         (bindings)
          (string (with-output-to-string (stream)
                    (setf bindings (second (multiple-value-list (apply #'format-sql syntax-node :stream stream args)))))))
     (values string bindings)))
