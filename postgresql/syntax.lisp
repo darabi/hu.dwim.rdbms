@@ -26,19 +26,20 @@
   (format-string "'::bytea"))
 
 (defmethod format-sql-literal ((literal sql-literal) (database postgresql))
-  (if (type-of literal)
-      (progn
-        (vector-push-extend literal *binding-entries*)
-        (format-string "$")
-        (format-string (princ-to-string (length *binding-entries*)))
-        (format-string "::")
-        (format-sql-syntax-node (type-of literal) database))
-      (call-next-method)))
+  (backquote-aware-format-sql-literal
+   literal
+   (lambda ()
+     (format-string "$")
+     (format-string (princ-to-string (length *binding-types*)))
+     (format-string "::")
+     (format-sql-syntax-node (type-of literal) database))
+   #'call-next-method))
 
 (defmethod format-sql-syntax-node ((variable sql-binding-variable) (database postgresql))
-  (vector-push-extend variable *binding-entries*)
+  (vector-push-extend variable *binding-types*)
+  (vector-push-extend nil *binding-values*)
   (format-string "$")
-  (format-string (princ-to-string (length *binding-entries*)))
+  (format-string (princ-to-string (length *binding-types*)))
   (awhen (type-of variable)
     (format-string "::")
     (format-sql-syntax-node (type-of variable) database)))

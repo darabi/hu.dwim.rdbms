@@ -20,7 +20,8 @@
 
 (defvar *sql-stream*)
 (defvar *sql-stream-elements*)
-(defvar *binding-entries*)
+(defvar *binding-types*)
+(defvar *binding-values*)
 
 (defgeneric format-sql-syntax-node (node database)
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
@@ -32,41 +33,59 @@
   (let ((*sql-stream* (make-string-output-stream))
         (*sql-stream-elements* (make-array 8 :adjustable #t :fill-pointer 0))
         (*database* database)
-        (*binding-entries* (make-array 16 :adjustable #t :fill-pointer 0)))
+        (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
+        (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
     (format-sql-syntax-node syntax-node database)
-    `(lambda ()
-      (let ((*binding-entries* ,(let ((length (length *binding-entries*)))
-                                  (if (and (zerop length)
-                                           (every 'stringp *sql-stream-elements*))
-                                      #()
-                                      `(make-array ,length :adjustable #t :fill-pointer ,length
-                                                   :initial-contents ,*binding-entries*)))))
-        ,@(iter (for element :in-vector *sql-stream-elements*)
-                (collect (if (stringp element)
-                             (unless (zerop (length element))
-                               `(write-string ,element *sql-stream*))
-                             element)))
-        ,(let ((last-chunk (get-output-stream-string *sql-stream*)))
-           (unless (zerop (length last-chunk))
-             `(write-string ,last-chunk *sql-stream*)))
-        *binding-entries*))))
+    (flet ((copy-array (array)
+             (let ((length (length array)))
+               (if (and (zerop length)
+                        (every 'stringp *sql-stream-elements*))
+                   #()
+                   `(make-array ,length :adjustable #t :fill-pointer ,length
+                     :initial-contents ,array)))))
+      `(lambda ()
+        (let ((*binding-types* ,(copy-array *binding-types*))
+              (*binding-values* ,(copy-array *binding-values*)))
+          ,@(iter (for element :in-vector *sql-stream-elements*)
+                  (collect (if (stringp element)
+                               (unless (zerop (length element))
+                                 `(write-string ,element *sql-stream*))
+                               element)))
+          ,(let ((last-chunk (get-output-stream-string *sql-stream*)))
+                (unless (zerop (length last-chunk))
+                  `(write-string ,last-chunk *sql-stream*)))
+          (values *binding-types* *binding-values*))))))
+
+(defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
+  (assert (not bindings) () "You may not specify bindings when using command factories")
+  (let* (binding-types
+         binding-values
+         (command (with-output-to-string (*sql-stream*)
+                                         (setf (values binding-types binding-values) (funcall command)))))
+    (update-binding-types-and-values binding-types binding-values bindings)
+    (apply #'execute-command database transaction command
+           :binding-types binding-types :binding-values binding-values  args)))
 
 (defun format-sql (syntax-node &key (stream t) (database *database*))
   "Formats the given SQL syntax node into the stream."
   (let* ((*print-pretty* #f)
          (*sql-stream* stream)
          (*database* database)
-         (*binding-entries* (make-array 16 :adjustable #t :fill-pointer 0)))
+         (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
+         (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
     (format-sql-syntax-node syntax-node database)
-    (values stream *binding-entries*)))
+    (values stream *binding-types* *binding-values*)))
 
 (defun format-sql-to-string (syntax-node &rest args &key &allow-other-keys)
   "Formats the given SQL syntax node into a string."
   (let* ((*print-pretty* #f)
-         (bindings)
+         scratch
+         binding-types
+         binding-values
          (string (with-output-to-string (stream)
-                   (setf bindings (second (multiple-value-list (apply #'format-sql syntax-node :stream stream args)))))))
-    (values string bindings)))
+                   (setf (values scratch binding-types binding-values)
+                         (apply #'format-sql syntax-node :stream stream args)))))
+    (values string binding-types binding-values)))
 
 (defun sql-constructor-name (name)
   (concatenate-symbol (find-package :cl-rdbms) "SQL-" name))

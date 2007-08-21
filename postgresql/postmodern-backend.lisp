@@ -21,29 +21,31 @@
   (cl-postgres:prepare-query (connection-of tr) name command)
   (make-instance 'prepared-statement :name name :query command))
 
-(defun execute-postmodern-prepared-statement (db connection statement-name &key bindings visitor result-type &allow-other-keys)
-  (assert (not (and visitor bindings)) (visitor bindings) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
+(defun execute-postmodern-prepared-statement (db connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
+  (assert (not (and visitor (not (zerop (length binding-values)))))
+          (visitor binding-values) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
   (cl-postgres:exec-prepared connection statement-name
-                             (loop for (type value) :on bindings :by #'cddr
-                                   collect (cond ((eq value :null)
-                                                  :null)
-                                                 ((typep type 'sql-boolean-type)
-                                                  (if (stringp value)
-                                                      value
-                                                      (if value "TRUE" "FALSE")))
-                                                 ((eq value nil)
-                                                  :null)
-                                                 (t
-                                                  (etypecase type
-                                                    (sql-binary-large-object-type value)
-                                                    ((or sql-simple-type
-                                                         sql-string-type
-                                                         sql-float-type
-                                                         sql-integer-type)
-                                                     ;; TODO: push down to postmodern backend
-                                                     (if (numberp value)
-                                                         (rdbms::print-number-to-sql-string value)
-                                                         (princ-to-string value)))))))
+                             (iter (for type :in-vector binding-types)
+                                   (for value :in-vector binding-values)
+                                   (collect (cond ((eq value :null)
+                                                   :null)
+                                                  ((typep type 'sql-boolean-type)
+                                                   (if (stringp value)
+                                                       value
+                                                       (if value "TRUE" "FALSE")))
+                                                  ((eq value nil)
+                                                   :null)
+                                                  (t
+                                                   (etypecase type
+                                                     (sql-binary-large-object-type value)
+                                                     ((or sql-simple-type
+                                                          sql-string-type
+                                                          sql-float-type
+                                                          sql-integer-type)
+                                                      ;; TODO: push down to postmodern backend
+                                                      (if (numberp value)
+                                                          (rdbms::print-number-to-sql-string value)
+                                                          (princ-to-string value))))))))
                              (if visitor
                                  (cl-postgres:row-reader (fields)
                                    (loop with row = (ecase result-type

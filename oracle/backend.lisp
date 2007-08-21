@@ -37,21 +37,21 @@
 (defmethod execute-command ((database oracle)
                             (transaction oracle-transaction)
                             (command string)
-                            &key visitor bindings result-type start-row row-limit
+                            &key visitor binding-types binding-values result-type start-row row-limit
                             &allow-other-keys)
   (log.debug "Executing ~S" command)
   (let ((statement (prepare-command database transaction command)))
     (unwind-protect
-         (execute-prepared-statement transaction statement bindings visitor result-type
+         (execute-prepared-statement transaction statement binding-types binding-values visitor result-type
                                      :start-row start-row :row-limit row-limit)
       (free-prepared-statement statement))))
 
 (defmethod execute-command ((database oracle)
                             (transaction oracle-transaction)
                             (prepared-statement prepared-statement)
-                            &key visitor bindings result-type start-row row-limit
+                            &key visitor binding-types binding-values result-type start-row row-limit
                             &allow-other-keys)
-  (execute-prepared-statement transaction prepared-statement bindings visitor result-type
+  (execute-prepared-statement transaction prepared-statement binding-types binding-values visitor result-type
                               :start-row start-row :row-limit row-limit))
 
 (defmethod cleanup-transaction ((transaction oracle-transaction))
@@ -189,12 +189,12 @@
   (free-bindings (bindings-of statement))
   (cffi:foreign-free (statement-handle-pointer statement)))
 
-(defun execute-prepared-statement (transaction statement bindings visitor result-type
+(defun execute-prepared-statement (transaction statement binding-types binding-values visitor result-type
                                                &key (start-row 0) row-limit)
 
   (let ((needs-scrollable-cursor-p (and start-row (> start-row 0))))
     ;; make bindings
-    (setf (bindings-of statement) (make-bindings statement transaction bindings))
+    (setf (bindings-of statement) (make-bindings statement transaction binding-types binding-values))
     
     ;; execute
     (stmt-execute statement
@@ -232,10 +232,11 @@
    (data-size)
    (indicator)))
 
-(defun make-bindings (statement transaction bindings)
-  (loop for (type value) :on bindings :by #'cddr
-        for position :from 1
-        collect (make-binding statement transaction position type value)))
+(defun make-bindings (statement transaction binding-types binding-values)
+  (iter (for type :in-vector binding-types)
+        (for value :in-vector binding-values)
+        (for position :from 1)
+        (collect (make-binding statement transaction position type value))))
 
 (defun make-binding (statement transaction position sql-type value)
   (let* ((statement-handle (statement-handle-of statement))

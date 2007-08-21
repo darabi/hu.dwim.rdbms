@@ -247,6 +247,18 @@
 (defgeneric prepare-command (database transaction command &key name)
   (:documentation "Sends a query to the database for parsing and returns a handler (a prepared-statement CLOS object) that can be used as a command for EXECUTE-COMMAND."))
 
+(defun update-binding-types-and-values (binding-types binding-values name-value-bindings)
+  (iter (for type :in-vector binding-types)
+        (for value :in-vector binding-values)
+        (for index :from 0)
+        (when (typep type 'sql-binding-variable)
+          (setf value (or (getf name-value-bindings (name-of type))
+                          (error 'unbound-binding-variable-error :variable type)))
+          (setf type (type-of type))
+          (setf (aref binding-types index) type)
+          (setf (aref binding-values index) value))
+        (assert type nil "The type of literals and binding variables must be defined because they are transmitted through the binding infrastructure")))
+
 (defgeneric execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
   (:method (database transaction command &key &allow-other-keys)
            (error "Default method should not be reached"))
@@ -264,13 +276,6 @@
                                                   for (type el) on bindings by #'cddr
                                                   collect (format nil "$~A = ~A as ~A" i el (format-sql-to-string type))))))
              (sql-log.info "; ~A" command)))
-
-  (:method :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
-           (assert (not bindings) () "You may not specify bindings when using command factories")
-           (let* ((bindings)
-                  (command (with-output-to-string (*sql-stream*)
-                             (setf bindings (funcall command)))))
-             (apply #'execute-command database transaction command :bindings bindings args)))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
            (apply #'call-next-method database transaction command :result-type result-type args))

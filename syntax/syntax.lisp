@@ -128,13 +128,30 @@
   (:format-sql-syntax-node
    (expand-sql-backquote self 'format-sql-syntax-node)))
 
-(defun expand-sql-backquote (node formatter)
+(defun push-form-into-sql-stream-elements (form)
   (vector-push-extend (get-output-stream-string *sql-stream*) *sql-stream-elements*)
-  (vector-push-extend `(,formatter ,(form-of node) *database*) *sql-stream-elements*)
+  (vector-push-extend form *sql-stream-elements*)
   (setf *sql-stream* (make-string-output-stream)))
 
-(defmethod format-sql-literal :before ((literal sql-literal) database)
-  (assert (not (typep (value-of literal) 'sql-backquote)) () "SQL-BACKQUOTE is not allowed in SQL-LITERAL"))
+(defun expand-sql-backquote (node formatter)
+  (push-form-into-sql-stream-elements `(,formatter ,(form-of node) *database*)))
+
+(defun backquote-aware-format-sql-literal (literal trunk call-next-method)
+  (let ((type (type-of literal))
+        (value (value-of literal)))
+    (if type
+        (if (typep value 'sql-backquote)
+            (progn
+              (vector-push-extend type *binding-types*)
+              (vector-push-extend nil *binding-values*)
+              (push-form-into-sql-stream-elements
+               `(setf (aref *binding-values* ,(1- (length *binding-types*))) ,(form-of value)))
+              (funcall trunk))
+            (progn
+              (vector-push-extend type *binding-types*)
+              (vector-push-extend value *binding-values*)
+              (funcall trunk)))
+        (funcall call-next-method))))
 
 (defmethod format-sql-literal ((node sql-backquote) database)
   (expand-sql-backquote node 'format-sql-literal))
@@ -159,25 +176,14 @@
 ;;; Execute
 
 (defcondition* unbound-binding-variable-error (rdbms-error)
-  ((variable)
-   (query))
+  ((variable))
   (:report (lambda (error stream)
              (format stream "The variable ~A was not bound while executing the query ~A"
                      (variable-of error) (query-of error)))))
 
 (defmethod execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
-  (remf-keywords args :bindings)
-  (multiple-value-bind (string binding-entries) (format-sql-to-string command)
-    (let ((final-bindings
-           (iter (for binding-entry :in-vector binding-entries)
-                 (assert (type-of binding-entry) ((type-of binding-entry)) "The type of literals and binding variables must be defined because they are transmitted through the binding infrastructure")
-                 (etypecase binding-entry
-                   (sql-literal
-                    (collect (type-of binding-entry))
-                    (collect (value-of binding-entry)))
-                   (sql-binding-variable
-                    (collect (type-of binding-entry))
-                    (aif (getf bindings (name-of binding-entry))
-                         (collect it)
-                         (error 'unbound-binding-variable-error :variable binding-entry :query command)))))))
-      (apply 'execute-command database transaction string :bindings final-bindings args))))
+  (multiple-value-bind (string binding-types binding-values)
+      (format-sql-to-string command)
+    (update-binding-types-and-values binding-types binding-values bindings)
+    (apply 'execute-command database transaction string
+           :binding-types binding-types :binding-values binding-values args)))
