@@ -89,17 +89,6 @@
                          (:file "type")
                          (:file "ddl")))))
 
-(defsystem :cl-rdbms.pg
-  :class cl-rdbms-backend-system
-  :database-factory-form "(make-instance 'postgresql-pg :connection-specification
-                                         '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
-  :description "cl-rdbms with pg backend"
-  :depends-on (:arnesi :iterate :defclass-star :cl-rdbms.postgresql :pg)
-  :default-component-class local-cl-source-file
-  :components
-  ((:module "postgresql"
-            :components ((:file "pg-backend")))))
-
 (defsystem :cl-rdbms.postmodern
   :class cl-rdbms-backend-system
   :database-factory-form "(make-instance 'postgresql-postmodern :connection-specification

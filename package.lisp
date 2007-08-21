@@ -17,7 +17,6 @@
    #:database
    #:oracle
    #:postgresql
-   #:postgresql-pg
    #:postgresql-postmodern
    #:*database*
    #:with-database

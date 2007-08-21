@@ -106,13 +106,3 @@
     (unless loaded-p
       (asdf:operate 'asdf:load-op :cl-rdbms.postmodern)
       (setf loaded-p #t))))
-
-(defclass* postgresql-pg (postgresql)
-  ((native-encoding
-    :type string)))
-
-(let ((loaded-p #f))
-  (defmethod initialize-instance :before ((self postgresql-pg) &key &allow-other-keys)
-    (unless loaded-p
-      (asdf:operate 'asdf:load-op :cl-rdbms.pg)
-      (setf loaded-p #t))))
