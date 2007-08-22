@@ -263,18 +263,20 @@
   (:method (database transaction command &key &allow-other-keys)
            (error "Default method should not be reached"))
 
-  (:method :before (database transaction command &key bindings &allow-other-keys)
+  (:method :before (database transaction command &key binding-types binding-values &allow-other-keys)
            (unless (begin-was-executed-p transaction)
              (setf (begin-was-executed-p transaction) #t)
              (begin-transaction database transaction))
            (log.dribble "*** ~S in transaction ~A of database ~A"
                         command transaction database)
            (when (stringp command)
-             (when bindings
+             (unless (zerop (length binding-types))
                (sql-log.info "; ~A" (format nil "~{~A~^, ~}"
-                                            (loop for i upfrom 1
-                                                  for (type el) on bindings by #'cddr
-                                                  collect (format nil "$~A = ~A as ~A" i el (format-sql-to-string type))))))
+                                            (iter (for i upfrom 1)
+                                                  (for type :in-vector binding-types)
+                                                  (for value :in-vector binding-values)
+                                                  (collect (format nil "$~A = ~A as ~A" i value
+                                                                   (format-sql-to-string type)))))))
              (sql-log.info "; ~A" command)))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
