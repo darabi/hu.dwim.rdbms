@@ -29,10 +29,15 @@
   (:method (node database)
            (format-sql-literal node database)))
 
-(defun expand-sql-ast-into-lambda-form (syntax-node &key (database *database*))
+(defun expand-sql-ast-into-lambda-form (syntax-node &key database)
   (let ((*sql-stream* (make-string-output-stream))
         (*sql-stream-elements* (make-array 8 :adjustable #t :fill-pointer 0))
-        (*database* database)
+        (*database* (or database
+                        (and (boundp '*database*)
+                             *database*)
+                        (progn
+                          (simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
+                          (make-instance 'database))))
         (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
         (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
     (format-sql-syntax-node syntax-node database)
