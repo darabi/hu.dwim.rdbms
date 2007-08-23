@@ -91,3 +91,9 @@ arguments when given."
          (push (pop body) decls)
          (go :declarations)))
     (values body (nreverse decls) doc)))
+
+(define-condition simple-style-warning (style-warning simple-warning)
+  ())
+
+(defun simple-style-warning (message &rest args)
+  (warn 'simple-style-warning :format-control message :format-arguments args))
