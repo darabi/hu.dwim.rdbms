@@ -70,7 +70,6 @@
    #:list-table-indices
 
    #:sql
-   #:sql*
    #:format-sql
    #:format-sql-to-string
    #:import-sql-syntax-node-names

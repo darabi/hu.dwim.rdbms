@@ -4,17 +4,18 @@
 ;;;
 ;;; See LICENCE for details.
 
+;;; This file contains the sexp-sql -> sql-ast parser. (and is far from being done)
+
 (in-package :cl-rdbms)
 
 #.(file-header)
 
-(defmacro sql (body)
-  "Evaluate BODY and parse the result as an sql sexp."
-  `(compile-sql ,body))
+;; TODO support [select (count *) !(some lisp generating the from part)] syntax
 
-(defmacro sql* (body)
-  "Same as SQL, but does not evaluate BODY."
-  `(compile-sql ',body))
+(defmacro sql (body)
+  "Parse BODY as an sexp-sql sexp."
+  (expand-sql-ast-into-lambda-form
+   (compile-sexp-sql body)))
 
 (defun sql-compile-error (form &optional error-at-form)
   (error "Error while compiling sql form ~S at form ~S" form error-at-form))
@@ -24,7 +25,7 @@
        (or (symbolp b) (stringp b))
        (equalp (string a) (string b))))
 
-(defun compile-sql (form)
+(defun compile-sexp-sql (form)
   (let* ((sql-compiler-function-name (concatenate 'string
                                                   (symbol-name '#:compile-sql-)
                                                   (when (symbolp (first form))
@@ -39,7 +40,8 @@
   (if (and function-call-allowed-p
            (sql-function-call-form-p body))
       (list (compile-sql-function-call body))
-      (if (consp body)
+      (if (and (consp body)
+               (not (sql-symbol-equal (first body) 'backquote)))
           (loop for node :in body
                 collect (if (and function-call-allowed-p
                                  (sql-function-call-form-p node))
@@ -48,16 +50,25 @@
           (list (process-sql-syntax-node visitor body)))))
 
 (defun process-sql-syntax-node (visitor node)
-  (if (typep node 'sql-syntax-node)
-      node
-      (funcall visitor node)))
+  (cond ((typep node 'sql-syntax-node)
+         node)
+        ((and (consp node)
+              (sql-symbol-equal (first node) 'backquote))
+         (funcall visitor (compile-sql-backquote node)))
+        (t (funcall visitor node))))
+
+(defun compile-sql-backquote (body)
+  (unless (= 2 (length body))
+    (sql-compile-error body))
+  (make-instance 'sql-backquote :form (second body)))
 
 (defun compile-sql-select (body)
   (destructuring-bind (columns tables &optional where) body
     (make-instance 'sql-select
                    :columns (process-sql-syntax-list #'compile-sql-column-alias columns :function-call-allowed-p #t)
                    :tables (process-sql-syntax-list #'compile-sql-table-alias tables)
-                   :where where)))
+                   ;; TODO process where
+                   :where (process-sql-syntax-node #'identity where))))
 
 (defun compile-sql-create (body)
   (let ((whole-body body)
