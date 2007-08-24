@@ -53,9 +53,9 @@
 
 (defprint-object (self command-counter)
   (princ (strcat "insert: " (insert-counter-of self)
-                 " select: " (select-counter-of self)
-                 " update: " (update-counter-of self)
-                 " delete: " (delete-counter-of self))))
+                 ", select: " (select-counter-of self)
+                 ", update: " (update-counter-of self)
+                 ", delete: " (delete-counter-of self))))
 
 (defun current-insert-counter ()
   (insert-counter-of (command-counter-of *transaction*)))
