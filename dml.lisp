@@ -42,3 +42,9 @@
                           :tables tables
                           :where where
                           :order-by order-by)))
+
+(defun select-count-* (tables &optional where)
+  (first* (first* (execute (make-instance 'sql-select
+                                          :columns (list (sql-count-*))
+                                          :tables tables
+                                          :where where)))))

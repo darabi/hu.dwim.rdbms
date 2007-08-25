@@ -85,6 +85,7 @@
    #:update-records
    #:delete-records
    #:select-records
+   #:select-count-*
 
    #:make-cursor
    #:cursor-position
