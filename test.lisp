@@ -11,10 +11,12 @@
 (eval-always
   (use-package :stefil)
   (import (let ((*package* (find-package :cl-rdbms)))
+            ;; we intentionally not import all internal cl-rdbms symbols here to test the proper exporting of the symbols, too
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
-                                with-transaction* process-sql-syntax-list compile-sql-column compile-sql-columns compile-sql-type
-                                value-of compile-sql-binding-variable compile-sql-literal first* second* third*
+                                with-transaction* process-sql-syntax-list compile-sexp-sql-column compile-sexp-sql-columns
+                                compile-sexp-sql compile-sexp-sql-type
+                                value-of compile-sexp-sql-binding-variable compile-sexp-sql-literal first* second* third*
                                 log log.dribble log.debug log.info log.warn log.error)")))
   (import-sql-syntax-node-names))
 
@@ -61,19 +63,20 @@
   (let ((unicode-text "éáúóüőű"))
     (unwind-protect
          (with-transaction
-           (execute-ddl (sql `(create table alma ((name (varchar 50))))))
-           (execute (sql `(insert alma (name) ((,unicode-text varchar)))))
-           (is (string= (first* (first* (execute (sql '(select * alma))))) unicode-text)))
+           (execute-ddl (sql (create table alma ((name (varchar 50))))))
+           (execute (sql (insert alma (name) (((backquote unicode-text) varchar)))))
+           (is (string= (first* (first* (execute (sql (select * alma))))) unicode-text)))
       (ignore-errors
-        (execute-ddl (sql '(drop table alma)))))))
+        (execute-ddl (sql (drop table alma)))))))
 
 (deftest* test/binding ()
-  (let* ((columns (compile-sql-columns `((a (integer 32))
-                                         (string_column (varchar 50))
-                                         (integer_column (integer 32))
-                                         (boolean_true_column boolean)
-                                         (boolean_false_column boolean)
-                                         (b (integer 32)))))
+  (let* ((columns (compile-sexp-sql-columns
+                   `((a (integer 32))
+                     (string_column (varchar 50))
+                     (integer_column (integer 32))
+                     (boolean_true_column boolean)
+                     (boolean_false_column boolean)
+                     (b (integer 32)))))
          (binding-literals (loop for entry :in `(("éáúóüőű" varchar)
                                                  (42 (integer 32))
                                                  (#t boolean)
@@ -83,18 +86,20 @@
                                  for idx :upfrom 0
                                  collect (progn
                                            (setf type (if type
-                                                          (compile-sql-type type)
+                                                          (compile-sexp-sql-type type)
                                                           (type-of (elt columns idx))))
                                            (make-instance 'sql-literal :value value :type type)))))
     (unwind-protect
          (with-transaction
-           (execute-ddl (sql `(create table alma ,columns)))
-           (execute (sql `(insert alma ,columns ,(append (list (compile-sql-literal '(? named1 (integer 32))))
-                                                         binding-literals
-                                                         (list (compile-sql-literal '(? named2 (integer 32)))))))
+           (execute-ddl (sql (create table alma (backquote columns))))
+           (execute (sql (insert alma
+                                 (backquote columns)
+                                 (backquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
+                                                    binding-literals
+                                                    (list (compile-sexp-sql-literal '(? named2 (integer 32))))))))
                     :bindings `(named1 11
                                 named2 22))
-           (execute (sql `(select ,columns alma))
+           (execute (sql (select (backquote columns) alma))
                     :visitor (let ((first-time #t))
                                (lambda (row)
                                  (let ((idx -1))
@@ -109,11 +114,13 @@
                                      (is (eql (next) (value-of (fourth binding-literals))))
                                      (is (eql (next) 22)))))))
            (signals unbound-binding-variable-error
-             (execute (sql `(insert alma ,columns ,(append (list (compile-sql-literal '(? named1 (integer 32))))
-                                                           binding-literals
-                                                           (list (compile-sql-literal '(? named2 (integer 32))))))))))
+             (execute (sql (insert alma
+                                   (backquote columns)
+                                   (backquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
+                                                      binding-literals
+                                                      (list (compile-sexp-sql-literal '(? named2 (integer 32)))))))))))
       (ignore-errors
-        (execute-ddl (sql '(drop table alma)))))))
+        (execute-ddl (sql (drop table alma)))))))
 
 (defmacro define-type-test (name type &body values)
   `(deftest ,name ()
@@ -122,24 +129,24 @@
                 (literals (mapcar
                            (lambda (value)
                              (sql-literal :value value
-                                          :type (cl-rdbms::compile-sql-type ',type)))
+                                          :type (compile-sexp-sql-type ',type)))
                            values)))
            (with-transaction
-             (execute-ddl (sql `(create table alma ((a ,',type)))))
+             (execute-ddl (sql (create table alma ((a ,type)))))
              (loop for literal in literals
-                   do (execute (sql `(insert alma (a) (,literal)))))
+                   do (execute (sql (insert alma (a) ((backquote literal))))))
              (if (and values (typep (first values) 'local-time:local-time))
                  (is
                   (every #'local-time:local-time=
-                         (apply #'nconc (execute (sql `(select * alma)) :result-type 'list))
+                         (apply #'nconc (execute (sql (select * alma)) :result-type 'list))
                          values))
                  (is
                   (equalp
-                   (apply #'nconc (execute (sql `(select * alma)) :result-type 'list))
+                   (apply #'nconc (execute (sql (select * alma)) :result-type 'list))
                    values)))))
     
       (ignore-errors
-        (execute-ddl (sql '(drop table alma)))))))
+        (execute-ddl (sql (drop table alma)))))))
 
 (define-type-test test/boolean boolean
   t
@@ -188,6 +195,7 @@
 (define-type-test test/date date
   (local-time:today))
 
+;; TODO time type is not gonna work with local-time, or needs special support
 (define-type-test test/time time
   (local-time:parse-timestring "06:06:06Z"))
 
@@ -223,7 +231,7 @@
 
 (deftest* test/insert-record ()
   (unwind-protect
-       (let ((columns (compile-sql-columns
+       (let ((columns (compile-sexp-sql-columns
                        `((a (integer 32))
                          (b (varchar 50))))))
          (create-table 'alma columns)
@@ -233,22 +241,22 @@
              (is (= (elt row 0) 1))
              (is (string= (elt row 1) "alma")))))
     (ignore-errors
-      (execute-ddl (sql '(drop table alma))))))
+      (execute-ddl (sql (drop table alma))))))
 
 (deftest* test/update-records ()
   (unwind-protect
-       (let ((columns (compile-sql-columns
+       (let ((columns (compile-sexp-sql-columns
                        `((a (integer 32))
                          (b (varchar 50))))))
          (create-table 'alma columns)
          (with-transaction
-           (execute (sql '(insert alma (a b) (:null :null))))
+           (execute (sql (insert alma (a b) (:null :null))))
            (update-records 'alma columns (list 1 "alma"))
            (let ((row (first* (select-records columns '(alma)))))
              (is (= (elt row 0) 1))
              (is (string= (elt row 1) "alma")))))
     (ignore-errors
-      (execute-ddl (sql '(drop table alma))))))
+      (execute-ddl (sql (drop table alma))))))
 
 (defmacro defsyntaxtest* (name sexp-p &body body)
   `(deftest ,name ()
@@ -256,7 +264,7 @@
       ,@ (loop for (sql string-or-case-body) :on body :by #'cddr
                collect `(is (equalp
                              (format-sql-to-string ,(if sexp-p
-                                                        `(sql ,sql)
+                                                        `(compile-sexp-sql ,sql)
                                                         sql))
                              ,(if (stringp string-or-case-body)
                                   string-or-case-body
@@ -287,8 +295,8 @@
                  :temporary :drop
                  :name "a"
                  :columns (list (make-instance 'sql-column :name "a" :type (make-instance 'sql-integer-type))))
-  ((oracle "CREATE TEMPORARY TABLE a (a NUMBER) ON COMMIT DROP")
-   (t "CREATE TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")))
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE a (a NUMBER) ON COMMIT DROP")
+   (t "CREATE GLOBAL TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")))
 
 (defasttest test/alter-table-syntax
   (make-instance 'sql-alter-table
@@ -405,15 +413,15 @@
    (t "SELECT NEXTVAL('a')")))
 
 (defsyntaxtest test/sexp-syntax
-  `(select "bar" table)
+  '(select "bar" table)
   ((oracle "SELECT bar FROM \"table\"")
    (t "SELECT bar FROM table"))
 
-  `(select (count *) _table)
+  '(select (count *) _table)
   ((oracle "SELECT count(*) FROM \"_table\"")
    (t "SELECT count(*) FROM _table"))
 
-  `(select
+  '(select
     ((foo.col1 "col1_alias") "bar")
     table)
   ((oracle "SELECT foo.col1 AS col1_alias, bar FROM \"table\"")
@@ -421,17 +429,16 @@
 
   `(select
     (foo.column "bar")
-    ,(progn
-      (list (make-instance 'sql-table-alias
-                           :name "alma"
-                           :alias "alma_alias"))))
+    ,(list (make-instance 'sql-table-alias
+                          :name "alma"
+                          :alias "alma_alias")))
   ((oracle "SELECT foo.\"column\", bar FROM alma alma_alias")
    (t "SELECT foo.column, bar FROM alma alma_alias"))
 
-  `(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
-  ((oracle "CREATE TEMPORARY TABLE alma (col1 VARCHAR2, col2 NUMBER(10)) ON COMMIT DROP")
-   (t "CREATE TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP"))
+  '(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE alma (col1 VARCHAR2, col2 NUMBER(10)) ON COMMIT DROP")
+   (t "CREATE GLOBAL TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP"))
 
-  `(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
-  ((oracle "CREATE TEMPORARY TABLE alma (col2 NUMBER(10)) ON COMMIT DELETE ROWS")
-   (t "CREATE TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")))
+  '(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE alma (col2 NUMBER(10)) ON COMMIT DELETE ROWS")
+   (t "CREATE GLOBAL TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")))

@@ -26,6 +26,9 @@
 (defgeneric format-sql-syntax-node (node database)
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
 
+  (:method :around (node (database null))
+           (error "May not call with null DATABASE"))
+
   (:method (node database)
            (format-sql-literal node database)))
 
@@ -40,7 +43,10 @@
                           (make-instance 'database))))
         (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
         (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
-    (format-sql-syntax-node syntax-node database)
+    (assert *database*)
+    ;; TODO (?) this formatting could be put in a load-time-value and then loading the fasl's would react to
+    ;; changing *database* before loading them and use the syntax customizations specified by it.
+    (format-sql-syntax-node syntax-node *database*)
     (flet ((copy-array (array)
              (let ((length (length array)))
                (if (and (zerop length)
@@ -62,7 +68,6 @@
           (values *binding-types* *binding-values*))))))
 
 (defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
-  (assert (not bindings) () "You may not specify bindings when using command factories")
   (let* (binding-types
          binding-values
          (command (with-output-to-string (*sql-stream*)
@@ -111,6 +116,8 @@
                  ,@(remove-if (lambda (option)
                                 (starts-with (string-downcase (first option)) "format"))
                               options))
+      (defmethod make-load-form ((self ,name) &optional env)
+        (make-load-form-saving-slots self :environment env))
       (pushnew ',name *sql-syntax-node-names*)
       ,(awhen (find :format-sql-syntax-node options :key #'first)
               `(defmethod format-sql-syntax-node ((self ,name) database)
@@ -142,12 +149,20 @@
   `(format-comma-separated-list ,nodes nil format-sql-identifier))
 
 (defmacro format-comma-separated-list (nodes &optional database (format-fn 'format-sql-syntax-node))
-  `(iter (for node :in-sequence ,nodes)
-         (unless (first-iteration-p)
-           (write-string ", " *sql-stream*))
-         ,(if database
-              `(,format-fn node ,database)
-              `(,format-fn node))))
+  (with-unique-names (node)
+    (rebinding (nodes)
+      `(if (sql-backquote-p ,nodes)
+           (push-form-into-sql-stream-elements
+            `(iter (for ,',node :in-sequence ,(form-of ,nodes))
+                   (unless (first-iteration-p)
+                     (write-string ", " *sql-stream*))
+                   (,',format-fn ,',node *database*)))
+        (iter (for ,node :in-sequence ,nodes)
+              (unless (first-iteration-p)
+                (write-string ", " *sql-stream*))
+              ,(if database
+                   `(,format-fn ,node ,database)
+                   `(,format-fn ,node)))))))
 
 (defmacro format-separated-list (nodes separator &optional database (format-fn 'format-sql-syntax-node))
   `(iter (for node :in-sequence ,nodes)

@@ -144,16 +144,21 @@
 
 (defmethod perform ((op test-op) (system cl-rdbms-backend-system))
   (operate 'load-op system)
+  (in-package :cl-rdbms)
+  ;; set it before compiling, so the SEXP SQL compiler will use the specified database type to format sql
+  (eval (read-from-string
+         (concatenate 'string "(progn
+                                 (setf *database* " (database-factory-form-of system) "))")))
   (operate 'load-op :cl-rdbms-test)
   (in-package :cl-rdbms-test)
   (eval (read-from-string
-         (concatenate 'string "(setf *test-database* " (database-factory-form-of system) ")")))
+         (concatenate 'string "(progn
+                                 (setf *test-database* *database*))")))
   (declaim (optimize (debug 3)))
   (warn "(declaim (optimize (debug 3))) was issued to help later C-c C-c'ing")
   (eval (read-from-string "(progn
-                             (stefil:funcall-test-with-feedback-message 'test)
-                             (setf *database* *test-database*))"))
-  (warn "(setf *database* *test-database*) was issued that have set the global value of *database* (helps REPL'ing)")
+                             (stefil:funcall-test-with-feedback-message 'test))"))
+  (warn "*database* was set to ~A help REPL'ing" (eval (read-from-string "*database*")))
   (values))
 
 (defmethod operation-done-p ((op test-op) (system (eql (find-system :cl-rdbms))))
