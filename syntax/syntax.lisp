@@ -120,27 +120,27 @@
            (format-string (string-downcase name))))
 
 
-;;;;;;;;;;;;;
-;;; Backquote
+;;;;;;;;;;;
+;;; Unquote
 
-(define-syntax-node sql-backquote (sql-syntax-node)
+(define-syntax-node sql-unquote (sql-syntax-node)
   ((form nil))
   (:format-sql-syntax-node
-   (expand-sql-backquote self 'format-sql-syntax-node)))
+   (expand-sql-unquote self 'format-sql-syntax-node)))
 
 (defun push-form-into-sql-stream-elements (form)
   (vector-push-extend (get-output-stream-string *sql-stream*) *sql-stream-elements*)
   (vector-push-extend form *sql-stream-elements*)
   (setf *sql-stream* (make-string-output-stream)))
 
-(defun expand-sql-backquote (node formatter)
+(defun expand-sql-unquote (node formatter)
   (push-form-into-sql-stream-elements `(,formatter ,(form-of node) *database*)))
 
-(defun backquote-aware-format-sql-literal (literal trunk call-next-method)
+(defun unquote-aware-format-sql-literal (literal trunk call-next-method)
   (let ((type (type-of literal))
         (value (value-of literal)))
     (if type
-        (if (typep value 'sql-backquote)
+        (if (typep value 'sql-unquote)
             (progn
               (vector-push-extend type *binding-types*)
               (vector-push-extend nil *binding-values*)
@@ -153,11 +153,11 @@
               (funcall trunk)))
         (funcall call-next-method))))
 
-(defmethod format-sql-literal ((node sql-backquote) database)
-  (expand-sql-backquote node 'format-sql-literal))
+(defmethod format-sql-literal ((node sql-unquote) database)
+  (expand-sql-unquote node 'format-sql-literal))
 
-(defmethod format-sql-identifier ((node sql-backquote) database)
-  (expand-sql-backquote node 'format-sql-identifier))
+(defmethod format-sql-identifier ((node sql-unquote) database)
+  (expand-sql-unquote node 'format-sql-identifier))
 
 ;;;;;;;;;;;;;
 ;;; Statement

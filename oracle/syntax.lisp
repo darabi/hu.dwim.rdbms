@@ -25,7 +25,7 @@
   (format-string "'T'"))
 
 (defmethod format-sql-literal ((literal sql-literal) (database oracle))
-  (backquote-aware-format-sql-literal
+  (unquote-aware-format-sql-literal
    literal
    (lambda ()
      (format-string ":")

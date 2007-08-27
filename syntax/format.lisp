@@ -151,7 +151,7 @@
 (defmacro format-comma-separated-list (nodes &optional database (format-fn 'format-sql-syntax-node))
   (with-unique-names (node)
     (rebinding (nodes)
-      `(if (sql-backquote-p ,nodes)
+      `(if (sql-unquote-p ,nodes)
            (push-form-into-sql-stream-elements
             `(iter (for ,',node :in-sequence ,(form-of ,nodes))
                    (unless (first-iteration-p)

@@ -64,7 +64,7 @@
     (unwind-protect
          (with-transaction
            (execute-ddl (sql (create table alma ((name (varchar 50))))))
-           (execute (sql (insert alma (name) (((backquote unicode-text) varchar)))))
+           (execute (sql (insert alma (name) (((sql-unquote unicode-text) varchar)))))
            (is (string= (first* (first* (execute (sql (select * alma))))) unicode-text)))
       (ignore-errors
         (execute-ddl (sql (drop table alma)))))))
@@ -91,15 +91,15 @@
                                            (make-instance 'sql-literal :value value :type type)))))
     (unwind-protect
          (with-transaction
-           (execute-ddl (sql (create table alma (backquote columns))))
+           (execute-ddl (sql (create table alma (sql-unquote columns))))
            (execute (sql (insert alma
-                                 (backquote columns)
-                                 (backquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
-                                                    binding-literals
-                                                    (list (compile-sexp-sql-literal '(? named2 (integer 32))))))))
+                                 (sql-unquote columns)
+                                 (sql-unquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
+                                                      binding-literals
+                                                      (list (compile-sexp-sql-literal '(? named2 (integer 32))))))))
                     :bindings `(named1 11
                                 named2 22))
-           (execute (sql (select (backquote columns) alma))
+           (execute (sql (select (sql-unquote columns) alma))
                     :visitor (let ((first-time #t))
                                (lambda (row)
                                  (let ((idx -1))
@@ -115,10 +115,10 @@
                                      (is (eql (next) 22)))))))
            (signals unbound-binding-variable-error
              (execute (sql (insert alma
-                                   (backquote columns)
-                                   (backquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
-                                                      binding-literals
-                                                      (list (compile-sexp-sql-literal '(? named2 (integer 32)))))))))))
+                                   (sql-unquote columns)
+                                   (sql-unquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
+                                                        binding-literals
+                                                        (list (compile-sexp-sql-literal '(? named2 (integer 32)))))))))))
       (ignore-errors
         (execute-ddl (sql (drop table alma)))))))
 
@@ -134,7 +134,7 @@
            (with-transaction
              (execute-ddl (sql (create table alma ((a ,type)))))
              (loop for literal in literals
-                   do (execute (sql (insert alma (a) ((backquote literal))))))
+                   do (execute (sql (insert alma (a) ((sql-unquote literal))))))
              (if (and values (typep (first values) 'local-time:local-time))
                  (is
                   (every #'local-time:local-time=

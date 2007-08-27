@@ -26,7 +26,7 @@
   (format-string "'::bytea"))
 
 (defmethod format-sql-literal ((literal sql-literal) (database postgresql))
-  (backquote-aware-format-sql-literal
+  (unquote-aware-format-sql-literal
    literal
    (lambda ()
      (format-string "$")

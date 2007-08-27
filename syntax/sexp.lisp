@@ -52,8 +52,8 @@
            (sql-function-call-form-p body))
       (list (compile-sexp-sql-function-call body))
       (cond
-        ((sql-backquote-p body)
-         (compile-sexp-sql-backquote body))
+        ((sql-unquote-p body)
+         (compile-sexp-sql-unquote body))
         ((consp body)
          (loop for node :in body
                collect (if (and function-call-allowed-p
@@ -65,8 +65,8 @@
 (defun process-sexp-sql-syntax-node (node &optional (visitor #'identity))
   (cond ((typep node 'sql-syntax-node)
          node)
-        ((sql-backquote-p node)
-         (funcall visitor (compile-sexp-sql-backquote node)))
+        ((sql-unquote-p node)
+         (funcall visitor (compile-sexp-sql-unquote node)))
         (t (funcall visitor node))))
 
 (defun sql-function-name-p (thing)
@@ -87,18 +87,18 @@
   (and (consp thing)
        (sql-function-name-p (first thing))))
 
-(defun sql-backquote-p (thing)
-  (or (typep thing 'sql-backquote)
+(defun sql-unquote-p (thing)
+  (or (typep thing 'sql-unquote)
       (and (consp thing)
-           (sql-symbol-equal (first thing) 'backquote))))
+           (sql-symbol-equal (first thing) 'sql-unquote))))
 
-(defun compile-sexp-sql-backquote (body)
-  (if (typep body 'sql-backquote)
+(defun compile-sexp-sql-unquote (body)
+  (if (typep body 'sql-unquote)
       body
       (progn
         (unless (= 2 (length body))
           (sql-compile-error body))
-        (make-instance 'sql-backquote :form (second body)))))
+        (make-instance 'sql-unquote :form (second body)))))
 
 (defun compile-sexp-sql-select (body)
   (pop body)
@@ -150,6 +150,9 @@
                    :table (process-sexp-sql-syntax-node table #'compile-sexp-sql-table-alias)
                    :where where)))
 
+(defun compile-sexp-sql-update (body)
+  (error "Not yet implemented"))
+
 (defun compile-sexp-sql-function-call (body)
   (make-instance 'sql-function-call
                  :name (string-downcase (first body))
@@ -162,8 +165,8 @@
 
 (defun compile-sexp-sql-column-alias (body)
   (cond
-    ((sql-backquote-p body)
-     (compile-sexp-sql-backquote body))
+    ((sql-unquote-p body)
+     (compile-sexp-sql-unquote body))
     ((sql-symbol-equal body "*")
      (make-instance 'sql-all-columns))
     ;; TODO this is temporary
@@ -209,8 +212,8 @@
   (make-instance 'sql-binding-variable :name (pop body) :type (compile-sexp-sql-type (pop body))))
 
 (defun compile-sexp-sql-type (body)
-  (if (sql-backquote-p body)
-      (compile-sql-backquote body)
+  (if (sql-unquote-p body)
+      (compile-sexp-sql-unquote body)
       (let ((name (if (consp body)
                       (first body)
                       body))
