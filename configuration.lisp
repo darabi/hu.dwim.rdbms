@@ -27,7 +27,8 @@
 
 (defun setup-readtable ()
   (enable-sharp-boolean-syntax)
-  (enable-sharp-l-syntax))
+  (enable-sharp-l-syntax)
+  (enable-sql-syntax))
 
 #+#.(cl:when (cl:find-package "SWANK") '(:and))
 (unless (assoc "CL-RDBMS" swank:*readtable-alist* :test #'string=)

@@ -8,6 +8,10 @@
 
 #.(cl-rdbms::file-header)
 
+(enable-sql-syntax)
+
+;;; please note that cl-perec tests cl-rdbms throughout, this is only a limited test file here
+
 (eval-always
   (use-package :stefil)
   (import (let ((*package* (find-package :cl-rdbms)))

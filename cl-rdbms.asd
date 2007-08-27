@@ -53,7 +53,8 @@
   :components
   ((:file "package")
    (:file "duplicates" :depends-on ("package"))
-   (:file "configuration" :depends-on ("duplicates"))
+   (:file "reader-macro" :depends-on ("duplicates") :pathname "syntax/reader-macro.lisp")
+   (:file "configuration" :depends-on ("duplicates" "reader-macro"))
    (:file "database" :depends-on ("configuration"))
    (:file "transaction" :depends-on ("database"))
    (:file "cursor" :depends-on ("transaction"))
