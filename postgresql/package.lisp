@@ -10,7 +10,8 @@
   (:shadowing-import-from #:cl-rdbms
     #:type #:type-of #:log)
 
-  (:use :cl :iterate :arnesi :defclass-star :cl-rdbms-system :cl-rdbms)
+  ;; TODO drop :arnesi, use :alexandria
+  (:use :cl :iterate :arnesi :cl-def :metabang-bind :defclass-star :cl-rdbms-system :cl-rdbms)
 
   (:export
    ))

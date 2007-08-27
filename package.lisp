@@ -10,8 +10,9 @@
   (:nicknames :rdbms)
 
   (:shadow #:log #:type-of #:type)
-  
-  (:use :cl :sb-pcl :iterate :arnesi :defclass-star :cl-rdbms-system)
+
+  ;; TODO drop :arnesi, use :alexandria
+  (:use :cl :sb-pcl :iterate :arnesi :cl-def :metabang-bind :defclass-star :cl-rdbms-system)
 
   (:export
    #:database

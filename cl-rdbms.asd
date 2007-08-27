@@ -47,7 +47,8 @@
 	       "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD"
   :description "rdbms lib with sql syntax and sql backend abstractions"
-  :depends-on (:arnesi :iterate :defclass-star)
+  ;; TODO drop arnesi dependency
+  :depends-on (:alexandria :iterate :cl-def :metabang-bind :defclass-star :arnesi)
   :default-component-class local-cl-source-file
   :components
   ((:file "package")
