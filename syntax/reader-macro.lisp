@@ -7,7 +7,12 @@
 (in-package :cl-rdbms)
 
 (def constant +default-sql-syntax-open-character+ #\[)
+
 (def constant +default-sql-syntax-close-character+ #\])
+
+;; #\, conflicts with backquote and comma, but it's ok, because it's a reader, so it couln't work
+;; transparently inside `(foo [select ,bar]) anyway, so we use #\, for sql-unquote. see the SQL macro
+;; if you want to use it inside a backquote.
 (def constant +default-sql-syntax-unquote-character+ #\,)
 
 (def function make-sql-reader (end-char unquote-char)
