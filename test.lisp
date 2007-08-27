@@ -67,11 +67,11 @@
   (let ((unicode-text "éáúóüőű"))
     (unwind-protect
          (with-transaction
-           (execute-ddl (sql (create table alma ((name (varchar 50))))))
-           (execute (sql (insert alma (name) (((sql-unquote unicode-text) varchar)))))
-           (is (string= (first* (first* (execute (sql (select * alma))))) unicode-text)))
+           (execute-ddl [create table alma ((name (varchar 50)))])
+           (execute [insert alma (name) ((,unicode-text varchar))])
+           (is (string= (first* (first* (execute [select * alma]))) unicode-text)))
       (ignore-errors
-        (execute-ddl (sql (drop table alma)))))))
+        (execute-ddl [drop table alma])))))
 
 (deftest* test/binding ()
   (let* ((columns (compile-sexp-sql-columns
@@ -95,15 +95,15 @@
                                            (make-instance 'sql-literal :value value :type type)))))
     (unwind-protect
          (with-transaction
-           (execute-ddl (sql (create table alma (sql-unquote columns))))
-           (execute (sql (insert alma
-                                 (sql-unquote columns)
-                                 (sql-unquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
-                                                      binding-literals
-                                                      (list (compile-sexp-sql-literal '(? named2 (integer 32))))))))
+           (execute-ddl [create table alma ,columns])
+           (execute [insert alma
+                            ,columns
+                            ,(append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
+                                     binding-literals
+                                     (list (compile-sexp-sql-literal '(? named2 (integer 32)))))]
                     :bindings `(named1 11
                                 named2 22))
-           (execute (sql (select (sql-unquote columns) alma))
+           (execute [select ,columns alma]
                     :visitor (let ((first-time #t))
                                (lambda (row)
                                  (let ((idx -1))
@@ -118,13 +118,13 @@
                                      (is (eql (next) (value-of (fourth binding-literals))))
                                      (is (eql (next) 22)))))))
            (signals unbound-binding-variable-error
-             (execute (sql (insert alma
-                                   (sql-unquote columns)
-                                   (sql-unquote (append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
-                                                        binding-literals
-                                                        (list (compile-sexp-sql-literal '(? named2 (integer 32)))))))))))
+             (execute [insert alma
+                              ,columns
+                              ,(append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
+                                       binding-literals
+                                       (list (compile-sexp-sql-literal '(? named2 (integer 32)))))])))
       (ignore-errors
-        (execute-ddl (sql (drop table alma)))))))
+        (execute-ddl [drop table alma])))))
 
 (defmacro define-type-test (name type &body values)
   `(deftest ,name ()
@@ -136,21 +136,22 @@
                                           :type (compile-sexp-sql-type ',type)))
                            values)))
            (with-transaction
+             ;; the reader syntax can not cope with backquote, so we use SQL
              (execute-ddl (sql (create table alma ((a ,type)))))
              (loop for literal in literals
                    do (execute (sql (insert alma (a) ((sql-unquote literal))))))
              (if (and values (typep (first values) 'local-time:local-time))
                  (is
                   (every #'local-time:local-time=
-                         (apply #'nconc (execute (sql (select * alma)) :result-type 'list))
+                         (apply #'nconc (execute [select * alma] :result-type 'list))
                          values))
                  (is
                   (equalp
-                   (apply #'nconc (execute (sql (select * alma)) :result-type 'list))
+                   (apply #'nconc (execute [select * alma] :result-type 'list))
                    values)))))
     
       (ignore-errors
-        (execute-ddl (sql (drop table alma)))))))
+        (execute-ddl [drop table alma])))))
 
 (define-type-test test/boolean boolean
   t
@@ -245,7 +246,7 @@
              (is (= (elt row 0) 1))
              (is (string= (elt row 1) "alma")))))
     (ignore-errors
-      (execute-ddl (sql (drop table alma))))))
+      (execute-ddl [drop table alma]))))
 
 (deftest* test/update-records ()
   (unwind-protect
@@ -254,13 +255,13 @@
                          (b (varchar 50))))))
          (create-table 'alma columns)
          (with-transaction
-           (execute (sql (insert alma (a b) (:null :null))))
+           (execute [insert alma (a b) (:null :null)])
            (update-records 'alma columns (list 1 "alma"))
            (let ((row (first* (select-records columns '(alma)))))
              (is (= (elt row 0) 1))
              (is (string= (elt row 1) "alma")))))
     (ignore-errors
-      (execute-ddl (sql (drop table alma))))))
+      (execute-ddl [drop table alma]))))
 
 (defmacro defsyntaxtest* (name sexp-p &body body)
   `(deftest ,name ()
