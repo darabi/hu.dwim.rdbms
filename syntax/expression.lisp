@@ -32,7 +32,7 @@
   (:format-sql-syntax-node
    (format-char "(")
    (format-separated-list subqueries
-                          (strcat " " (symbol-name set-operation) (if all " ALL " " ")))
+                          (concatenate 'string (symbol-name set-operation) (if all " ALL" "")))
    (format-char ")")))
 
 (defmacro define-set-operation (name)
@@ -88,7 +88,7 @@
     :type list))
   (:format-sql-syntax-node
    (format-char "(")
-   (format-separated-list expressions (strcat " " name " "))
+   (format-separated-list expressions name)
    (format-char ")")))
 
 (defmacro define-unary-operator (name &optional (fix :prefix))

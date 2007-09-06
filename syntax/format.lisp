@@ -170,7 +170,9 @@
 (defmacro format-separated-list (nodes separator &optional database (format-fn 'format-sql-syntax-node))
   `(iter (for node :in-sequence ,nodes)
          (unless (first-iteration-p)
-           (write-string ,separator *sql-stream*))
+           (write-string " " *sql-stream*)
+           (write-string ,separator *sql-stream*)
+           (write-string " " *sql-stream*))
          ,(if database
               `(,format-fn node ,database)
               `(,format-fn node))))
