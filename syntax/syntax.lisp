@@ -74,7 +74,11 @@
            (format-string ")"))
 
   (:method ((literal sql-literal) database)
-           (format-sql-literal (value-of literal) database)))
+    (format-sql-literal (if (and (null (value-of literal))
+                                 (not (typep (type-of literal) 'sql-boolean-type)))
+                            :null
+                            (value-of literal))
+                        database)))
 
 (define-syntax-node sql-binding-variable (named-sql-syntax-node)
   ((type nil
