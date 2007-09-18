@@ -48,7 +48,7 @@
   (format-char "(")
   (format-sql-syntax-node (string-of regexp-like) database)
   (format-char " ")
-  (format-sql-name (if (case-sensitive-p regexp-like) "~" "~*"))
+  (format-string (if (case-sensitive-p regexp-like) "~" "~*"))
   (format-char " ")
   (format-sql-syntax-node (pattern-of regexp-like) database)
   (format-char ")"))

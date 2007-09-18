@@ -108,17 +108,22 @@
   (:method ((identifier sql-identifier) database)
            (format-sql-identifier (name-of identifier) database)))
 
-;;;
+;;;;;;;;;
 ;;; Names
-;;;
-;; TODO delme, names are strings, period. basically format-sql-identifier.
-(defgeneric format-sql-name (name)
-  (:method ((name string))
+
+(defgeneric format-sql-operator-name (name database)
+  (:method ((name string) database)
            (format-string name))
 
-  (:method ((name symbol))
+  (:method ((name symbol) database)
            (format-string (string-downcase name))))
 
+(defgeneric format-sql-function-name (name database)
+  (:method ((name string) database)
+           (format-string name))
+
+  (:method ((name symbol) database)
+           (format-string (string-downcase name))))
 
 ;;;;;;;;;;;
 ;;; Unquote

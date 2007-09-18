@@ -65,8 +65,14 @@
   (:format-sql-syntax-node
    (format-char "(")
    (ecase fix
-     (:prefix (format-sql-name name) (format-char " ") (format-sql-syntax-node expression))
-     (:postfix (format-sql-syntax-node expression) (format-char " ") (format-sql-name name)))
+     (:prefix
+      (format-sql-operator-name name database)
+      (format-char " ")
+      (format-sql-syntax-node expression))
+     (:postfix
+      (format-sql-syntax-node expression)
+      (format-char " ")
+      (format-sql-operator-name name database)))
    (format-char ")")))
 
 (define-syntax-node sql-binary-operator (sql-operator)
@@ -78,7 +84,7 @@
    (format-char "(")
    (format-sql-syntax-node left)
    (format-char " ")
-   (format-sql-name name)
+   (format-sql-operator-name name database)
    (format-char " ")
    (format-sql-syntax-node right)
    (format-char ")")))
@@ -251,7 +257,7 @@
    (arguments
     nil))
   (:format-sql-syntax-node
-   (format-sql-name name)
+   (format-sql-function-name name database)
    (format-char "(")
    (format-comma-separated-list arguments)
    (format-char ")")))
