@@ -109,8 +109,10 @@
    (right
     :type sql-table-reference)
    (on
+    nil
     :type sql-expression)
    (using
+    nil
     :type (list sql-identifier*)))
   (:format-sql-syntax-node
    (format-char "(")
