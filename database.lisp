@@ -64,7 +64,7 @@
   "Cuts off the end of names that are too long and appends the SXHASH of the original name."
   (assert (>= limit 8))
   (let ((name-as-string (strcat prefix (string-downcase name))))
-    (iter (for char :in-sequence "*\\/-~")
+    (iter (for char :in-sequence "*\\/-~%")
           (nsubstitute #\_ char name-as-string :test #'char=))
     (let ((name-as-bytes (string-to-octets name-as-string :utf-8)))
       (when (> (length name-as-bytes)
