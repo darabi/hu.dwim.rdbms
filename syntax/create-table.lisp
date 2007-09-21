@@ -46,13 +46,18 @@
     :type sql-type)
    (constraints
     nil
-    :type list))
+    :type list)
+   (default-value
+    :type t))
   (:documentation "An SQL column specification.")
   (:format-sql-syntax-node
    (format-sql-identifier name)
    (when type
      (format-char " ")
      (format-sql-syntax-node type))
+   (when (slot-boundp self 'default-value)
+     (format-string " DEFAULT ")
+     (format-sql-literal default-value))
    (mapc (lambda (constraint) (format-sql-syntax-node constraint)) constraints))
   (:format-sql-identifier
    (format-sql-identifier name)))
