@@ -63,24 +63,42 @@
 ;;;;;;;;;;;;;;;;
 ;;; Update table
 
-(defcondition* unconfirmed-destructive-alter-table-error (serious-condition)
+(defparameter *signal-non-destructive-alter-table-commands* #f)
+
+(defcondition* unconfirmed-alter-table-error (serious-condition)
   ((table-name
-    :type string)
-   (column-name
     :type string)))
 
-(defcondition* unconfirmed-destructive-alter-column-type-error (unconfirmed-destructive-alter-table-error)
+(defcondition* unconfirmed-add-column-error (unconfirmed-alter-table-error)
+  ((column-name
+    :type string)
+   (column-type))
+  (:report (lambda (error stream)
+             (format stream "Adding the column ~S with type ~A in table ~S is a safe operation"
+                     (column-name-of error) (column-type-of error) (table-name-of error)))))
+
+(defcondition* unconfirmed-alter-column-type-error (unconfirmed-alter-table-error)
   ((old-type)
    (new-type)
    (new-rdbms-type))
   (:report (lambda (error stream)
-             (format stream "Changing the type of column ~S from ~A to ~A, ~A in table ~S is a destructive transformation"
+             (format stream "Changing the type of column ~S from ~A to ~A, ~A in table ~S will be issued in a separate transaction and your database will try to convert existing data which may be an unsafe operation"
+                     (column-name-of error) (old-type-of error) (new-type-of error) (new-rdbms-type-of error) (table-name-of error)))))
+
+(defcondition* unconfirmed-destructive-alter-table-error (unconfirmed-alter-table-error)
+  ((column-name
+    :type string)))
+
+(defcondition* unconfirmed-destructive-alter-column-type-error (unconfirmed-destructive-alter-table-error unconfirmed-alter-column-type-error)
+  ()
+  (:report (lambda (error stream)
+             (format stream "DESTRUCTIVE: Changing the type of column ~S from ~A to ~A, ~A in table ~S is a destructive transformation"
                      (column-name-of error) (old-type-of error) (new-type-of error) (new-rdbms-type-of error) (table-name-of error)))))
 
 (defcondition* unconfirmed-destructive-drop-column-error (unconfirmed-destructive-alter-table-error)
   ()
   (:report (lambda (error stream)
-             (format stream "Dropping the column ~S from table ~S is a destructive transformation"
+             (format stream "DESTRUCTIVE: Dropping the column ~S from table ~S is a destructive transformation"
                      (column-name-of error) (table-name-of error)))))
 
 (defmacro with-confirmed-descructive-changes (&body body)
@@ -116,6 +134,13 @@
               (unless (equal-type-p (type-of table-column) new-type *database*)
                 (handler-case
                     (with-transaction
+                      (with-simple-restart
+                          (continue "Alter the table by adding the new column")
+                        (when *signal-non-destructive-alter-table-commands*
+                          (error 'unconfirmed-alter-column-type-error :table-name name :column-name column-name
+                                 :old-type (type-of table-column)
+                                 :new-type (type-of column)
+                                 :new-rdbms-type new-type)))
                       (alter-column-type name column))
                   (error (e)
                          (declare (ignore e))
@@ -128,7 +153,12 @@
                          (drop-column name column-name)
                          (add-column name column)))))
             ;; add missing columns not present in the table
-            (add-column name column))))
+            (progn
+              (with-simple-restart
+                  (continue "Alter the table by adding the new column")
+                (when *signal-non-destructive-alter-table-commands*
+                  (error 'unconfirmed-add-column-error :table-name name :column-name (name-of column) :column-type (type-of column))))
+              (add-column name column)))))
     ;; drop extra columns that are present in the table
     (dolist (table-column table-columns)
       (let ((column-name (name-of table-column)))
