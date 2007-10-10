@@ -53,18 +53,16 @@
         (intern symbol-name package)
         (intern symbol-name))))
 
-(defun length=1 (list)
+(def (function io) length=1 (list)
   (and list (null (cdr list))))
 
-(declaim (inline first* second* third*))
-
-(defun first* (sequence)
+(def (function io) first* (sequence)
   (elt sequence 0))
 
-(defun second* (sequence)
+(def (function io) second* (sequence)
   (elt sequence 1))
 
-(defun third* (sequence)
+(def (function io) third* (sequence)
   (elt sequence 2))
 
 ;;;;;;;;;;;;;;;;;;;
