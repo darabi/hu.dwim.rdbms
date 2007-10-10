@@ -67,12 +67,12 @@
 
 (defcondition* unconfirmed-alter-table-error (serious-condition)
   ((table-name
+    :type string)
+   (column-name
     :type string)))
 
 (defcondition* unconfirmed-add-column-error (unconfirmed-alter-table-error)
-  ((column-name
-    :type string)
-   (column-type))
+  ((column-type))
   (:report (lambda (error stream)
              (format stream "Adding the column ~S with type ~A in table ~S is a safe operation"
                      (column-name-of error) (column-type-of error) (table-name-of error)))))
@@ -83,17 +83,19 @@
    (new-rdbms-type))
   (:report (lambda (error stream)
              (format stream "Changing the type of column ~S from ~A to ~A, ~A in table ~S will be issued in a separate transaction and your database will try to convert existing data which may be an unsafe operation"
-                     (column-name-of error) (old-type-of error) (new-type-of error) (new-rdbms-type-of error) (table-name-of error)))))
+                     (column-name-of error) (old-type-of error) (new-type-of error)
+                     (new-rdbms-type-of error) (table-name-of error)))))
 
 (defcondition* unconfirmed-destructive-alter-table-error (unconfirmed-alter-table-error)
-  ((column-name
-    :type string)))
+  ())
 
-(defcondition* unconfirmed-destructive-alter-column-type-error (unconfirmed-destructive-alter-table-error unconfirmed-alter-column-type-error)
+(defcondition* unconfirmed-destructive-alter-column-type-error (unconfirmed-destructive-alter-table-error
+                                                                unconfirmed-alter-column-type-error)
   ()
   (:report (lambda (error stream)
              (format stream "DESTRUCTIVE: Changing the type of column ~S from ~A to ~A, ~A in table ~S is a destructive transformation"
-                     (column-name-of error) (old-type-of error) (new-type-of error) (new-rdbms-type-of error) (table-name-of error)))))
+                     (column-name-of error) (old-type-of error) (new-type-of error)
+                     (new-rdbms-type-of error) (table-name-of error)))))
 
 (defcondition* unconfirmed-destructive-drop-column-error (unconfirmed-destructive-alter-table-error)
   ()
