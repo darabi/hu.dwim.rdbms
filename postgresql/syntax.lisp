@@ -44,6 +44,16 @@
     (format-string "::")
     (format-sql-syntax-node (type-of variable) database)))
 
+(defmethod format-sql-syntax-node ((like sql-like) (database postgresql))
+  (with-slots (string pattern case-sensitive-p) like
+    (format-char "(")
+    (format-sql-syntax-node string database)
+    (if case-sensitive-p
+        (format-string " LIKE ")
+        (format-string " ILIKE "))
+    (format-sql-syntax-node pattern database)
+    (format-char ")")))
+
 (defmethod format-sql-syntax-node ((regexp-like sql-regexp-like) (database postgresql))
   (format-char "(")
   (format-sql-syntax-node (string-of regexp-like) database)

@@ -196,12 +196,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pattern matching
 
-(define-binary-operator like)
+(define-syntax-node sql-like (sql-expression)
+  ((string :type  sql-expression)
+   (pattern :type sql-expression)
+   (case-sensitive-p #t :type boolean))
+  (:format-sql-syntax-node
+   (if case-sensitive-p
+       (progn
+         (format-char "(")
+         (format-sql-syntax-node string)
+         (format-string " LIKE ")
+         (format-sql-syntax-node pattern)
+         (format-char ")"))
+       (progn
+         (format-string "(UPPER(")
+         (format-sql-syntax-node string)
+         (format-string ") LIKE UPPER(")
+         (format-sql-syntax-node pattern)
+         (format-string "))")))))
 
 (define-syntax-node sql-regexp-like (sql-expression)
-  ((string)
-   (pattern)
-   (case-sensitive #t :type boolean)))
+  ((string :type sql-expression)
+   (pattern :type sql-expression)
+   (case-sensitive-p #t :type boolean)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Case expressions
