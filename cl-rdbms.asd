@@ -11,26 +11,26 @@
   (:export
    #:optimize-declaration
    #:project-relative-pathname
-   #:*load-with-debug-p*))
+   #:*load-as-production-p*))
 
 (in-package #:cl-rdbms-system)
 
 (defun project-relative-pathname (path)
   (merge-pathnames path (component-pathname (find-system :cl-rdbms))))
 
-(defparameter *load-with-debug-p* t)
+(defparameter *load-as-production-p* t)
 
 (defun optimize-declaration ()
-  (if *load-with-debug-p*
-      '(optimize (debug 3) (safety 3))
-      '(optimize (speed 3) (debug 0) (safety 0))))
+  (if *load-as-production-p*
+      '(optimize (speed 3) (debug 0) (safety 0))
+      '(optimize (debug 3) (safety 3))))
 
 (defclass local-cl-source-file (cl-source-file)
   ())
 
 (defmethod perform :around ((op operation) (component local-cl-source-file))
   (let ((*features* *features*))
-    (when *load-with-debug-p*
+    (unless *load-as-production-p*
       (pushnew :debug *features*))
     (call-next-method)))
 

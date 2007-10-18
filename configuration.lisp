@@ -16,9 +16,9 @@
   #-debug(declare (ignore body)))
 
 (defun inline-declaration ()
-  (if *load-with-debug-p*
-      (values)
-      '(inline begin commit rollback execute assert-transaction-in-progress in-transaction-p)))
+  (if *load-as-production-p*
+      '(inline begin commit rollback execute assert-transaction-in-progress in-transaction-p)
+      (values)))
 
 (defun file-header ()
   `(eval-always
