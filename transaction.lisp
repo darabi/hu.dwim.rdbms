@@ -115,12 +115,13 @@
                ((:rollback :marked-for-rollback-only)
                 (rollback-transaction *database* *transaction*)))))
       (when *transaction*
-        (unless body-finished-p
-          (handler-case
-              (rollback-transaction *database* *transaction*)
-            (serious-condition (condition)
-                               (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
-        (cleanup-transaction *transaction*)))))
+        (unwind-protect
+             (unless body-finished-p
+               (handler-case
+                   (rollback-transaction *database* *transaction*)
+                 (serious-condition (condition)
+                   (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
+          (cleanup-transaction *transaction*))))))
 
 (defmethod (setf terminal-action-of) :before (new-value (transaction transaction))
   (when (and (member (terminal-action-of *transaction*) '(:marked-for-rollback-only :marked-for-commit-only))
