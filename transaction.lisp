@@ -69,6 +69,11 @@
 (defun current-delete-counter ()
   (delete-counter-of (command-counter-of *transaction*)))
 
+(def (macro e) with-readonly-transaction (&body body)
+  `(with-transaction* (:default-terminal-action :rollback)
+     (mark-transaction-for-rollback-only)
+     ,@body))
+
 (defmacro with-transaction (&body forms)
   `(with-transaction* ()
     ,@forms))
