@@ -11,9 +11,27 @@
 ;;; These definitions need to be available by the time we are reading the other files, therefore
 ;;; they are in a standalone file.
 
-(defmacro debug-only (&body body)
-  #+debug`(progn ,@body)
-  #-debug(declare (ignore body)))
+(def macro debug-only (&body body)
+  (if cl-rdbms-system:*load-as-production-p*
+      (values)
+      `(progn
+         ,@body)))
+
+(def macro debug-only* (&body body)
+  `(unless cl-rdbms-system:*load-as-production-p*
+     ,@body))
+
+(def macro production-only (&body body)
+  (if cl-rdbms-system:*load-as-production-p*
+      `(progn
+         ,@body)
+      (values)))
+
+(def macro production-only* (&body body)
+  `(if cl-rdbms-system:*load-as-production-p*
+       (progn
+         ,@body)
+       (values)))
 
 (defun inline-declaration ()
   (if *load-as-production-p*

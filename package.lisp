@@ -127,35 +127,3 @@
 
   (:shadowing-import-from :cl-rdbms
                           #:log))
-
-(in-package :cl-rdbms)
-
-(deflogger log ()
-  :level +warn+
-  :compile-time-level #+debug +dribble+ #-debug +warn+
-  :appender (make-instance 'brief-stream-log-appender :stream *debug-io*))
-
-(defclass sql-log-appender (stream-log-appender)
-  ())
-
-(deflogger sql-log ()
-  :level +warn+
-  :compile-time-level +info+
-  :appender (make-instance 'sql-log-appender :stream *debug-io*))
-
-(defun start-sql-recording ()
-  (setf (log.level (get-logger 'sql-log)) +info+)
-  (values))
-
-(defun stop-sql-recording ()
-  (setf (log.level (get-logger 'sql-log)) +warn+)
-  (values))
-
-(defun enable-sql-recording ()
-  (start-sql-recording))
-
-(defun disable-sql-recording ()
-  (stop-sql-recording))
-
-(defmethod append-message ((category log-category) (appender sql-log-appender) message level)
-  (format (arnesi::log-stream appender) "~&~A~%" message))
