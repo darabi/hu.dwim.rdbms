@@ -25,9 +25,8 @@
 
 (deflogger sql-log ()
   :level +warn+
-  :compile-time-level +info+
-  :appenders ((debug-only*
-                (make-instance 'sql-log-appender :stream *debug-io*))))
+  :compile-time-level *compile-time-log-level*
+  :appenders ((make-instance 'sql-log-appender :stream *debug-io*)))
 
 (defun start-sql-recording ()
   (setf (log.level (get-logger 'sql-log)) +info+)
