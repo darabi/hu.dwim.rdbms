@@ -34,6 +34,7 @@
    #:commit-transaction
    #:rollback-transaction
    #:cleanup-transaction
+   #:notify-transaction-event
    #:in-transaction-p
    #:transaction-in-progress-p
    #:transaction-valid-p

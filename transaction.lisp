@@ -265,6 +265,10 @@
           (setf (aref binding-values index) value))
         (assert type nil "The type of literals and binding variables must be defined because they are transmitted through the binding infrastructure")))
 
+(defgeneric notify-transaction-event (transaction event)
+  (:method (transaction event)
+    (values)))
+
 (defgeneric execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
   (:method (database transaction command &key &allow-other-keys)
            (error "Default method should not be reached"))
@@ -291,14 +295,17 @@
   (:method :after (database transaction (command string) &key &allow-other-keys)
            (let ((command-counter (command-counter-of transaction)))
              (cond ((starts-with command "INSERT" :test #'equalp)
-                    (incf (insert-counter-of command-counter)))
+                    (incf (insert-counter-of command-counter))
+                    (notify-transaction-event transaction :insert))
                    ((starts-with command "SELECT" :test #'equalp)
-                    (incf (select-counter-of command-counter)))
+                    (incf (select-counter-of command-counter))
+                    (notify-transaction-event transaction :select))
                    ((starts-with command "UPDATE" :test #'equalp)
-                    (incf (update-counter-of command-counter)))
+                    (incf (update-counter-of command-counter))
+                    (notify-transaction-event transaction :update))
                    ((starts-with command "DELETE" :test #'equalp)
-                    (incf (delete-counter-of command-counter)))))))
-
+                    (incf (delete-counter-of command-counter))
+                    (notify-transaction-event transaction :delete))))))
 
 (defclass* transaction-with-hooks-mixin ()
   ((hooks nil :type list)))
