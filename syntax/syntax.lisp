@@ -24,6 +24,15 @@
   (:format-sql-syntax-node
    (error "No formatter method for ~A" self)))
 
+;;;;;;;;;;;;
+;;; Fragment
+
+(define-syntax-node sql-fragment ()
+  ((sql :type string))
+  (:documentation "Represents an embedded SQL string.")
+  (:format-sql-syntax-node
+   (format-string sql)))
+
 ;;;;;;;;;;;
 ;;; Literal
 
