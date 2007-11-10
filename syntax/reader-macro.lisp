@@ -16,18 +16,25 @@
 (def constant +default-sql-syntax-unquote-character+ #\,)
 
 (def function make-sql-reader (end-char unquote-char)
-  (labels ((sql-unquote-reader (stream char)
-             (declare (ignore char))
-             (list 'sql-unquote (read stream t nil t)))
-           (sql-reader (stream char)
-             (declare (ignore char))
-             (bind ((*readtable* (copy-readtable)))
-               (set-macro-character unquote-char #'sql-unquote-reader)
-               (bind ((body (read-delimited-list end-char stream t)))
-                 ;; TODO these cause some warnings, but it's a headache to load stuff in such an order that...
-                 (expand-sql-ast-into-lambda-form
-                  (compile-sexp-sql body))))))
-    #'sql-reader))
+  (bind ((original-unquote-reader nil))
+    (labels ((sql-unquote-reader (stream char)
+               (declare (ignore char))
+               (list 'sql-unquote
+                     (bind ((*readtable* (copy-readtable)))
+                       ;; only override the meaning of unquote-char (#\,) for the first level of nesting.
+                       ;; this way [select ,`(foo ,bar)] works as expected.
+                       (set-macro-character unquote-char original-unquote-reader)
+                       (read stream t nil t))))
+             (sql-reader (stream char)
+               (declare (ignore char))
+               (setf original-unquote-reader (get-macro-character unquote-char *readtable*))
+               (bind ((*readtable* (copy-readtable)))
+                 (set-macro-character unquote-char #'sql-unquote-reader)
+                 (bind ((body (read-delimited-list end-char stream t)))
+                   ;; TODO these cause some warnings, but it's a headache to load stuff in such an order that...
+                   (expand-sql-ast-into-lambda-form
+                    (compile-sexp-sql body))))))
+      #'sql-reader)))
 
 (def (macro e) enable-sql-syntax (&optional (open-char +default-sql-syntax-open-character+)
                                             (close-char +default-sql-syntax-close-character+)
