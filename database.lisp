@@ -26,11 +26,23 @@
 (defcondition* rdbms-error ()
   ())
 
+(defcondition* translated-rdbms-error (rdbms-error)
+  ((original-error)))
+
 (defcondition* simple-rdbms-error (simple-error)
   ())
 
 (defun simple-rdbms-error (message &rest args)
   (error 'simple-rdbms-error :format-control message :format-arguments args))
+
+(defcondition* unable-to-obtain-lock-error (translated-rdbms-error simple-rdbms-error)
+  ())
+
+(defun unable-to-obtain-lock-error (message-or-nested-condition)
+  (error 'unable-to-obtain-lock-error
+         :format-control (princ-to-string message-or-nested-condition)
+         :original-error (when (typep message-or-nested-condition 'condition)
+                           message-or-nested-condition)))
 
 (defmethod shared-initialize :after ((database database) slot-names
                                      &key transaction-mixin generated-transaction-class-name &allow-other-keys)

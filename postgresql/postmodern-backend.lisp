@@ -72,7 +72,10 @@
   (let ((connection (connection-of tr))
         (statement-name "")) ; unnamed prepared statement
     (cl-postgres:prepare-query connection statement-name command)
-    (apply #'execute-postmodern-prepared-statement db connection statement-name args)))
+    (handler-case
+        (apply #'execute-postmodern-prepared-statement db connection statement-name args)
+      (cl-postgres:unable-to-obtain-lock-error (error)
+        (unable-to-obtain-lock-error error)))))
 
 (defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
                             &rest args)

@@ -15,6 +15,9 @@
   (:use :cl :sb-pcl :iterate :arnesi :cl-def :metabang-bind :defclass-star :cl-rdbms-system)
 
   (:export
+   #:rdbms-error
+   #:unable-to-obtain-lock-error
+   
    #:database
    #:oracle
    #:postgresql
