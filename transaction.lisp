@@ -281,12 +281,16 @@
                         command transaction database)
            (when (stringp command)
              (unless (zerop (length binding-types))
-               (sql-log.info "; ~A" (format nil "~{~A~^, ~}"
-                                            (iter (for i upfrom 1)
-                                                  (for type :in-vector binding-types)
-                                                  (for value :in-vector binding-values)
-                                                  (collect (format nil "$~A = ~A as ~A" i value
-                                                                   (format-sql-to-string type)))))))
+               (bind ((*print-length* 128)
+                      (*print-level* 3)
+                      (*print-pretty* #f)
+                      (*print-circle* #f))
+                 (sql-log.info "; ~A" (format nil "~{~A~^, ~}"
+                                              (iter (for i upfrom 1)
+                                                    (for type :in-vector binding-types)
+                                                    (for value :in-vector binding-values)
+                                                    (collect (format nil "$~A = ~A as ~A" i value
+                                                                     (format-sql-to-string type))))))))
              (sql-log.info "; ~A" command)))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
