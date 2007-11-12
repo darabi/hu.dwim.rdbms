@@ -37,7 +37,10 @@
    (terminal-action
     :commit
     :type (member :commit :rollback :marked-for-commit-only :marked-for-rollback-only)
-    :documentation "Used by with-transaction to decide what to do when the with-transaction body finishes without any errors."))
+    :documentation "Used by with-transaction to decide what to do when the with-transaction body finishes without any errors.")
+   (break-on-next-command
+    #f
+    :type boolean))
   (:documentation "An object representing a transaction context. The actual backend connection/transaction is usually lazily created."))
 
 (defprint-object (self transaction)
@@ -68,6 +71,12 @@
 
 (defun current-delete-counter ()
   (delete-counter-of (command-counter-of *transaction*)))
+
+(def (function e) report-transaction-state ()
+  (cerror "Confirm transaction state and go on" "Reporting ~A with ~A terminal action~%statistics: ~A" *transaction* (terminal-action-of *transaction*) (command-counter-of *transaction*)))
+
+(def (function e) break-on-next-command ()
+  (setf (break-on-next-command-p *transaction*) #t))
 
 (def (macro e) with-readonly-transaction (&body body)
   `(with-transaction* (:default-terminal-action :rollback)
@@ -294,6 +303,9 @@
              (sql-log.info "; ~A" command)))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
+           (when (break-on-next-command-p *transaction*)
+             (setf (break-on-next-command-p *transaction*) #f)
+             (cerror "Continue transaction" "Break requested on rdbms command ~S" command))
            (apply #'call-next-method database transaction command :result-type result-type args))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
