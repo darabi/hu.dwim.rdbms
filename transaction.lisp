@@ -78,6 +78,15 @@
 (def (function e) break-on-next-command ()
   (setf (break-on-next-command-p *transaction*) #t))
 
+(def (macro e) assert-single-select-statement (&body forms)
+  (with-unique-names (command-counter counter)
+    `(let* ((,command-counter (command-counter-of *transaction*))
+            (,counter (select-counter-of ,command-counter)))
+       (multiple-value-prog1
+           (progn
+             ,@forms)
+         (assert (= (1+ ,counter) (select-counter-of ,command-counter)))))))
+
 (def (macro e) with-readonly-transaction (&body body)
   `(with-transaction* (:default-terminal-action :rollback)
      (mark-transaction-for-rollback-only)
