@@ -52,27 +52,41 @@
     (cffi:foreign-free garbage)
     (make-instance 'sqlite-prepared-statement :statement-pointer statement-pointer)))
 
-(defvar *callback-data*)
+(defvar *execute-command-result*)
 
-(cffi:defcallback sqlite-3-exec-callback :int ((callback-data :pointer) (column-count :int) (row-data :pointer) (columns :pointer))
+(cffi:defcallback sqlite-3-vector-result-collector :int ((callback-data :pointer) (column-count :int) (row-data :pointer) (columns :pointer))
   (declare (ignore callback-data columns))
   (bind ((row (make-array column-count)))
     (loop for i :from 0 :below column-count
        do (setf (aref row i)
                 (cffi:mem-ref (cffi:inc-pointer row-data (* i (cffi:foreign-type-size :pointer))) :string)))
-    (vector-push-extend row *callback-data*)
+    (vector-push-extend row *execute-command-result*)
     sqlite3-cffi-bindings:+sqlite-ok+))
 
-(defmethod execute-command ((db sqlite) (tr sqlite-transaction) (command string) &key &allow-other-keys)
+(cffi:defcallback sqlite-3-list-result-collector :int ((callback-data :pointer) (column-count :int) (row-data :pointer) (columns :pointer))
+  (declare (ignore callback-data columns))
+  (push (loop for i :from 0 :below column-count
+           collect (cffi:mem-ref (cffi:inc-pointer row-data (* i (cffi:foreign-type-size :pointer))) :string))
+        *execute-command-result*)
+  sqlite3-cffi-bindings:+sqlite-ok+)
+
+(defmethod execute-command ((db sqlite) (tr sqlite-transaction) (command string) &key result-type &allow-other-keys)
   (ensure-connected tr)
   (bind ((error-pointer (cffi:foreign-alloc :pointer))
-         (*callback-data* (make-array 8 :adjustable t :fill-pointer 0)))
+         (*execute-command-result* (ecase result-type
+                                     (vector (make-array 8 :adjustable t :fill-pointer 0))
+                                     (list nil))))
     (cffi:with-foreign-string (foreign-command command)
       (sqlite3-cffi-bindings:sqlite-3-exec (connection-pointer-of tr) foreign-command
-                                           (cffi:callback sqlite-3-exec-callback) (cffi:null-pointer) error-pointer)
+                                           (ecase result-type
+                                             (vector (cffi:callback sqlite-3-vector-result-collector))
+                                             (list (cffi:callback sqlite-3-list-result-collector)))
+                                           (cffi:null-pointer) error-pointer)
       (process-error tr "Error ~A during executing ~S" (cffi:mem-ref error-pointer :string) command)
       (cffi:foreign-free error-pointer)
-      *callback-data*)))
+      (when (eq result-type 'list)
+        (setf *execute-command-result* (nreverse *execute-command-result*)))
+      *execute-command-result*)))
 
 (defmethod execute-command ((db sqlite) (tr sqlite-transaction) (prepared-statement prepared-statement) &key &allow-other-keys)
   (sqlite3-cffi-bindings:sqlite-3-step (statement-pointer-of prepared-statement)))
