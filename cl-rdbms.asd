@@ -143,7 +143,9 @@
             :components ((:file "package")
                          (:file "sqlite3-cffi-bindings")
                          (:file "database")
-                         (:file "ddl")))))
+                         (:file "syntax")
+                         (:file "ddl")
+                         (:file "type")))))
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."

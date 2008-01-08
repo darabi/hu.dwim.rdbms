@@ -70,7 +70,9 @@
         *execute-command-result*)
   sqlite3-cffi-bindings:+sqlite-ok+)
 
-(defmethod execute-command ((db sqlite) (tr sqlite-transaction) (command string) &key result-type &allow-other-keys)
+(defmethod execute-command ((db sqlite) (tr sqlite-transaction) (command string) &key result-type binding-types binding-values &allow-other-keys)
+  (when (or binding-types binding-values)
+    (error "Binding is not yet implemented"))
   (ensure-connected tr)
   (bind ((error-pointer (cffi:foreign-alloc :pointer))
          (*execute-command-result* (ecase result-type
