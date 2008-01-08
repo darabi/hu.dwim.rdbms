@@ -129,6 +129,22 @@
                          (:file "type")
                          (:file "backend")))))
 
+(defsystem :cl-rdbms.sqlite
+  :class cl-rdbms-backend-system
+  :database-factory-form "(make-instance 'sqlite
+                                         :connection-specification
+                                         '(:file-name \"/tmp/perec-test\"))"
+  :description "cl-rdbms with Sqlite backend"
+  :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
+  :default-component-class local-cl-source-file
+  :components
+  ((:module "sqlite"
+            :serial t
+            :components ((:file "package")
+                         (:file "sqlite3-cffi-bindings")
+                         (:file "database")
+                         (:file "ddl")))))
+
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
   :depends-on (:iterate :stefil :cl-rdbms)

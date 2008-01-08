@@ -19,9 +19,10 @@
    #:unable-to-obtain-lock-error
    
    #:database
-   #:oracle
    #:postgresql
    #:postgresql-postmodern
+   #:oracle
+   #:sqlite
    #:*database*
    #:with-database
    #:transaction

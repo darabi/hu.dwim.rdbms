@@ -103,6 +103,3 @@
     (log.debug "Closing Postmodern connection ~A of transaction ~A in database ~A" it tr (database-of tr))
     (cl-postgres:close-database it)
     (setf (connection-of tr) nil)))
-
-
-

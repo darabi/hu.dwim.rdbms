@@ -8,6 +8,9 @@
 
 #.(file-header)
 
+;;;;;;;;;;;;;
+;;; Databases
+
 (defvar *database*)
 
 (defclass* database ()
@@ -63,6 +66,9 @@
   `(let ((*database* ,database))
     ,@body))
 
+;;;;;;;;;;;;;;;
+;;; RDBMS names
+
 (defgeneric calculate-rdbms-name (database thing name)
   (:documentation "May be specialized to take name length and character set limitations into account.")
   (:method ((database database) thing name)
@@ -90,6 +96,8 @@
                 (strcat name-as-string (format nil "~8,'0X" hash)))))
       name-as-string)))
 
+;;;;;;;;;;;;;;;;;;;
+;;; Oracle database
 
 (defclass* oracle (database)
   ((connection-encoding
@@ -103,9 +111,12 @@
       (eval (read-from-string
              ;; TODO let the user control version, path and stuff through initargs
              "(let ((cffi:*foreign-library-directories*
-                   (list #P\"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/\")))
-              (cffi:load-foreign-library 'oracle-oci))"))
+                     (list #P\"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/\")))
+                (cffi:load-foreign-library 'cl-rdbms.oracle::oracle-oci))"))
       (setf loaded-p #t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;;; Postgresql database
 
 (defclass* postgresql (database)
   ())
@@ -117,4 +128,18 @@
   (defmethod initialize-instance :before ((self postgresql-postmodern) &key &allow-other-keys)
     (unless loaded-p
       (asdf:operate 'asdf:load-op :cl-rdbms.postmodern)
+      (setf loaded-p #t))))
+
+;;;;;;;;;;;;;;;;;;;
+;;; Sqlite database
+
+(defclass* sqlite (database)
+  ())
+
+(let ((loaded-p #f))
+  (defmethod initialize-instance :before ((self sqlite) &key &allow-other-keys)
+    (unless loaded-p
+      (asdf:operate 'asdf:load-op :cl-rdbms.sqlite)
+      (eval (read-from-string
+             "(cffi:load-foreign-library 'cl-rdbms.sqlite::sqlite3)"))
       (setf loaded-p #t))))
