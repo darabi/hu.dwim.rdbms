@@ -20,5 +20,5 @@
 
 ;; this name mapping is not injective, different lisp names _may_ be mapped to the same rdbms name
 (defmethod calculate-rdbms-name ((db postgresql) thing name)
-  "Cuts off the end of names that are too long and appends the SXHASH of the original name."
+  "Cuts off the end of names that are too long and appends the hash of the original name."
   (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+ :prefix "_"))
