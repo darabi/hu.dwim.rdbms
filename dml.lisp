@@ -36,12 +36,16 @@
                                        :table table
                                        :where where))))
 
-(defun select-records (columns tables &key where order-by)
+(defun select-records (columns tables &key where group-by having order-by offset limit)
   (execute (make-instance 'sql-select
                           :columns columns
                           :tables tables
                           :where where
-                          :order-by order-by)))
+                          :group-by group-by
+                          :having having
+                          :order-by order-by
+                          :offset offset
+                          :limit limit)))
 
 (defun select-count-* (tables &optional where)
   (first* (first* (execute (make-instance 'sql-select
