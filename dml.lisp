@@ -36,7 +36,7 @@
                                        :table table
                                        :where where))))
 
-(defun select-records (columns tables &optional where order-by)
+(defun select-records (columns tables &key where order-by)
   (execute (make-instance 'sql-select
                           :columns columns
                           :tables tables
