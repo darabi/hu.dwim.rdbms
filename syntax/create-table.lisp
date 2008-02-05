@@ -19,7 +19,7 @@
     :type list)
    (as
     nil
-    :type sql-subquery))
+    :type (or sql-select sql-set-operation-expression)))
   (:documentation "An SQL CREATE TABLE statement.")
   (:format-sql-syntax-node
    (format-string "CREATE")
@@ -40,6 +40,25 @@
    (when as
      (format-string " AS ")
      (format-sql-syntax-node as))))
+
+(define-syntax-node sql-create-view (sql-create-table)
+  ((replace
+    #f
+    :type boolean))
+  (:documentation "An SQL CREATE TABLE statement.")
+  (:format-sql-syntax-node
+   (format-string "CREATE")
+   (when replace
+     (format-string " OR REPLACE"))
+   (when temporary
+     (format-string " TEMPORARY"))
+   (format-string " VIEW ")
+   (format-sql-identifier name)
+   (format-string " (")
+   (format-comma-separated-identifiers columns)
+   (format-char ")")
+   (format-string " AS ")
+   (format-sql-syntax-node as)))
 
 (define-syntax-node sql-column (named-sql-syntax-node)
   ((type

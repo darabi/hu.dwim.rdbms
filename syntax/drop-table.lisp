@@ -15,3 +15,11 @@
   (:format-sql-syntax-node
     (format-string "DROP TABLE ")
     (format-sql-identifier name)))
+
+(define-syntax-node sql-drop-view (sql-ddl-statement)
+  ((name
+    :type string))
+  (:documentation "An SQL DROP VIEW  statement.")
+  (:format-sql-syntax-node
+    (format-string "DROP VIEW ")
+    (format-sql-identifier name)))
