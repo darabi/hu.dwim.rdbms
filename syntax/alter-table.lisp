@@ -43,3 +43,17 @@
    (format-sql-identifier name)
    (format-string " TYPE ")
    (format-sql-syntax-node type)))
+
+(define-syntax-node sql-add-constraint-action (sql-syntax-node)
+  ()
+  (:format-sql-syntax-node
+   (format-string "ADD ")))
+
+(define-syntax-node sql-add-primary-key-constraint-action (sql-add-constraint-action)
+  ((columns
+    :type list))
+  (:format-sql-syntax-node
+   (call-next-method)
+   (format-string "PRIMARY KEY (")
+   (format-comma-separated-identifiers columns)
+   (format-string ")")))

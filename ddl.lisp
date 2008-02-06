@@ -42,6 +42,11 @@
                                                             :name (name-of column)
                                                             :type (type-of column))))))
 
+(defun add-primary-key-constraint (name columns)
+  (execute-ddl (make-instance 'sql-alter-table
+                              :name name
+                              :actions (list (make-instance 'sql-add-primary-key-constraint-action :columns columns)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Query tables and columns
 

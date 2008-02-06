@@ -53,6 +53,7 @@
    #:add-column
    #:drop-column
    #:alter-column-type
+   #:add-primary-key-constraint
    #:update-table
    #:list-tables
    #:list-table-columns
