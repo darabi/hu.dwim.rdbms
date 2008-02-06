@@ -170,6 +170,32 @@
             (error 'unconfirmed-destructive-drop-column-error :table-name name :column-name column-name))
 	  (drop-column name column-name))))))
 
+;;;;;;;;;;;;;;;;;;;;;
+;;; Create, drop view
+
+(defun create-view (name columns as)
+  (execute-ddl (make-instance 'sql-create-view
+                              :name name
+                              :columns columns
+                              :as as)))
+
+(defun drop-view (name)
+  (execute-ddl (make-instance 'sql-drop-view :name name)))
+
+(defun view-exists-p (name)
+  (not (null (member (string-downcase name) (list-views) :test 'equalp))))
+
+(defun update-view (name column as)
+  (when (view-exists-p name)
+    (drop-view name))
+  (create-view name column as))
+
+(defun list-views ()
+  (database-list-views *database*))
+
+(defgeneric database-list-views (database)
+  (:documentation "Returns the list of view names present in the database."))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop sequence
 

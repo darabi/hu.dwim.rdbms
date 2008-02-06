@@ -63,8 +63,15 @@
    #:unbound-binding-variable-error
    #:with-confirmed-descructive-changes
 
+   #:create-view
+   #:drop-view
+   #:update-view
+   #:list-views
+   #:view-exists-p
+
    #:create-sequence
    #:drop-sequence
+   #:list-sequences
    #:sequence-exists-p
    #:sequence-next
 

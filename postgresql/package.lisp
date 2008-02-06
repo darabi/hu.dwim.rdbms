@@ -26,4 +26,3 @@
   (when (and (eq (symbol-package symbol) #.(find-package :cl-rdbms))
              (not (find-symbol (symbol-name symbol) #.(find-package :cl-rdbms.postgresql))))
     (import symbol)))
-

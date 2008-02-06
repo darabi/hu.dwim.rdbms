@@ -17,6 +17,9 @@
 (defmethod database-list-tables ((database postgresql))
   (list-objects "r"))
 
+(defmethod database-list-views ((database postgresql))
+  (list-objects "v"))
+
 (defmethod database-list-table-columns (name (database postgresql))
   (map 'list
        (lambda (column)
