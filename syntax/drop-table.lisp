@@ -10,11 +10,16 @@
 
 (define-syntax-node sql-drop-table (sql-ddl-statement)
   ((name
-    :type string))
+    :type string)
+   (cascade
+    #f
+    :type boolean))
   (:documentation "An SQL DROP TABLE statement.")
   (:format-sql-syntax-node
     (format-string "DROP TABLE ")
-    (format-sql-identifier name)))
+    (format-sql-identifier name)
+    (when cascade
+      (format-string " CASCADE"))))
 
 (define-syntax-node sql-drop-view (sql-ddl-statement)
   ((name

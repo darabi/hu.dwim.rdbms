@@ -17,8 +17,8 @@
 (defun create-temporary-table (name &rest columns)
   (execute-ddl (make-instance 'sql-create-table :name name :columns columns)))
 
-(defun drop-table (name)
-  (execute-ddl (make-instance 'sql-drop-table :name name)))
+(defun drop-table (name &key cascade)
+  (execute-ddl (make-instance 'sql-drop-table :name name :cascade cascade)))
 
 (defun alter-table (name &rest actions)
   (execute-ddl (make-instance 'sql-alter-table :name name :actions actions)))
