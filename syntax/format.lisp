@@ -59,8 +59,9 @@
           (apply #'concatenate 'string (append (coerce *sql-stream-elements* 'list)
                                                (list (get-output-stream-string *sql-stream*))))
           `(lambda ()
-            (let ((*binding-types* ,(copy-array *binding-types*))
-                  (*binding-values* ,(copy-array *binding-values*)))
+            (bind ((*sql-stream* (make-string-output-stream))
+                   (*binding-types* ,(copy-array *binding-types*))
+                   (*binding-values* ,(copy-array *binding-values*)))
               ,@(iter (for element :in-vector *sql-stream-elements*)
                       (collect (if (stringp element)
                                    (unless (zerop (length element))
@@ -69,13 +70,10 @@
               ,(let ((last-chunk (get-output-stream-string *sql-stream*)))
                     (unless (zerop (length last-chunk))
                       `(write-string ,last-chunk *sql-stream*)))
-              (values *binding-types* *binding-values*)))))))
+              (values (get-output-stream-string *sql-stream*) *binding-types* *binding-values*)))))))
 
 (defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
-  (let* (binding-types
-         binding-values
-         (command (with-output-to-string (*sql-stream*)
-                                         (setf (values binding-types binding-values) (funcall command)))))
+  (bind (((:values command binding-types binding-values) (funcall command)))
     (update-binding-types-and-values binding-types binding-values bindings)
     (apply #'execute-command database transaction command
            :binding-types binding-types :binding-values binding-values  args)))
