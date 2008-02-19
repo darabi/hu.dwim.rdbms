@@ -38,6 +38,8 @@
                                                   (t
                                                    (etypecase type
                                                      (sql-binary-large-object-type value)
+                                                     (sql-time-type
+                                                       (local-time:format-rfc3339-timestring value :omit-date-part-p #t))
                                                      ((or sql-simple-type
                                                           sql-string-type
                                                           sql-float-type
