@@ -136,7 +136,7 @@
 (defpackage :cl-rdbms-test
   (:nicknames :rdbmst)
 
-  (:use :cl :iterate :arnesi :cl-rdbms)
+  (:use :cl :iterate :arnesi :cl-rdbms :cl-def :metabang-bind)
 
   (:shadowing-import-from :cl-rdbms
                           #:log))

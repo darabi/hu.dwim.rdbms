@@ -152,7 +152,12 @@
   :depends-on (:iterate :stefil :cl-rdbms)
   :default-component-class local-cl-source-file
   :components
-  ((:file "test")))
+  ((:module "tests"
+            :serial t
+            :components ((:file "test-environment")
+                         (:file "basic")
+                         (:file "syntax")
+                         (:file "types")))))
 
 (defmethod perform :after ((op load-op) (system (eql (find-system :cl-rdbms-test))))
   (in-package :cl-rdbms-test)
