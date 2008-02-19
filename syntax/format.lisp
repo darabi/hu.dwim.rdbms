@@ -54,7 +54,8 @@
                    #()
                    `(make-array ,length :adjustable #t :fill-pointer ,length
                      :initial-contents ,array)))))
-      (if (every #'stringp *sql-stream-elements*)
+      (if (and (zerop (length *binding-values*))
+               (every #'stringp *sql-stream-elements*))
           (apply #'concatenate 'string (append (coerce *sql-stream-elements* 'list)
                                                (list (get-output-stream-string *sql-stream*))))
           `(lambda ()

@@ -288,6 +288,7 @@
         (for value :in-vector binding-values)
         (for index :from 0)
         (when (typep type 'sql-binding-variable)
+          (assert (name-of type) nil "Binding variables must have a name")
           (setf value (or (getf name-value-bindings (name-of type))
                           (error 'unbound-binding-variable-error :variable type)))
           (setf type (type-of type))
