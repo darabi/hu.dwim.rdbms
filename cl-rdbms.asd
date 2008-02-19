@@ -48,7 +48,7 @@
   :licence "BSD"
   :description "rdbms lib with sql syntax and sql backend abstractions"
   ;; TODO drop arnesi dependency
-  :depends-on (:alexandria :iterate :cl-def :metabang-bind :defclass-star :arnesi :ironclad)
+  :depends-on (:alexandria :iterate :cl-def :metabang-bind :defclass-star :arnesi :ironclad :local-time)
   :default-component-class local-cl-source-file
   :components
   ((:file "package")
