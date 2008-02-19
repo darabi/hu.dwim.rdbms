@@ -49,11 +49,5 @@
   (enable-sql-syntax))
 
 #+#.(cl:when (cl:find-package "SWANK") '(:and))
-(unless (assoc "CL-RDBMS" swank:*readtable-alist* :test #'string=)
-  (let ((*readtable* (copy-readtable)))
-    (setup-readtable)
-    (flet ((doit (&rest packages)
-             (dolist (package packages)
-               (push (cons package *readtable*) swank:*readtable-alist*))))
-      (doit "CL-RDBMS" "CL-RDBMS-TEST"
-            "CL-RDBMS.POSTGRESQL" "CL-RDBMS.ORACLE"))))
+(setup-swank-readtable-alist
+ '("CL-RDBMS" "CL-RDBMS-TEST" "CL-RDBMS.POSTGRESQL" "CL-RDBMS.ORACLE") 'setup-readtable)

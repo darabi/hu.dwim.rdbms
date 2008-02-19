@@ -184,7 +184,7 @@
   (warn "(declaim (optimize (debug 3))) was issued to help later C-c C-c'ing")
   (eval (read-from-string "(progn
                              (stefil:funcall-test-with-feedback-message 'test))"))
-  (warn "*database* was set to ~A help REPL'ing" (eval (read-from-string "*database*")))
+  (warn "*database* was set to ~A to help REPL'ing" (eval (read-from-string "*database*")))
   (values))
 
 (defmethod operation-done-p ((op test-op) (system (eql (find-system :cl-rdbms))))
