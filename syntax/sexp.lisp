@@ -145,10 +145,12 @@
         (sql-compile-error whole-body body)))))
 
 (defun compile-sexp-sql-delete (body)
-  (destructuring-bind (table &optional where) body
+  (pop body)
+  (bind (((table &optional where) body))
     (make-instance 'sql-delete
                    :table (process-sexp-sql-syntax-node table #'compile-sexp-sql-table-alias)
-                   :where where)))
+                   ;; TODO process where
+                   :where (process-sexp-sql-syntax-node where))))
 
 (defun compile-sexp-sql-update (body)
   (error "Not yet implemented"))
