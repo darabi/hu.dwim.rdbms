@@ -54,9 +54,10 @@
      (format-string " TEMPORARY"))
    (format-string " VIEW ")
    (format-sql-identifier name)
-   (format-string " (")
-   (format-comma-separated-identifiers columns)
-   (format-char ")")
+   (awhen columns
+     (format-string " (")
+     (format-comma-separated-identifiers columns)
+     (format-char ")"))
    (format-string " AS ")
    (format-sql-syntax-node as)))
 
