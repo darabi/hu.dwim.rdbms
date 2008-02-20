@@ -27,27 +27,55 @@
   (cl-postgres:exec-prepared connection statement-name
                              (iter (for type :in-vector binding-types)
                                    (for value :in-vector binding-values)
-                                   (collect (cond ((eq value :null)
-                                                   :null)
-                                                  ((typep type 'sql-boolean-type)
-                                                   (if (stringp value)
-                                                       value
-                                                       (if value "TRUE" "FALSE")))
-                                                  ((eq value nil)
-                                                   :null)
-                                                  (t
-                                                   (etypecase type
-                                                     (sql-binary-large-object-type value)
-                                                     (sql-time-type
-                                                       (local-time:format-rfc3339-timestring value :omit-date-part-p #t))
-                                                     ((or sql-simple-type
-                                                          sql-string-type
-                                                          sql-float-type
-                                                          sql-integer-type)
-                                                      ;; TODO: push down to postmodern backend
-                                                      (if (numberp value)
-                                                          (rdbms::print-number-to-sql-string value)
-                                                          (princ-to-string value))))))))
+                                   (collect (cond
+                                              ;; be careful when reordering stuff here! the order of these nested conds
+                                              ;; and etypecase'es is important.
+                                              ((eq value :null)
+                                               :null)
+                                              ((typep type 'sql-boolean-type)
+                                               (if (stringp value)
+                                                   value
+                                                   (if value "TRUE" "FALSE")))
+                                              ((eq value nil)
+                                               :null)
+                                              (t
+                                               (etypecase type
+                                                 ((or sql-timestamp-type
+                                                      sql-date-type
+                                                      sql-time-type)
+                                                  (if (stringp value)
+                                                      ;; let the user talk to PostgreSQL directly with strings
+                                                      value
+                                                      (etypecase type
+                                                        (sql-timestamp-type
+                                                          (unless (or (with-timezone-p type)
+                                                                      (eq (local-time:timezone-of value)
+                                                                          local-time:+utc-zone+))
+                                                            (cerror "continue"
+                                                                    "Binding a local-time timestamp with non-UTC timezone while the specified binding type is a timestamp *without* timezone. PostgreSQL will silently drop the timezone information. The timestamp in question is: ~A"
+                                                                    value))
+                                                          (local-time:format-rfc3339-timestring value))
+                                                        (sql-date-type
+                                                          (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
+                                                                       (zerop (local-time:sec-of value))
+                                                                       (zerop (local-time:nsec-of value)))
+                                                            (cerror "continue"
+                                                                    "Binding a local-time date that has either time values or a non-UTC timezone which is about to be silently dropped. The date in question is: ~A"
+                                                                    value))
+                                                          (local-time:format-rfc3339-timestring value :omit-time-part-p #t))
+                                                        (sql-time-type
+                                                          (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
+                                                                       (zerop (local-time:day-of value)))
+                                                            (cerror "continue"
+                                                                    "Binding a local-time time that has either day value or a non-UTC timezone which is about to be silently dropped. The time in question is: ~A"
+                                                                    value))
+                                                          (local-time:format-rfc3339-timestring value :omit-date-part-p #t)))))
+                                                 ((or sql-simple-type
+                                                      sql-string-type
+                                                      sql-float-type
+                                                      sql-integer-type
+                                                      sql-binary-large-object-type)
+                                                  value))))))
                              (if visitor
                                  (cl-postgres:row-reader (fields)
                                    (loop with row = (ecase result-type
