@@ -157,7 +157,12 @@
                     (cons (process (car node))
                           (process (cdr node))))
                    ((typep node 'sql-syntax-node)
-                    (expand-sql-ast-into-lambda-form node :toplevel #f))
+                    (bind ((form (expand-sql-ast-into-lambda-form node :toplevel #f)))
+                      (etypecase form
+                        (string
+                         `(lambda ()
+                            (write-string ,form *sql-stream*)))
+                        (cons form))))
                    (t node))))
     (push-form-into-sql-stream-elements `(,formatter ,(process (form-of node)) *database*))))
 
