@@ -95,6 +95,13 @@
    #:mark-transaction-for-commit-only
    #:mark-transaction-for-rollback-only
 
+   ;; well, these are... but if you want to deal with sequences...
+   #:first*
+   #:second*
+   #:third*
+   #:last*
+   #:length=1
+
    #:insert-record
    #:update-records
    #:delete-records

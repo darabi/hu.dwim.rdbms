@@ -67,9 +67,14 @@
         (intern symbol-name package)
         (intern symbol-name))))
 
-(def (function io) length=1 (list)
-  (and list (null (cdr list))))
+(def (function io) length=1 (sequence)
+  (if (listp sequence)
+      (and sequence
+           (null (rest sequence)))
+      (= 1 (length sequence))))
 
+;; TODO these should probably hide their cl counterparts, because then inlined they reduce
+;; to a mere CL:FIRST call if type information is available
 (def (function io) first* (sequence)
   (elt sequence 0))
 
@@ -78,6 +83,11 @@
 
 (def (function io) third* (sequence)
   (elt sequence 2))
+
+(def (function io) last* (sequence)
+  (if (listp sequence)
+      (last1 sequence)
+      (elt sequence (1- (length sequence)))))
 
 ;;;;;;;;;;;;;;;;;;;
 ;;; from alexandria
