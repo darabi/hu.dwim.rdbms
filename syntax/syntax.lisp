@@ -146,10 +146,11 @@
   (:format-sql-syntax-node
    (expand-sql-unquote self 'format-sql-syntax-node)))
 
-(defun push-form-into-sql-stream-elements (form)
-  (vector-push-extend (get-output-stream-string *sql-stream*) *sql-stream-elements*)
-  (vector-push-extend form *sql-stream-elements*)
-  (setf *sql-stream* (make-string-output-stream)))
+(defun push-form-into-sql-stream-elements (form &optional (flush? #t))
+  (when flush?
+    (vector-push-extend (get-output-stream-string *sql-stream*) *sql-stream-elements*)
+    (setf *sql-stream* (make-string-output-stream)))
+  (vector-push-extend form *sql-stream-elements*))
 
 (defun expand-sql-unquote (node formatter)
   (labels ((process (node)
@@ -178,7 +179,7 @@
               (vector-push-extend type *binding-types*)
               (vector-push-extend nil *binding-values*)
               (push-form-into-sql-stream-elements
-               `(setf (aref *binding-values* ,(1- (length *binding-types*))) ,(form-of value)))
+               `(setf (aref *binding-values* ,(1- (length *binding-types*))) ,(form-of value)) #f)
               (funcall thunk))
             (progn
               (vector-push-extend type *binding-types*)

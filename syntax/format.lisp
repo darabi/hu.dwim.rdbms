@@ -54,30 +54,50 @@
                    #()
                    `(make-array ,length :adjustable #t :fill-pointer ,length
                                 :initial-contents ,array)))))
-      (if (and (zerop (length *binding-values*))
-               (every #'stringp *sql-stream-elements*))
-          (apply #'concatenate 'string (append (coerce *sql-stream-elements* 'list)
-                                               (list (get-output-stream-string *sql-stream*))))
-          (let ((body
-                 `(,@(iter (for element :in-vector *sql-stream-elements*)
-                           (collect (if (stringp element)
-                                        (unless (zerop (length element))
-                                          `(write-string ,element *sql-stream*))
-                                        element)))
-                     ,(let ((last-chunk (get-output-stream-string *sql-stream*)))
-                           (unless (zerop (length last-chunk))
-                             `(write-string ,last-chunk *sql-stream*)))
-                     ,(if toplevel
-                          '(values (get-output-stream-string *sql-stream*) *binding-types* *binding-values*)
-                          '(values)))))
-            (if toplevel
+      (bind ((strings-only? (every #'stringp *sql-stream-elements*))
+             (command
+              (when strings-only?
+                (apply #'concatenate 'string (append (coerce *sql-stream-elements* 'list)
+                                                     (list (get-output-stream-string *sql-stream*)))))))
+        (if (and strings-only?
+                 (notany #L(typep !1 'sql-binding-variable) *binding-types*))
+            (if (zerop (length *binding-types*))
+                command
                 `(lambda ()
-                   (bind ((*sql-stream* (make-string-output-stream))
-                          (*binding-types* ,(copy-array *binding-types*))
-                          (*binding-values* ,(copy-array *binding-values*)))
-                     ,@body))
-                `(lambda ()
-                   ,@body)))))))
+                   (values ,command ,*binding-types* ,*binding-values*)))
+            (let ((body
+                   `(,@(iter (for element :in-vector *sql-stream-elements*)
+                             (collect (if (stringp element)
+                                          (unless (zerop (length element))
+                                            `(write-string ,element *sql-stream*))
+                                          element)))
+                       ,(let ((last-chunk (get-output-stream-string *sql-stream*)))
+                             (unless (zerop (length last-chunk))
+                               `(write-string ,last-chunk *sql-stream*)))
+                       ,(if toplevel
+                            `(values ,(if strings-only?
+                                          command
+                                          '(get-output-stream-string *sql-stream*))
+                                     ,(if strings-only?
+                                          *binding-types*
+                                          '*binding-types*)
+                                     ,(if (and strings-only?
+                                               (zerop (length *binding-types*)))
+                                          *binding-values*
+                                          '*binding-values*))
+                            '(values)))))
+              (if toplevel
+                  `(lambda ()
+                     (bind (,@(unless strings-only?
+                                      `((*sql-stream* (make-string-output-stream))))
+                              ,@(unless (and strings-only?
+                                             (zerop (length *binding-types*)))
+                                        `((*binding-values* ,(copy-array *binding-values*))))
+                              ,@(unless strings-only?
+                                        `((*binding-types* ,(copy-array *binding-types*)))))
+                       ,@body))
+                  `(lambda ()
+                     ,@body))))))))
 
 (defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
   (bind (((:values command binding-types binding-values) (funcall command)))
