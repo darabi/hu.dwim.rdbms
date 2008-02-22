@@ -137,7 +137,7 @@
 (defun format-sql-table-reference (reference database)
   (etypecase reference
     (sql-table-alias* (format-sql-identifier reference database))
-    ((or sql-derived-table sql-joined-table) (format-sql-syntax-node reference database))))
+    ((or sql-derived-table sql-joined-table sql-unquote) (format-sql-syntax-node reference database))))
 
 (define-syntax-node sql-column-alias (sql-identifier)
   ((table
