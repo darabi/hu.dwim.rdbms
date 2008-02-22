@@ -63,10 +63,10 @@
      (format-comma-separated-list order-by))
    (when limit
      (format-string " LIMIT ")
-     (format-number limit))
+     (format-sql-syntax-node limit))
    (when offset
      (format-string " OFFSET ")
-     (format-number offset))
+     (format-sql-syntax-node offset))
    (when for
      (format-string " FOR ")
      (format-string (symbol-name for))
