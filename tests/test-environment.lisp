@@ -17,10 +17,11 @@
             (read-from-string "(enable-sharp-boolean-syntax
                                 connection-specification-of *database* *transaction*
                                 with-transaction* process-sql-syntax-list compile-sexp-sql-column compile-sexp-sql-columns
-                                compile-sexp-sql compile-sexp-sql-type
+                                compile-sexp-sql compile-sexp-sql-type expand-sql-ast-into-lambda-form
                                 value-of compile-sexp-sql-binding-variable compile-sexp-sql-literal first* second* third*
                                 log log.dribble log.debug log.info log.warn log.error)")))
-  (import-sql-syntax-node-names))
+  (import-sql-syntax-node-names)
+  (import-sql-constructor-names))
 
 (in-root-suite)
 

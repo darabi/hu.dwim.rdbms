@@ -152,9 +152,19 @@
   (setf *sql-stream* (make-string-output-stream)))
 
 (defun expand-sql-unquote (node formatter)
-  (push-form-into-sql-stream-elements `(,formatter ,(form-of node) *database*)))
+  (labels ((process (node)
+             (cond ((consp node)
+                    (cons (process (car node))
+                          (process (cdr node))))
+                   ((typep node 'sql-syntax-node)
+                    (expand-sql-ast-into-lambda-form node :toplevel #f))
+                   (t node))))
+    (push-form-into-sql-stream-elements `(,formatter ,(process (form-of node)) *database*))))
 
-(defun unquote-aware-format-sql-literal (literal trunk call-next-method)
+(defmethod format-sql-syntax-node ((thunk function) database)
+  (funcall thunk))
+
+(defun unquote-aware-format-sql-literal (literal thunk call-next-method)
   (let ((type (type-of literal))
         (value (value-of literal)))
     (if type
@@ -164,11 +174,11 @@
               (vector-push-extend nil *binding-values*)
               (push-form-into-sql-stream-elements
                `(setf (aref *binding-values* ,(1- (length *binding-types*))) ,(form-of value)))
-              (funcall trunk))
+              (funcall thunk))
             (progn
               (vector-push-extend type *binding-types*)
               (vector-push-extend value *binding-values*)
-              (funcall trunk)))
+              (funcall thunk)))
         (funcall call-next-method))))
 
 (defmethod format-sql-literal ((node sql-unquote) database)

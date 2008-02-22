@@ -198,3 +198,29 @@
   '(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
   ((oracle "CREATE GLOBAL TEMPORARY TABLE alma (col2 NUMBER(10)) ON COMMIT DELETE ROWS")
    (t "CREATE GLOBAL TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")))
+
+(def test test/syntax/expand-sql-ast (&optional (n 3))
+  (is (string=
+       (format nil "SELECT a, b FROM t WHERE (~A)"
+               (apply 'concatenate 'string
+                      (iter (for i :from 1 :to n)
+                            (unless (first-iteration-p)
+                              (collect " OR "))
+                            (collect (format nil "(a = (b + $~d::NUMERIC + ~d))" i i)))))
+       (funcall
+        (compile
+         nil
+         (expand-sql-ast-into-lambda-form
+          (sql-select :columns '(a b)
+                      :tables '(t)
+                      :where (sql-unquote
+                               :form
+                               `(apply 'sql-or
+                                       (iter (for i :from 1 :to ,n)
+                                             (rebind (i)
+                                               (collect ,(sql-= (sql-identifier :name 'a)
+                                                                (sql-+ (sql-identifier :name 'b)
+                                                                       (sql-unquote :form '(sql-binding-variable
+                                                                                            :type (sql-integer-type)
+                                                                                            :name i))
+                                                                       (sql-unquote :form '(sql-literal :value i))))))))))))))))
