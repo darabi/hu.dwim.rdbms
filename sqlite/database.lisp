@@ -23,7 +23,7 @@
 
 ;; this name mapping is not injective, different lisp names _may_ be mapped to the same rdbms name
 (defmethod calculate-rdbms-name ((db sqlite) thing name)
-  (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+))
+  (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+ :prefix "_"))
 
 (defun process-error (tr message &rest args)
   (apply 'process-error-code (sqlite3-cffi-bindings:sqlite-3-errcode (connection-pointer-of tr))
