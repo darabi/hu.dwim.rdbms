@@ -122,8 +122,8 @@
                  (return
                    (setf (connection-of tr)
                          (apply #'cl-postgres:open-database
-                                (destructuring-bind (&key (host "localhost") (port 5432) database user-name (password ""))
-                                    (connection-specification-of db)
+                                (bind (((&key (host "localhost") (port 5433) database user-name (password ""))
+                                        (connection-specification-of db)))
                                   (list database user-name password host port)))))))
            (log.debug "Succesfully opened Postmodern connection ~A for transaction ~A in database ~A"
                       it tr db)))))
