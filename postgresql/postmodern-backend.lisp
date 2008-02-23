@@ -80,15 +80,23 @@
                         value))))))
    (if visitor
        (cl-postgres:row-reader (fields)
-         (loop with row = (ecase result-type
-                            (vector (make-array (length fields))))
-            while (cl-postgres:next-row)
-            do (progn
-                 (loop for field :across fields
-                    for next-field = (cl-postgres:next-field field)
-                    for idx :upfrom 0
-                    do (setf (aref row idx) next-field))
-                 (funcall visitor row))))
+         (ecase result-type
+           (vector (loop
+                      with row = (make-array (length fields))
+                      while (cl-postgres:next-row)
+                      do (progn
+                           (loop
+                              for field :across fields
+                              for next-field = (cl-postgres:next-field field)
+                              for idx :upfrom 0
+                              do (setf (aref row idx) next-field))
+                           (funcall visitor row))))
+          (list (loop
+                   while (cl-postgres:next-row)
+                   do (let ((row (loop
+                                    for field :across fields
+                                    collect (cl-postgres:next-field field))))
+                        (funcall visitor row))))))
        (ecase result-type
          (list #'cl-postgres:list-row-reader)
          (vector #'cl-postgres:vector-row-reader)))))
