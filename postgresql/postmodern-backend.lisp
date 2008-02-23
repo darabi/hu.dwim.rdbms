@@ -104,7 +104,7 @@
     (cl-postgres:prepare-query connection statement-name command)
     (handler-case
         (apply #'execute-postmodern-prepared-statement db connection statement-name args)
-      (cl-postgres:unable-to-obtain-lock-error (error)
+      (cl-postgres-error:lock-not-available (error)
         (unable-to-obtain-lock-error error)))))
 
 (defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
