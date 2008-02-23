@@ -142,7 +142,8 @@
 ;;; Unquote
 
 (define-syntax-node sql-unquote (sql-syntax-node)
-  ((form nil))
+  ((form nil)
+   (spliced #f :type boolean))
   (:format-sql-syntax-node
    (expand-sql-unquote self 'format-sql-syntax-node)))
 

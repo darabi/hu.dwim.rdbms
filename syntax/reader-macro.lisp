@@ -19,12 +19,16 @@
   (bind ((original-unquote-reader nil))
     (labels ((sql-unquote-reader (stream char)
                (declare (ignore char))
-               (list 'sql-unquote
-                     (bind ((*readtable* (copy-readtable)))
-                       ;; only override the meaning of unquote-char (#\,) for the first level of nesting.
-                       ;; this way [select ,`(foo ,bar)] works as expected.
+               (bind ((spliced (eq (peek-char nil stream t nil t) #\@)))
+                 (when spliced
+                   (read-char stream t nil t))
+                 `(sql-unquote
+                    ,(bind ((*readtable* (copy-readtable)))
+                       ;; only override the meaning of unquote-char (#\!) for the first level of nesting.
+                       ;; this way the unquote char may be used in lisp code with its original meaning.
                        (set-macro-character unquote-char original-unquote-reader)
-                       (read stream t nil t))))
+                       (read stream t nil t))
+                    :spliced ,spliced)))
              (sql-reader (stream char)
                (declare (ignore char))
                (setf original-unquote-reader (get-macro-character unquote-char *readtable*))
