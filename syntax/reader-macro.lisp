@@ -10,35 +10,35 @@
 
 (def constant +default-sql-syntax-close-character+ #\])
 
-;; #\, conflicts with backquote and comma, but it's ok, because it's a reader, so it couln't work
-;; transparently inside `(foo [select ,bar]) anyway, so we use #\, for sql-unquote. see the SQL macro
-;; if you want to use it inside a backquote.
+;; #\, conflicts with lisp's backquote and comma. but it's ok, because it's a reader, so it couldn't work
+;; transparently inside `(foo [select ,bar]) anyway, so we use #\, for SQL-UNQUOTE, too. you'll need to
+;; revert to using the SQL macro and SQL-UNQUOTE if you want to use the [] syntax inside a backquote.
 (def constant +default-sql-syntax-unquote-character+ #\,)
 
+(def special-variable *original-unquote-reader*)
+
 (def function make-sql-reader (end-char unquote-char)
-  (bind ((original-unquote-reader nil))
-    (labels ((sql-unquote-reader (stream char)
-               (declare (ignore char))
-               (bind ((spliced (eq (peek-char nil stream t nil t) #\@)))
-                 (when spliced
-                   (read-char stream t nil t))
-                 `(sql-unquote
-                    ,(bind ((*readtable* (copy-readtable)))
-                       ;; only override the meaning of unquote-char (#\!) for the first level of nesting.
-                       ;; this way the unquote char may be used in lisp code with its original meaning.
-                       (set-macro-character unquote-char original-unquote-reader)
-                       (read stream t nil t))
-                    :spliced ,spliced)))
-             (sql-reader (stream char)
-               (declare (ignore char))
-               (setf original-unquote-reader (get-macro-character unquote-char *readtable*))
-               (bind ((*readtable* (copy-readtable)))
-                 (set-macro-character unquote-char #'sql-unquote-reader)
-                 (bind ((body (read-delimited-list end-char stream t)))
-                   ;; TODO these cause some warnings, but it's a headache to load stuff in such an order that...
-                   (expand-sql-ast-into-lambda-form
-                    (compile-sexp-sql body))))))
-      #'sql-reader)))
+  (labels ((sql-unquote-reader (stream char)
+             (declare (ignore char))
+             (bind ((spliced (eq (peek-char nil stream t nil t) #\@)))
+               (when spliced
+                 (read-char stream t nil t))
+               `(sql-unquote
+                  ,(bind ((*readtable* (copy-readtable)))
+                     ;; only override the meaning of unquote-char (#\,) for the first level of nesting.
+                     ;; this way the unquote char may be used in sql-unquoted lisp code with its original
+                     ;; meaning. (although only inside a newly started ` due to CLHS limitations)
+                     (set-macro-character unquote-char *original-unquote-reader*)
+                     (read stream t nil t))
+                  ,spliced)))
+           (sql-reader (stream char)
+             (declare (ignore char))
+             (bind ((*original-unquote-reader* (get-macro-character unquote-char *readtable*))
+                    (*readtable* (copy-readtable)))
+               (set-macro-character unquote-char #'sql-unquote-reader)
+               (bind ((body (read-delimited-list end-char stream t)))
+                 `(sql ,body)))))
+    #'sql-reader))
 
 (def (macro e) enable-sql-syntax (&optional (open-char +default-sql-syntax-open-character+)
                                             (close-char +default-sql-syntax-close-character+)
