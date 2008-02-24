@@ -96,9 +96,9 @@
   (if (typep body 'sql-unquote)
       body
       (progn
-        (unless (= 2 (length body))
+        (unless (<= 2 (length body) 3)
           (sql-compile-error body))
-        (make-instance 'sql-unquote :form (second body)))))
+        (make-instance 'sql-unquote :form (second body) :spliced (third body)))))
 
 (defun compile-sexp-sql-select (body)
   (pop body)
