@@ -77,6 +77,7 @@
            (format-string (symbol-name literal))
            (format-char "'"))
 
+  ;; TODO this one is probably bullshit, delete it if you dare to... :)
   (:method ((literal list) database)
            (format-string "(")
            (format-comma-separated-list literal database)

@@ -10,9 +10,9 @@
 
 (def constant +default-sql-syntax-close-character+ #\])
 
-;; #\, conflicts with lisp's backquote and comma. but it's ok, because it's a reader, so it couldn't work
-;; transparently inside `(foo [select ,bar]) anyway, so we use #\, for SQL-UNQUOTE, too. you'll need to
-;; revert to using the SQL macro and SQL-UNQUOTE if you want to use the [] syntax inside a backquote.
+;; we use #\, for SQL-UNQUOTE, too. so, #\, to backtick #\` is like comma #\, to the sql reader #\[.
+;; the first #\, inside the SQL reader is treated an an SQL-UNQUOTE and the rest is like normal CL comma.
+;; see the test for examples.
 (def constant +default-sql-syntax-unquote-character+ #\,)
 
 (def special-variable *original-unquote-reader*)
@@ -27,7 +27,7 @@
                   ,(bind ((*readtable* (copy-readtable)))
                      ;; only override the meaning of unquote-char (#\,) for the first level of nesting.
                      ;; this way the unquote char may be used in sql-unquoted lisp code with its original
-                     ;; meaning. (although only inside a newly started ` due to CLHS limitations)
+                     ;; meaning.
                      (set-macro-character unquote-char *original-unquote-reader*)
                      (read stream t nil t))
                   ,spliced)))
@@ -47,7 +47,7 @@
 Be careful when using in different situations, because it modifies *readtable*."
   `(eval-when (:compile-toplevel :execute)
     ;; this COPY-READTABLE is important because unaware users may alter readtables they didn't intend to.
-    ;; but because of this it does not work from the Slime repl.
+    ;; but because of this, it does not work from the Slime repl.
     (setf *readtable* (copy-readtable))
     (set-macro-character ,open-char (make-sql-reader ,close-char ,unquote-char) t *readtable*)
     (set-syntax-from-char ,close-char #\) *readtable*)))
