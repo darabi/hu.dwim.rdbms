@@ -15,24 +15,23 @@
 (in-suite types)
 
 (def definer type-test (name type &body values)
-  `(def test* ,name ()
-    (unwind-protect
-         (bind ((sql-type ,(compile-sexp-sql-type type)))
-           (with-transaction
-             ;; two alternatives, macroexpand tests to see the difference
-             (execute-ddl (sql (create table alma ((a ,type))))) ; fully optimal version which expands to a constant string
-             ;;(execute-ddl [create table alma ((a ,sql-type))]) ; less optimal version, using the sql reader syntax (where (the first) comma means runtime execution)
-             ,@(iter (for (comparator value expected) :in values)
-                     (unless expected
-                       (setf expected value))
-                     (collect `(progn
-                                 (execute [insert alma (a) (,(sql-literal :value ,value :type sql-type))])
-                                 (is (funcall ',comparator
-                                              (first* (first* (execute [select * alma] :result-type 'list)))
-                                              ,expected))
-                                 (execute [delete alma]))))))
-      (ignore-errors
-        (execute-ddl [drop table alma])))))
+  (bind ((sql-type (compile-sexp-sql-type type)))
+    `(def test* ,name ()
+       (unwind-protect
+            (with-transaction
+              ;; the first , is unquote relative to the sql syntax, the second is relative to `
+              (execute-ddl [create table alma ((a ,,sql-type))])
+              ,@(iter (for (comparator value expected) :in values)
+                      (unless expected
+                        (setf expected value))
+                      (collect `(progn
+                                  (execute [insert alma (a) (,(sql-literal :value ,value :type ,sql-type))])
+                                  (is (funcall ',comparator
+                                               (first* (first* (execute [select * alma] :result-type 'list)))
+                                               ,expected))
+                                  (execute [delete alma])))))
+         (ignore-errors
+           (execute-ddl [drop table alma]))))))
 
 (def definer simple-type-test (name type &body values)
   `(def type-test ,name ,type
