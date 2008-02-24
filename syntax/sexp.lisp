@@ -56,10 +56,13 @@
          (compile-sexp-sql-unquote body))
         ((consp body)
          (loop for node :in body
-               collect (if (and function-call-allowed-p
-                                (sql-function-call-form-p node))
-                           (compile-sexp-sql-function-call node)
-                           (process-sexp-sql-syntax-node node visitor))))
+               collect (cond
+                         ((typep node 'sql-syntax-node)
+                          node)
+                         ((and function-call-allowed-p
+                               (sql-function-call-form-p node))
+                          (compile-sexp-sql-function-call node))
+                         (t (process-sexp-sql-syntax-node node visitor)))))
         (t (list (process-sexp-sql-syntax-node body visitor))))))
 
 (defun process-sexp-sql-syntax-node (node &optional (visitor #'identity))
@@ -214,44 +217,48 @@
   (make-instance 'sql-binding-variable :name (pop body) :type (compile-sexp-sql-type (pop body))))
 
 (defun compile-sexp-sql-type (body)
-  (if (sql-unquote-p body)
-      (compile-sexp-sql-unquote body)
-      (let ((name (if (consp body)
-                      (first body)
-                      body))
-            (type-args (when (consp body)
-                         (rest body))))
-        (cond ((sql-symbol-equal name "char")
-               (make-instance 'sql-character-type :size (when type-args
-                                                          (first type-args))))
-              ((sql-symbol-equal name "varchar")
-               (make-instance 'sql-character-varying-type :size (when type-args
+  (cond
+    ((typep body 'sql-syntax-node)
+     body)
+    ((sql-unquote-p body)
+     (compile-sexp-sql-unquote body))
+    (t
+     (let ((name (if (consp body)
+                     (first body)
+                     body))
+           (type-args (when (consp body)
+                        (rest body))))
+       (cond ((sql-symbol-equal name "char")
+              (make-instance 'sql-character-type :size (when type-args
+                                                         (first type-args))))
+             ((sql-symbol-equal name "varchar")
+              (make-instance 'sql-character-varying-type :size (when type-args
+                                                                 (first type-args))))
+             ((sql-symbol-equal name "integer")
+              (make-instance 'sql-integer-type :bit-size (when type-args
+                                                           (first type-args))))
+             ((sql-symbol-equal name "float")
+              (make-instance 'sql-float-type :bit-size (when type-args
+                                                         (first type-args))))
+             ((sql-symbol-equal name "numeric")
+              (make-instance 'sql-numeric-type))
+             ((or (sql-symbol-equal name "boolean")
+                  (sql-symbol-equal name "bool"))
+              (make-instance 'sql-boolean-type))
+             ((sql-symbol-equal name "date")
+              (make-instance 'sql-date-type))
+             ((sql-symbol-equal name "time")
+              (make-instance 'sql-time-type))
+             ((sql-symbol-equal name "timestamp")
+              (make-instance 'sql-timestamp-type :with-timezone (when type-args
                                                                   (first type-args))))
-              ((sql-symbol-equal name "integer")
-               (make-instance 'sql-integer-type :bit-size (when type-args
-                                                            (first type-args))))
-              ((sql-symbol-equal name "float")
-               (make-instance 'sql-float-type :bit-size (when type-args
-                                                          (first type-args))))
-              ((sql-symbol-equal name "numeric")
-               (make-instance 'sql-numeric-type))
-              ((or (sql-symbol-equal name "boolean")
-                   (sql-symbol-equal name "bool"))
-               (make-instance 'sql-boolean-type))
-              ((sql-symbol-equal name "date")
-               (make-instance 'sql-date-type))
-              ((sql-symbol-equal name "time")
-               (make-instance 'sql-time-type))
-              ((sql-symbol-equal name "timestamp")
-               (make-instance 'sql-timestamp-type :with-timezone (when type-args
+             ((sql-symbol-equal name "clob")
+              (make-instance 'sql-character-large-object-type :size (when type-args
+                                                                      (first type-args))))
+             ((sql-symbol-equal name "blob")
+              (make-instance 'sql-binary-large-object-type :size (when type-args
                                                                    (first type-args))))
-              ((sql-symbol-equal name "clob")
-               (make-instance 'sql-character-large-object-type :size (when type-args
-                                                                       (first type-args))))
-              ((sql-symbol-equal name "blob")
-               (make-instance 'sql-binary-large-object-type :size (when type-args
-                                                                    (first type-args))))
-              (t (sql-compile-error body))))))
+             (t (sql-compile-error body)))))))
 
 (defun compile-sexp-sql-column (body)
   (let ((name)
