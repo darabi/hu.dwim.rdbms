@@ -52,7 +52,7 @@
            (sql-function-call-form-p body))
       (list (compile-sexp-sql-function-call body))
       (cond
-        ((sql-unquote-p body)
+        ((sexp-sql-unquote-p body)
          (compile-sexp-sql-unquote body))
         ((consp body)
          (loop for node :in body
@@ -68,7 +68,7 @@
 (defun process-sexp-sql-syntax-node (node &optional (visitor #'identity))
   (cond ((typep node 'sql-syntax-node)
          node)
-        ((sql-unquote-p node)
+        ((sexp-sql-unquote-p node)
          (funcall visitor (compile-sexp-sql-unquote node)))
         (t (funcall visitor node))))
 
@@ -90,7 +90,7 @@
   (and (consp thing)
        (sql-function-name-p (first thing))))
 
-(defun sql-unquote-p (thing)
+(defun sexp-sql-unquote-p (thing)
   (or (typep thing 'sql-unquote)
       (and (consp thing)
            (sql-symbol-equal (first thing) 'sql-unquote))))
@@ -170,7 +170,7 @@
 
 (defun compile-sexp-sql-column-alias (body)
   (cond
-    ((sql-unquote-p body)
+    ((sexp-sql-unquote-p body)
      (compile-sexp-sql-unquote body))
     ((sql-symbol-equal body "*")
      (make-instance 'sql-all-columns))
@@ -220,7 +220,7 @@
   (cond
     ((typep body 'sql-syntax-node)
      body)
-    ((sql-unquote-p body)
+    ((sexp-sql-unquote-p body)
      (compile-sexp-sql-unquote body))
     (t
      (let ((name (if (consp body)
