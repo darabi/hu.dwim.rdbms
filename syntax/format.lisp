@@ -33,7 +33,9 @@
            (format-sql-literal node database)))
 
 (defun expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
-  (let ((*sql-stream* (make-string-output-stream))
+  (let ((*print-pretty* #f)
+        (*print-circle* #f)
+        (*sql-stream* (make-string-output-stream))
         (*sql-stream-elements* (make-array 8 :adjustable #t :fill-pointer 0))
         (*database* (or database
                         (and (boundp '*database*)
@@ -89,7 +91,9 @@
               (if toplevel
                   `(lambda ()
                      (bind (,@(unless strings-only?
-                                      `((*sql-stream* (make-string-output-stream))))
+                                      `((*print-pretty* #f)
+                                        (*print-circle* #f)
+                                        (*sql-stream* (make-string-output-stream))))
                               ,@(unless (and strings-only?
                                              (zerop (length *binding-types*)))
                                         `((*binding-values* ,(copy-array *binding-values*))))
