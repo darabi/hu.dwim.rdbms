@@ -149,7 +149,7 @@
 
 (defsystem :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
-  :depends-on (:iterate :stefil :cl-rdbms)
+  :depends-on (:iterate :stefil :cl-rdbms :closer-mop)
   :default-component-class local-cl-source-file
   :components
   ((:module "tests"

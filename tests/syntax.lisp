@@ -10,7 +10,16 @@
 
 (enable-sql-syntax)
 
-(def definer syntax-test* (name sexp-p &body body)
+(def definer syntax-test (name database args &body body)
+  `(def test ,name ,args
+     (with-database (closer-mop:class-prototype
+                     (find-class
+                      ',(if (eq database t)
+                            'database
+                            database)))
+       ,@body)))
+
+(def definer dialect-test (name sexp-p &body body)
   `(def test ,name ()
      (with-database *test-database*
        ,@(iter (for (sql string-or-case-body) :on body :by #'cddr)
@@ -23,48 +32,45 @@
                                    `(typecase *database*
                                       ,@string-or-case-body)))))))))
 
-(def definer syntax-test (name &body body)
-  `(def syntax-test* ,name #t ,@body))
+(def definer sexp-sql-dialect-test (name &body body)
+  `(def dialect-test ,name #t ,@body))
 
-(def definer ast-test (name &body body)
-  `(def syntax-test* ,name #f ,@body))
+(def definer ast-dialect-test (name &body body)
+  `(def dialect-test ,name #f ,@body))
 
 
 (def suite (syntax :in-suite 'test))
 (in-suite syntax)
 
-(def syntax-test test/syntax/sexp
+(def sexp-sql-dialect-test test/syntax/sexp-dialect
   '(select "bar" table)
-  ((oracle "SELECT bar FROM \"table\"")
+  ((oracle "SELECT \"bar\" FROM \"table\"")
    (t "SELECT bar FROM table"))
 
   '(select (count *) _table)
   ((oracle "SELECT count(*) FROM \"_table\"")
    (t "SELECT count(*) FROM _table"))
 
-  '(select
-    ((foo.col1 "col1_alias") "bar")
-    table)
-  ((oracle "SELECT foo.col1 AS col1_alias, bar FROM \"table\"")
+  '(select ((foo.col1 "col1_alias") "bar") table)
+  ((oracle "SELECT \"foo\".\"col1\" AS \"col1_alias\", \"bar\" FROM \"table\"")
    (t "SELECT foo.col1 AS col1_alias, bar FROM table"))
 
   `(select
     (foo.column "bar")
-    ,(list (make-instance 'sql-table-alias
-                          :name "alma"
-                          :alias "alma_alias")))
-  ((oracle "SELECT foo.\"column\", bar FROM alma alma_alias")
+    ,(list (sql-table-alias :name "alma" :alias "alma_alias")))
+  ((oracle "SELECT \"foo\".\"column\", \"bar\" FROM \"alma\" \"alma_alias\"")
    (t "SELECT foo.column, bar FROM alma alma_alias"))
 
   '(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
-  ((oracle "CREATE GLOBAL TEMPORARY TABLE alma (col1 VARCHAR2, col2 NUMBER(10)) ON COMMIT DROP")
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"alma\" (\"col1\" VARCHAR2, \"col2\" NUMBER(10)) ON COMMIT DROP")
    (t "CREATE GLOBAL TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP"))
 
   '(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
-  ((oracle "CREATE GLOBAL TEMPORARY TABLE alma (col2 NUMBER(10)) ON COMMIT DELETE ROWS")
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"alma\" (\"col2\" NUMBER(10)) ON COMMIT DELETE ROWS")
    (t "CREATE GLOBAL TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")))
 
-(def test test/syntax/expand-sql-ast/1 (&optional (n 3))
+(def syntax-test test/syntax/expand-sql-ast/1 postgresql (&optional (n 3))
+  ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
                            (apply 'concatenate 'string
                                   (iter (for i :from 1 :to n)
@@ -137,14 +143,14 @@
 (def suite (formatting :in-suite 'syntax))
 (in-suite formatting)
 
-(def ast-test test/syntax/formatting/identifier
+(def ast-dialect-test test/syntax/formatting/identifier
   (sql-identifier :name "alma")
   "alma"
 
   (sql-identifier :name 'alma)
   "alma")
 
-(def ast-test test/syntax/formatting/create-table
+(def ast-dialect-test test/syntax/formatting/create-table
   (sql-create-table :name "a"
                     :columns (list (sql-column :name "a"
                                                :type (sql-integer-type))))
@@ -158,7 +164,7 @@
   ((oracle "CREATE GLOBAL TEMPORARY TABLE a (a NUMBER) ON COMMIT DROP")
    (t "CREATE GLOBAL TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")))
 
-(def ast-test test/syntax/formatting/alter-table
+(def ast-dialect-test test/syntax/formatting/alter-table
   (sql-alter-table :name "a"
                    :actions (list (sql-add-column-action :name "a"
                                                          :type (sql-integer-type))))
@@ -175,21 +181,21 @@
                    :actions (list (sql-drop-column-action :name "a")))
   "ALTER TABLE a DROP COLUMN a")
 
-(def ast-test test/syntax/formatting/drop-table
+(def ast-dialect-test test/syntax/formatting/drop-table
   (sql-drop-table :name "a")
   "DROP TABLE a")
 
-(def ast-test test/syntax/formatting/create-index
+(def ast-dialect-test test/syntax/formatting/create-index
   (sql-create-index :name "a"
                     :table-name "a"
                     :columns (list "a" "a"))
   "CREATE INDEX a ON a (a, a)")
 
-(def ast-test test/syntax/formatting/drop-index
+(def ast-dialect-test test/syntax/formatting/drop-index
   (sql-drop-index :name "a")
   "DROP INDEX a")
 
-(def ast-test test/syntax/formatting/insert
+(def ast-dialect-test test/syntax/formatting/insert
   (sql-insert :table "a"
               :columns (list "a")
               :values (list "a"))
@@ -200,7 +206,7 @@
               :values (list "a"))
   "INSERT INTO a (a) VALUES ('a')")
 
-(def ast-test test/syntax/formatting/select
+(def ast-dialect-test test/syntax/formatting/select
   (sql-select :columns (list "a")
               :tables (list "a"))
   "SELECT a FROM a"
@@ -224,7 +230,7 @@
               :tables (list (sql-table-alias :name "a" :alias "b")))
   "SELECT b.a AS c FROM a b")
 
-(def ast-test test/syntax/formatting/update
+(def ast-dialect-test test/syntax/formatting/update
   (sql-update :table "a"
               :columns (list "a")
               :values (list "a"))
@@ -235,14 +241,14 @@
               :values (list "a"))
   "UPDATE a SET a = 'a'")
 
-(def ast-test test/syntax/formatting/delete
+(def ast-dialect-test test/syntax/formatting/delete
   (sql-delete :table "a")
   "DELETE from a"
 
   (sql-delete :table (make-instance 'sql-identifier :name "a"))
   "DELETE from a")
 
-(def ast-test test/syntax/formatting/sequence
+(def ast-dialect-test test/syntax/formatting/sequence
   (sql-create-sequence :name "a")
   "CREATE SEQUENCE a"
 
@@ -253,3 +259,29 @@
   ((oracle "SELECT a.nextval FROM dual ")
    (t "SELECT NEXTVAL('a')")))
 
+#|
+this variant runs the tests for all dialects, but it's not useful because
+that would require all the backends to be loaded (for their syntax customizations)
+which can be a headache for complex backends like the oracle one.
+
+(def definer dialect-test (name sexp-p &body body)
+  `(def test ,name ()
+     ,@(flet ((construct-entry (database expected)
+                `(is (equalp
+                      (with-database
+                          (closer-mop:class-prototype
+                           (find-class
+                            ',(if (eq database t)
+                                  'database
+                                  database)))
+                        (format-sql-to-string sql-ast))
+                      ,expected))))
+         (iter (for (sql cases) :on body :by #'cddr)
+               (collect `(bind ((sql-ast ,(if sexp-p
+                                              `(compile-sexp-sql ,sql)
+                                              sql)))
+                           ,@(if (stringp cases)
+                                 (list (construct-entry t cases))
+                                 (iter (for (database expected) :in cases)
+                                       (collect (construct-entry database expected))))))))))
+|#
