@@ -73,6 +73,13 @@
            (format-string literal)
            (format-char "'"))
 
+  ;; TODO i highly doubt that this implicit behaviour is a good thing. but some perec code relies on this currently.
+  (:method ((literal list) database)
+    (format-string "(")
+    (format-comma-separated-list literal database)
+    (format-string ")"))
+
+
   (:method ((literal symbol) database)
            (format-char "'")
            ;; TODO: solve escaping
