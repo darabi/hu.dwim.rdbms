@@ -177,31 +177,54 @@
 (defmacro format-comma-separated-identifiers (nodes)
   `(format-comma-separated-list ,nodes nil format-sql-identifier))
 
+;; TODO database arg is hopelessly lost when going through an sql-unquote
 (defmacro format-comma-separated-list (nodes &optional database (format-fn 'format-sql-syntax-node))
   (with-unique-names (node)
     (rebinding (nodes)
-      `(if (sql-unquote-p ,nodes)
+      ;; TODO should this (typep ,nodes 'sql-unquote) really be here? what about spliced-p?
+      `(if (typep ,nodes 'sql-unquote)
            (push-form-into-sql-stream-elements
             `(iter (for ,',node :in-sequence ,(form-of ,nodes))
                    (unless (first-iteration-p)
                      (write-string ", " *sql-stream*))
                    (,',format-fn ,',node *database*)))
-        (iter (for ,node :in-sequence ,nodes)
-              (unless (first-iteration-p)
-                (write-string ", " *sql-stream*))
-              ,(if database
-                   `(,format-fn ,node ,database)
-                   `(,format-fn ,node)))))))
+           (iter (for ,node :in-sequence ,nodes)
+                 (unless (first-iteration-p)
+                   (write-string ", " *sql-stream*))
+                 ,(if database
+                      `(,format-fn ,node ,database)
+                      `(,format-fn ,node)))))))
 
-(defmacro format-separated-list (nodes separator &optional database (format-fn 'format-sql-syntax-node))
+;; FIXME *database* is not propagated through this function. is this a problem?
+;; how does it relate to the runtime formatting of sql ast nodes?
+;; check all the other macros that are similar to what format-separated-list was.
+(def function format-separated-list (nodes separator)
+  (iter (for node :in-sequence nodes)
+        (unless (first-iteration-p)
+          (write-string " " *sql-stream*)
+          (write-string separator *sql-stream*)
+          (write-string " " *sql-stream*))
+        (if (typep node 'sql-unquote)
+            (push-form-into-sql-stream-elements
+             (if (spliced-p node)
+                 `(format-separated-list ,(form-of node) ,separator)
+                 `(format-sql-syntax-node ,(form-of node) *database*)))
+            (format-sql-syntax-node node *database*))))
+
+;; TODO delme, was this:
+#+nil
+(defmacro format-separated-list (nodes separator &optional (database 'database) (format-fn 'format-sql-syntax-node))
   `(iter (for node :in-sequence ,nodes)
          (unless (first-iteration-p)
            (write-string " " *sql-stream*)
            (write-string ,separator *sql-stream*)
            (write-string " " *sql-stream*))
-         ,(if database
-              `(,format-fn node ,database)
-              `(,format-fn node))))
+         (if (typep node 'sql-unquote)
+             (push-form-into-sql-stream-elements
+              (if (spliced-p node)
+                  `(format-separated-list ,(form-of node) ,',separator ,',database ',format-fn)
+                  `(funcall ',format-fn ,(form-of node) ,database)))
+             (,format-fn node ,database))))
 
 (defmacro format-string (string)
   `(write-string ,string *sql-stream*))

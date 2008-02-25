@@ -77,12 +77,6 @@
            (format-string (symbol-name literal))
            (format-char "'"))
 
-  ;; TODO this one is probably bullshit, delete it if you dare to... :)
-  (:method ((literal list) database)
-           (format-string "(")
-           (format-comma-separated-list literal database)
-           (format-string ")"))
-
   (:method ((literal sql-literal) database)
     (format-sql-literal (if (and (null (value-of literal))
                                  (not (typep (type-of literal) 'sql-boolean-type)))
