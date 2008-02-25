@@ -71,16 +71,14 @@
                                         (unless (first-iteration-p)
                                           (collect " OR "))
                                         (collect "t.b"))))))
-    ;; using the reader
-    (is (string=
-         expected
-         (funcall
-          (compile
-           nil
-           [select (a b) t ,(apply 'sql-or
-                                   (iter (repeat n)
-                                         (collect (sql-column-alias :table 't :column 'b))))]))))
-    ;; building the AST by hand (the builder expands to something very similar to this)
+    ;; advanced use of the reader: the criteria is generated into a variable,
+    ;; it could even be the input of the function.
+    (bind ((criteria [or ,@(iter (repeat (1- n))
+                                 (collect (sql-column-alias :table 't :column 'b)))
+                         ,(sql-column-alias :table 't :column 'b)]))
+      (is (string= expected
+                   (funcall [select (a b) t ,criteria]))))
+    ;; building the AST by hand
     (is (string=
          expected
          (funcall
@@ -95,27 +93,26 @@
                                          (iter (repeat ,n)
                                                (collect ,(sql-column-alias :table 't :column 'b)))))))))))))
 
-(def test test/syntax/expand-sql-ast/2 (&optional (n 3))
+(def syntax-test test/syntax/expand-sql-ast/2 postgresql (&optional (n 3))
+  ;; "SELECT a, b FROM t WHERE ((a = (b + $1::NUMERIC + 1)) OR (a = (b + $2::NUMERIC + 2)) OR (a = (b + $3::NUMERIC + 3)))"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
                            (apply 'concatenate 'string
                                   (iter (for i :from 1 :to n)
                                         (unless (first-iteration-p)
                                           (collect " OR "))
                                         (collect (format nil "(a = (b + $~d::NUMERIC + ~d))" i i)))))))
-    (is (string=
-         expected
-         (funcall
-          (compile
-           nil
-           [select (a b) t ,(apply 'sql-or
-                                   (iter (for i :from 1 :to n)
-                                         (rebind (i)
-                                           (collect (sql-= (sql-identifier :name 'a)
-                                                           (sql-+ (sql-identifier :name 'b)
-                                                                  (sql-binding-variable
-                                                                     :type (sql-integer-type)
-                                                                     :name i)
-                                                                  (sql-literal :value i)))))))]))))
+    (bind ((criteria [or ,@(iter (for i :from 1 :to n)
+                                 (rebind (i)
+                                   (collect (sql-= (sql-identifier :name 'a)
+                                                   (sql-+ (sql-identifier :name 'b)
+                                                          (sql-binding-variable
+                                                            :type (sql-integer-type)
+                                                            :name i)
+                                                          i)))))]))
+      (is (string=
+           expected
+           (funcall
+            [select (a b) t ,criteria]))))
     (is (string=
          expected
          (funcall
