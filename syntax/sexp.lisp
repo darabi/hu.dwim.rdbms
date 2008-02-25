@@ -41,14 +41,16 @@
 (defun compile-sexp-sql (form)
   (assert (consp form))
   (let ((first (first form)))
-    (cond
-      ((sql-symbol-equal first 'select) (compile-sexp-sql-select form))
-      ((sql-symbol-equal first 'insert) (compile-sexp-sql-insert form))
-      ((sql-symbol-equal first 'update) (compile-sexp-sql-update form))
-      ((sql-symbol-equal first 'delete) (compile-sexp-sql-delete form))
-      ((sql-symbol-equal first 'create) (compile-sexp-sql-create form))
-      ((sql-symbol-equal first 'drop)   (compile-sexp-sql-drop form))
-      (t (sql-compile-error form)))))
+    (switch (first :test #'sql-symbol-equal)
+      (select (compile-sexp-sql-select form))
+      (insert (compile-sexp-sql-insert form))
+      (update (compile-sexp-sql-update form))
+      ;; TODO this should work based on a constant list of operators
+      ((and or not) (compile-sexp-sql-expression form))
+      (delete (compile-sexp-sql-delete form))
+      (create (compile-sexp-sql-create form))
+      (drop   (compile-sexp-sql-drop form))
+      (otherwise (sql-compile-error form)))))
 
 (defun process-sexp-sql-syntax-list (body visitor &key function-call-allowed-p)
   (if (and function-call-allowed-p
@@ -291,3 +293,18 @@
         (progn
           (setf name body)))
     (make-instance 'sql-table-alias :name name :alias alias)))
+
+(defun compile-sexp-sql-expression (body)
+  (cond
+    ((sexp-sql-unquote-p body)
+     (compile-sexp-sql-unquote body))
+    ((atom body)
+     (sql-literal :value body))
+    (t
+     (bind ((operator (pop body))
+            (constructor (eswitch (operator :test #'sql-symbol-equal)
+                           ;; TODO this should work based on a constant list of operators
+                           (and #'sql-and)
+                           (or  #'sql-or)
+                           (not #'sql-not))))
+       (apply constructor (mapcar #'compile-sexp-sql-expression body))))))
