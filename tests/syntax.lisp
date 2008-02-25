@@ -19,24 +19,31 @@
                             database)))
        ,@body)))
 
-(def definer dialect-test (name sexp-p &body body)
+(def definer dialect-test (name kind &body body)
   `(def test ,name ()
      (with-database *test-database*
        ,@(iter (for (sql string-or-case-body) :on body :by #'cddr)
                (collect `(is (equalp
-                              (format-sql-to-string ,(if sexp-p
-                                                         `(compile-sexp-sql ,sql)
-                                                         sql))
+                              ,(ecase kind
+                                 (:sexp   `(format-sql-to-string (compile-sexp-sql ,sql)))
+                                 (:ast    `(format-sql-to-string ,sql))
+                                 (:reader (rebinding (sql)
+                                            `(etypecase ,sql
+                                               (string ,sql)
+                                               (function (funcall ,sql))))))
                               ,(if (stringp string-or-case-body)
                                    string-or-case-body
                                    `(typecase *database*
                                       ,@string-or-case-body)))))))))
 
 (def definer sexp-sql-dialect-test (name &body body)
-  `(def dialect-test ,name #t ,@body))
+  `(def dialect-test ,name :sexp ,@body))
 
 (def definer ast-dialect-test (name &body body)
-  `(def dialect-test ,name #f ,@body))
+  `(def dialect-test ,name :ast ,@body))
+
+(def definer reader-dialect-test (name &body body)
+  `(def dialect-test ,name :reader ,@body))
 
 
 (def suite (syntax :in-suite 'test))
@@ -68,6 +75,27 @@
   '(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
   ((oracle "CREATE GLOBAL TEMPORARY TABLE \"alma\" (\"col2\" NUMBER(10)) ON COMMIT DELETE ROWS")
    (t "CREATE GLOBAL TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")))
+
+(def reader-dialect-test test/syntax/sql-reader
+  [select "bar" table]
+  "SELECT bar FROM table"
+
+  (bind ((column-1 (sql-column-alias :table t :column 'col1 :alias "foo"))
+         (column-2 (sql-column-alias :table t :column 'col2 :alias "bar")))
+    [select (,column-1 ,column-2) table])
+  "SELECT t.col1 AS foo, t.col2 AS bar FROM table"
+
+  (bind ((columns (list (sql-column :name 'col1 :type (sql-integer-type))
+                        (sql-column :name 'col2 :type (sql-character-varying-type))
+                        (sql-column :name 'col3 :type (sql-character-varying-type))
+                        (sql-column :name 'col4 :type (sql-float-type)))))
+    [insert t ,columns (42
+                        ,(sql-literal :value (string-upcase "some random text")
+                                      :type (sql-character-varying-type))
+                        ,(sql-binding-variable :name 'dynamic-binding
+                                               :type (sql-character-varying-type))
+                        (? 'static-binding (float 32)))])
+  ((postgresql "INSERT INTO t (col1, col2, col3, col4) VALUES (42, $2::CHARACTER VARYING, $3::CHARACTER VARYING, $1::FLOAT4)")))
 
 (def syntax-test test/syntax/expand-sql-ast/1 postgresql (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
