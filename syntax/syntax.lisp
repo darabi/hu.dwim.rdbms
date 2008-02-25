@@ -48,6 +48,10 @@
 (deftype sql-literal* ()
   '(or null boolean string symbol number sql-literal))
 
+(define-syntax-node sql-binding-variable (named-sql-syntax-node)
+  ((type nil
+    :type sql-type)))
+
 (defgeneric format-sql-literal (literal database)
   (:documentation "Formats an SQL literal into *sql-stream*.")
 
@@ -77,16 +81,17 @@
            (format-string (symbol-name literal))
            (format-char "'"))
 
+  ;; TODO is it ok here? maybe we should have an extra format-sql-... method for the
+  ;; values block in INSERT INTO...?
+  (:method ((binding sql-binding-variable) database)
+    (format-sql-syntax-node binding database))
+
   (:method ((literal sql-literal) database)
     (format-sql-literal (if (and (null (value-of literal))
                                  (not (typep (type-of literal) 'sql-boolean-type)))
                             :null
                             (value-of literal))
                         database)))
-
-(define-syntax-node sql-binding-variable (named-sql-syntax-node)
-  ((type nil
-    :type sql-type)))
 
 ;;;;;;;;;;;;;;
 ;;; Identifier
