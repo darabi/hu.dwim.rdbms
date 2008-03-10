@@ -15,6 +15,26 @@
 (in-suite types)
 
 (def definer type-test (name type &body values)
+  `(def test* ,name ()
+     (unwind-protect
+          (with-transaction
+            ;; the first , is unquote relative to the sql syntax, the second is relative to `
+            (execute-ddl [create table alma ((a ,(compile-sexp-sql-type ',type)))])
+            ,@(iter (for (comparator value expected) :in values)
+                    (unless expected
+                      (setf expected value))
+                    (collect `(progn
+                                (execute [insert alma (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
+                                (is (funcall ',comparator
+                                             (first* (first* (execute [select * alma] :result-type 'list)))
+                                             ,expected))
+                                (execute [delete alma])))))
+       (ignore-errors
+         (execute-ddl [drop table alma])))))
+
+;; TODO: this should work, see sql-quote in syntax.lisp (perec has to follow these changes)
+#+nil
+(def definer type-test (name type &body values)
   (bind ((sql-type (compile-sexp-sql-type type)))
     `(def test* ,name ()
        (unwind-protect

@@ -97,7 +97,7 @@
                         (? 'static-binding (float 32)))])
   ((postgresql "INSERT INTO t (col1, col2, col3, col4) VALUES (42, $2::CHARACTER VARYING, $3::CHARACTER VARYING, $1::FLOAT4)")))
 
-(def syntax-test test/syntax/expand-sql-ast/1 postgresql (&optional (n 3))
+(def syntax-test test/syntax/expand-sql-ast/unquote/1 postgresql (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
                            (apply 'concatenate 'string
@@ -127,7 +127,7 @@
                                          (iter (repeat ,n)
                                                (collect ,(sql-column-alias :table 't :column 'b)))))))))))))
 
-(def syntax-test test/syntax/expand-sql-ast/2 postgresql (&optional (n 3))
+(def syntax-test test/syntax/expand-sql-ast/unquote/2 postgresql (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE ((a = (b + $1::NUMERIC + 1)) OR (a = (b + $2::NUMERIC + 2)) OR (a = (b + $3::NUMERIC + 3)))"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
                            (apply 'concatenate 'string
@@ -166,7 +166,6 @@
                                                                                               :type (sql-integer-type)
                                                                                               :name i))
                                                                          (sql-unquote :form '(sql-literal :value i)))))))))))))))))
-
 
 (def suite (formatting :in-suite 'syntax))
 (in-suite formatting)

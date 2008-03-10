@@ -20,6 +20,7 @@
 
 (defvar *sql-stream*)
 (defvar *sql-stream-elements*)
+(defvar *binding-variables*)
 (defvar *binding-types*)
 (defvar *binding-values*)
 
@@ -32,6 +33,7 @@
   (:method (node database)
            (format-sql-literal node database)))
 
+;; TODO: if sql-quote is added this should return a lambda returning the syntax-node unless it is an sql-quote in which case it can process
 (defun expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
   (let ((*print-pretty* #f)
         (*print-circle* #f)
@@ -43,6 +45,7 @@
                         (progn
                           (simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
                           (make-instance 'database))))
+        (*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))
         (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
         (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
     (assert *database*)
@@ -62,11 +65,11 @@
                 (apply #'concatenate 'string (append (coerce *sql-stream-elements* 'list)
                                                      (list (get-output-stream-string *sql-stream*)))))))
         (if (and strings-only?
-                 (notany #L(typep !1 'sql-binding-variable) *binding-types*))
+                 (every #'null *binding-variables*))
             (if (zerop (length *binding-types*))
                 command
                 `(lambda ()
-                   (values ,command ,*binding-types* ,*binding-values*)))
+                   (values ,command ,*binding-variables* ,*binding-types* ,*binding-values*)))
             (let ((body
                    `(,@(iter (for element :in-vector *sql-stream-elements*)
                              (collect (if (stringp element)
@@ -81,10 +84,13 @@
                                           command
                                           '(get-output-stream-string *sql-stream*))
                                      ,(if strings-only?
+                                          *binding-variables*
+                                          '*binding-variables*)
+                                     ,(if strings-only?
                                           *binding-types*
                                           '*binding-types*)
                                      ,(if (and strings-only?
-                                               (zerop (length *binding-types*)))
+                                               (zerop (length *binding-variables*)))
                                           *binding-values*
                                           '*binding-values*))
                             '(values)))))
@@ -94,41 +100,46 @@
                                       `((*print-pretty* #f)
                                         (*print-circle* #f)
                                         (*sql-stream* (make-string-output-stream))))
-                              ,@(unless (and strings-only?
-                                             (zerop (length *binding-types*)))
-                                        `((*binding-values* ,(copy-array *binding-values*))))
                               ,@(unless strings-only?
-                                        `((*binding-types* ,(copy-array *binding-types*)))))
+                                        `((*binding-variables* ,(copy-array *binding-variables*))))
+                              ,@(unless strings-only?
+                                        `((*binding-types* ,(copy-array *binding-types*))))
+                              ,@(unless (and strings-only?
+                                             (zerop (length *binding-variables*)))
+                                        `((*binding-values* ,(copy-array *binding-values*)))))
                        ,@body))
                   `(lambda ()
                      ,@body))))))))
 
 (defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
-  (bind (((:values command binding-types binding-values) (funcall command)))
-    (update-binding-types-and-values binding-types binding-values bindings)
+  (bind (((:values command binding-variables binding-types binding-values) (funcall command)))
+    (update-binding-values binding-variables binding-types binding-values bindings)
+    (alexandria:remove-from-plistf args :bindings)
     (apply #'execute-command database transaction command
-           :binding-types binding-types :binding-values binding-values  args)))
+           :binding-types binding-types :binding-values binding-values args)))
 
 (defun format-sql (syntax-node &key (stream t) (database *database*))
   "Formats the given SQL syntax node into the stream."
   (let* ((*print-pretty* #f)
          (*sql-stream* stream)
          (*database* database)
+         (*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))
          (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
          (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
     (format-sql-syntax-node syntax-node database)
-    (values stream *binding-types* *binding-values*)))
+    (values stream *binding-variables* *binding-types* *binding-values*)))
 
 (defun format-sql-to-string (syntax-node &rest args &key &allow-other-keys)
   "Formats the given SQL syntax node into a string."
   (let* ((*print-pretty* #f)
          scratch
+         binding-variables
          binding-types
          binding-values
          (string (with-output-to-string (stream)
-                   (setf (values scratch binding-types binding-values)
+                   (setf (values scratch binding-variables binding-types binding-values)
                          (apply #'format-sql syntax-node :stream stream args)))))
-    (values string binding-types binding-values)))
+    (values string binding-variables binding-types binding-values)))
 
 (defun sql-constructor-name (name)
   (concatenate-symbol (find-package :cl-rdbms) "SQL-" name))

@@ -25,20 +25,18 @@
   (format-string "'T'"))
 
 (defmethod format-sql-literal ((literal sql-literal) (database oracle))
-  (unquote-aware-format-sql-literal
-   literal
-   (lambda ()
-     (format-string ":")
-     (format-string (princ-to-string (length *binding-types*))))
-   #'call-next-method))
+  (if (unquote-aware-format-sql-literal literal)
+      (progn
+        (format-string ":")
+        (format-string (princ-to-string (length *binding-types*))))
+      (call-next-method)))
 
 ;;;----------------------------------------------------------------------------
 ;;; Bindings
 ;;;
 
 (defmethod format-sql-syntax-node ((variable sql-binding-variable) (database oracle))
-  (vector-push-extend variable *binding-types*)
-  (vector-push-extend nil *binding-values*)
+  (unquote-aware-format-sql-binding-variable variable)
   (format-string ":")
   (format-string (princ-to-string (length *binding-types*))))
 

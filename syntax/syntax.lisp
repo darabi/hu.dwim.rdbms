@@ -160,6 +160,10 @@
     (setf *sql-stream* (make-string-output-stream)))
   (vector-push-extend form *sql-stream-elements*))
 
+;; TODO: consider having an sql-quote node which should be checked instead of being an instance of sql-syntax-node here
+;; (sql-unquote :form (sql-boolean-type))                          -> ,(sql-boolean-type)
+;; (sql-unquote :form #<SQL-BOOLEAN-TYPE 1234>)                    -> ,#<SQL-BOOLEAN-TYPE 1234>
+;; (sql-unquote :form (sql-quote :value #<SQL-BOOLEAN-TYPE 1234>)) -> ,'#<SQL-BOOLEAN-TYPE 1234>
 (defun expand-sql-unquote (node formatter)
   (labels ((process (node)
              (cond ((consp node)
@@ -178,22 +182,32 @@
 (defmethod format-sql-syntax-node ((thunk function) database)
   (funcall thunk))
 
-(defun unquote-aware-format-sql-literal (literal thunk call-next-method)
+(defun unquote-aware-format-sql-literal (literal)
   (let ((type (type-of literal))
         (value (value-of literal)))
     (if type
-        (if (typep value 'sql-unquote)
-            (progn
-              (vector-push-extend type *binding-types*)
-              (vector-push-extend nil *binding-values*)
-              (push-form-into-sql-stream-elements
-               `(setf (aref *binding-values* ,(1- (length *binding-types*))) ,(form-of value)) #f)
-              (funcall thunk))
-            (progn
-              (vector-push-extend type *binding-types*)
-              (vector-push-extend value *binding-values*)
-              (funcall thunk)))
-        (funcall call-next-method))))
+        (progn
+          (vector-push-extend nil *binding-variables*)
+          (vector-push-extend type *binding-types*)
+          (if (typep value 'sql-unquote)
+              (bind ((index (length *binding-values*)))
+                (vector-push-extend nil *binding-values*)
+                (push-form-into-sql-stream-elements
+                 `(setf (aref *binding-values* ,index) ,(form-of value)) #f))
+              (vector-push-extend value *binding-values*))
+          #t)
+        #f)))
+
+(defun unquote-aware-format-sql-binding-variable (variable)
+  (vector-push-extend variable *binding-variables*)
+  (bind ((type (type-of variable)))
+    (if (typep type 'sql-unquote)
+        (bind ((index (length *binding-types*)))
+          (push-form-into-sql-stream-elements
+           `(setf (aref *binding-types* ,index) ,(form-of type)))
+          (vector-push-extend nil *binding-types*))
+        (vector-push-extend type *binding-types*)))
+  (vector-push-extend nil *binding-values*))
 
 (defmethod format-sql-literal ((node sql-unquote) database)
   (expand-sql-unquote node 'format-sql-literal))
@@ -220,12 +234,11 @@
 (defcondition* unbound-binding-variable-error (rdbms-error)
   ((variable))
   (:report (lambda (error stream)
-             (format stream "The variable ~A was not bound while executing the query ~A"
-                     (variable-of error) (query-of error)))))
+             (format stream "The variable ~A was not bound while executing a query" (variable-of error)))))
 
 (defmethod execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
-  (multiple-value-bind (string binding-types binding-values)
-      (format-sql-to-string command)
-    (update-binding-types-and-values binding-types binding-values bindings)
+  (bind (((:values string binding-variables binding-types binding-values) (format-sql-to-string command)))
+    (update-binding-values binding-variables binding-types binding-values bindings)
+    (alexandria:remove-from-plistf args :bindings)
     (apply 'execute-command database transaction string
            :binding-types binding-types :binding-values binding-values args)))
