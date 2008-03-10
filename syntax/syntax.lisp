@@ -164,11 +164,13 @@
 ;; (sql-unquote :form (sql-boolean-type))                          -> ,(sql-boolean-type)
 ;; (sql-unquote :form #<SQL-BOOLEAN-TYPE 1234>)                    -> ,#<SQL-BOOLEAN-TYPE 1234>
 ;; (sql-unquote :form (sql-quote :value #<SQL-BOOLEAN-TYPE 1234>)) -> ,'#<SQL-BOOLEAN-TYPE 1234>
-(defun expand-sql-unquote (node formatter)
+(defun expand-sql-unquote (unqoute-node formatter)
   (labels ((process (node)
              (cond ((consp node)
                     (cons (process (car node))
                           (process (cdr node))))
+                   ((typep node 'sql-unquote)
+                    (error "In ~A sql-unquote nodes cannot be nested without intermediate literal sql-syntax-nodes" unqoute-node))
                    ((typep node 'sql-syntax-node)
                     (bind ((form (expand-sql-ast-into-lambda-form node :toplevel #f)))
                       (etypecase form
@@ -177,7 +179,7 @@
                             (write-string ,form *sql-stream*)))
                         (cons form))))
                    (t node))))
-    (push-form-into-sql-stream-elements `(,formatter ,(process (form-of node)) *database*))))
+    (push-form-into-sql-stream-elements `(,formatter ,(process (form-of unqoute-node)) *database*))))
 
 (defmethod format-sql-syntax-node ((thunk function) database)
   (funcall thunk))
