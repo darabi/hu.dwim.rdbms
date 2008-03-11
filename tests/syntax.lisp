@@ -88,7 +88,7 @@
   (bind ((columns (list (sql-column :name 'col1 :type (sql-integer-type))
                         (sql-column :name 'col2 :type (sql-character-varying-type))
                         (sql-column :name 'col3 :type (sql-character-varying-type))
-                        (sql-column :name 'col4 :type (sql-float-type)))))
+                        (sql-column :name 'col4 :type (sql-float-type :bit-size 32)))))
     [insert t ,columns (42
                         ,(sql-literal :value (string-upcase "some random text")
                                       :type (sql-character-varying-type))
