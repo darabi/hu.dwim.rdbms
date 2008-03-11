@@ -126,6 +126,14 @@
 (defclass* postgresql-postmodern (postgresql)
   ((muffle-warnings #f :type boolean)))
 
+(defmethod make-load-form ((self database) &optional environment)
+  (declare (ignore environment))
+  ;; the sql ast expander needs to capture the compile-time value of *database* which it will use to format
+  ;; the ast nodes that are generated at runtime. to achive that it needs to be able to save the database instance
+  ;; into fasl's. but it must not call make-instance, because it may trigger some initialization code, so
+  ;; we just allocate-instance here because it's only used for dispatching.
+  `(allocate-instance (find-class ',(class-name (class-of self)))))
+
 (let ((loaded-p #f))
   (defmethod initialize-instance :before ((self postgresql-postmodern) &key &allow-other-keys)
     (unless loaded-p
