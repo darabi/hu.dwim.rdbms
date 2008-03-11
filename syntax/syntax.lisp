@@ -190,7 +190,12 @@
     (if type
         (progn
           (vector-push-extend nil *binding-variables*)
-          (vector-push-extend type *binding-types*)
+          (if (typep type 'sql-unquote)
+              (bind ((index (length *binding-types*)))
+                (push-form-into-sql-stream-elements
+                 `(setf (aref *binding-types* ,index) ,(form-of type)))
+                (vector-push-extend nil *binding-types*))
+              (vector-push-extend type *binding-types*))
           (if (typep value 'sql-unquote)
               (bind ((index (length *binding-values*)))
                 (vector-push-extend nil *binding-values*)
