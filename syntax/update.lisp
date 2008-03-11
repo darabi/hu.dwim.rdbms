@@ -30,4 +30,4 @@
          (format-sql-identifier column)
          (format-string " = ")
          (format-sql-syntax-node value))
-   (format-where where)))
+   (format-sql-where where)))

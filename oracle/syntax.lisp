@@ -159,13 +159,13 @@
     (format-string "SELECT ")
     (when distinct
       (format-string "DISTINCT "))
-    (format-comma-separated-list columns database format-sql-column-reference)
+    (format-comma-separated-list columns database 'format-sql-column-reference)
     (if tables
         (progn
           (format-string " FROM ")
-          (format-comma-separated-list tables database format-sql-table-reference))
+          (format-comma-separated-list tables database 'format-sql-table-reference))
         (format-string " FROM dual "))
-    (format-where where database)
+    (format-sql-where where database)
     (when order-by
       (format-string " ORDER BY ")
       (format-comma-separated-list order-by database))

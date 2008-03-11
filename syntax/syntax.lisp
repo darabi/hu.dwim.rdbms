@@ -73,12 +73,10 @@
            (format-string literal)
            (format-char "'"))
 
-  ;; TODO i highly doubt that this implicit behaviour is a good thing. but some perec code relies on this currently.
   (:method ((literal list) database)
     (format-string "(")
-    (format-comma-separated-list literal database)
+    (format-comma-separated-list literal database 'format-sql-literal)
     (format-string ")"))
-
 
   (:method ((literal symbol) database)
            (format-char "'")
@@ -152,7 +150,7 @@
   ((form nil)
    (spliced #f :type boolean))
   (:format-sql-syntax-node
-   (expand-sql-unquote self 'format-sql-syntax-node)))
+   (expand-sql-unquote self database 'format-sql-syntax-node)))
 
 (defun push-form-into-sql-stream-elements (form &optional (flush? #t))
   (when flush?
@@ -164,7 +162,7 @@
 ;; (sql-unquote :form (sql-boolean-type))                          -> ,(sql-boolean-type)
 ;; (sql-unquote :form #<SQL-BOOLEAN-TYPE 1234>)                    -> ,#<SQL-BOOLEAN-TYPE 1234>
 ;; (sql-unquote :form (sql-quote :value #<SQL-BOOLEAN-TYPE 1234>)) -> ,'#<SQL-BOOLEAN-TYPE 1234>
-(defun expand-sql-unquote (unqoute-node formatter)
+(defun expand-sql-unquote (unqoute-node database formatter)
   (labels ((process (node)
              (cond ((consp node)
                     (cons (process (car node))
@@ -179,7 +177,7 @@
                             (write-string ,form *sql-stream*)))
                         (cons form))))
                    (t node))))
-    (push-form-into-sql-stream-elements `(,formatter ,(process (form-of unqoute-node)) *database*))))
+    (push-form-into-sql-stream-elements `(funcall ',formatter ,(process (form-of unqoute-node)) ,database))))
 
 (defmethod format-sql-syntax-node ((thunk function) database)
   (funcall thunk))
@@ -217,10 +215,10 @@
   (vector-push-extend nil *binding-values*))
 
 (defmethod format-sql-literal ((node sql-unquote) database)
-  (expand-sql-unquote node 'format-sql-literal))
+  (expand-sql-unquote node database 'format-sql-literal))
 
 (defmethod format-sql-identifier ((node sql-unquote) database)
-  (expand-sql-unquote node 'format-sql-identifier))
+  (expand-sql-unquote node database 'format-sql-identifier))
 
 ;;;;;;;;;;;;;
 ;;; Statement

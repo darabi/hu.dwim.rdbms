@@ -50,8 +50,8 @@
    (format-comma-separated-identifiers columns)
    (when tables
      (format-string " FROM ")
-     (format-comma-separated-list tables database format-sql-table-reference))
-   (format-where where)
+     (format-comma-separated-list tables 'format-sql-table-reference))
+   (format-sql-where where)
    (when group-by
      (format-string " GROUP BY ")
      (format-comma-separated-list group-by))

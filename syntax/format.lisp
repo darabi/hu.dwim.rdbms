@@ -153,96 +153,73 @@
   (let ((effective-slots (delete-duplicates
                           (append (mapcan (lambda (super) (copy-list (get super :slot-names))) supers)
                                   (mapcar #'first slots)))))
-    `(progn
-      (eval-always
-        (setf (get ',name :slot-names) ',effective-slots))
-      (defclass* ,name ,supers ,slots
-                 ,@(remove-if (lambda (option)
-                                (starts-with (string-downcase (first option)) "format"))
-                              options))
-      (defmethod make-load-form ((self ,name) &optional env)
-        (make-load-form-saving-slots self :environment env))
-      (pushnew ',name *sql-syntax-node-names*)
-      ,(awhen (find :format-sql-syntax-node options :key #'first)
-              `(defmethod format-sql-syntax-node ((self ,name) database)
+    (flet ((define-format-method (method-name body)
+             `(defmethod ,method-name ((self ,name) database)
                 (macrolet ((format-sql-syntax-node (node)
                              `(funcall 'format-sql-syntax-node ,node database))
                            (format-sql-literal (node)
                              `(funcall 'format-sql-literal ,node database))
                            (format-sql-identifier (node)
-                             `(funcall 'format-sql-identifier ,node database)))
+                             `(funcall 'format-sql-identifier ,node database))
+                           (format-comma-separated-list (nodes &optional format-fn)
+                             `(funcall 'format-comma-separated-list ,nodes database
+                                       ,@(when format-fn
+                                               (list format-fn))))
+                           (format-comma-separated-identifiers (nodes)
+                             `(funcall 'format-comma-separated-identifiers ,nodes database))
+                           (format-separated-list (nodes separator &optional format-fn)
+                             `(funcall 'format-separated-list ,nodes ,separator database
+                                       ,@(when format-fn
+                                               (list format-fn))))
+                           (format-sql-where (expression)
+                             `(funcall 'format-sql-where ,expression database)))
                   (with-slots ,effective-slots self
-                    ,@(rest it)))))
-      ,(awhen (find :format-sql-identifier options :key #'first)
-              `(defmethod format-sql-identifier ((self ,name) database)
-                (macrolet ((format-sql-syntax-node (node)
-                             `(funcall 'format-sql-syntax-node ,node database))
-                           (format-sql-literal (node)
-                             `(funcall 'format-sql-literal ,node database))
-                           (format-sql-identifier (node)
-                             `(funcall 'format-sql-identifier ,node database)))
-                  (with-slots ,effective-slots
-                      self
-                    ,@(rest it)))))
-      (pushnew ',name *sql-constructor-names*)
-      (defmacro ,name (&body args)
-        `(make-instance ',',name ,@args))
-      (find-class ',name))))
+                    ,@body)))))
+      `(progn
+         (eval-always
+           (setf (get ',name :slot-names) ',effective-slots))
+         (defclass* ,name ,supers ,slots
+           ,@(remove-if (lambda (option)
+                          (starts-with (string-downcase (first option)) "format"))
+                        options))
+         (defmethod make-load-form ((self ,name) &optional env)
+           (make-load-form-saving-slots self :environment env))
+         (pushnew ',name *sql-syntax-node-names*)
+         ,(awhen (find :format-sql-syntax-node options :key #'first)
+                 (define-format-method 'format-sql-syntax-node (rest it)))
+         ,(awhen (find :format-sql-identifier options :key #'first)
+                 (define-format-method 'format-sql-identifier (rest it)))
+         (pushnew ',name *sql-constructor-names*)
+         (defmacro ,name (&body args)
+           `(make-instance ',',name ,@args))
+         (find-class ',name)))))
 
-(defmacro format-comma-separated-identifiers (nodes)
-  `(format-comma-separated-list ,nodes nil format-sql-identifier))
+(def function format-comma-separated-list (nodes database &optional (format-fn 'format-sql-syntax-node))
+  (format-separated-list nodes #\, database format-fn))
 
-;; TODO database arg is hopelessly lost when going through an sql-unquote
-(defmacro format-comma-separated-list (nodes &optional database (format-fn 'format-sql-syntax-node))
-  (with-unique-names (node)
-    (rebinding (nodes)
-      ;; TODO should this (typep ,nodes 'sql-unquote) really be here? what about spliced-p?
-      `(if (typep ,nodes 'sql-unquote)
-           (push-form-into-sql-stream-elements
-            `(iter (for ,',node :in-sequence ,(form-of ,nodes))
-                   (unless (first-iteration-p)
-                     (write-string ", " *sql-stream*))
-                   (,',format-fn ,',node *database*)))
-           (iter (for ,node :in-sequence ,nodes)
-                 (unless (first-iteration-p)
-                   (write-string ", " *sql-stream*))
-                 ,(if database
-                      `(,format-fn ,node ,database)
-                      `(,format-fn ,node)))))))
+(def function format-comma-separated-identifiers (nodes database)
+  (format-comma-separated-list nodes database 'format-sql-identifier))
 
-;; FIXME *database* is not propagated through this function. is this a problem?
-;; how does it relate to the runtime formatting of sql ast nodes?
-;; check all the other macros that are similar to what format-separated-list was.
-(def function format-separated-list (nodes separator)
-  (iter (for node :in-sequence nodes)
-        (unless (first-iteration-p)
-          (write-string " " *sql-stream*)
-          (write-string separator *sql-stream*)
-          (write-string " " *sql-stream*))
-        (if (typep node 'sql-unquote)
-            (push-form-into-sql-stream-elements
-             (if (spliced-p node)
-                 `(format-separated-list ,(form-of node) ,separator)
-                 `(format-sql-syntax-node ,(form-of node) *database*)))
-            (format-sql-syntax-node node *database*))))
-
-;; TODO delme, was this:
-#+nil
-(defmacro format-separated-list (nodes separator &optional (database 'database) (format-fn 'format-sql-syntax-node))
-  `(iter (for node :in-sequence ,nodes)
-         (unless (first-iteration-p)
-           (write-string " " *sql-stream*)
-           (write-string ,separator *sql-stream*)
-           (write-string " " *sql-stream*))
-         (if (typep node 'sql-unquote)
-             (push-form-into-sql-stream-elements
-              (if (spliced-p node)
-                  `(format-separated-list ,(form-of node) ,',separator ,',database ',format-fn)
-                  `(funcall ',format-fn ,(form-of node) ,database)))
-             (,format-fn node ,database))))
-
-(defmacro format-string (string)
-  `(write-string ,string *sql-stream*))
+(def function format-separated-list (nodes separator database &optional (format-fn 'format-sql-syntax-node))
+  (if (typep nodes 'sql-unquote)
+      (progn
+        (assert (not (spliced-p nodes)))
+        (push-form-into-sql-stream-elements
+         `(format-separated-list ,(form-of nodes) ,separator ,database ',format-fn)))
+      (iter (for node :in-sequence nodes)
+            (unless (first-iteration-p)
+              (unless (eq #\, separator)
+                (write-char #\Space *sql-stream*))
+              (if (typep separator 'character)
+                  (write-char separator *sql-stream*)
+                  (write-string separator *sql-stream*))
+              (write-char #\Space *sql-stream*))
+            (if (typep node 'sql-unquote)
+                (push-form-into-sql-stream-elements
+                 (if (spliced-p node)
+                     `(format-separated-list ,(form-of node) ,separator ,database ',format-fn)
+                     (expand-sql-unquote node database format-fn)))
+                (funcall format-fn node database)))))
 
 (defmacro format-char (character)
   `(write-char
@@ -252,20 +229,19 @@
            (elt character 0))
          character) *sql-stream*))
 
-(defun print-number-to-sql-string (number)
+(defmacro format-string (string)
+  `(write-string ,string *sql-stream*))
+
+(def function print-number-to-sql-string (number)
   (etypecase number
     (integer (princ-to-string number))
     (ratio (format nil "~F" (coerce number 'double-float)))
     (float (format nil "~F" number))))
 
 (defmacro format-number (number)
-  (rebinding (number)
-    `(write-string (print-number-to-sql-string ,number) *sql-stream*)))
+  `(write-string (print-number-to-sql-string ,number) *sql-stream*))
 
-(defmacro format-where (where &optional database)
-  (rebinding (where)
-    `(when ,where
-      (format-string " WHERE ")
-      ,(if database
-           `(format-sql-syntax-node ,where ,database)
-           `(format-sql-syntax-node ,where)))))
+(def function format-sql-where (where database)
+  (when where
+    (format-string " WHERE ")
+    (format-sql-syntax-node where database)))

@@ -18,4 +18,4 @@
   (:format-sql-syntax-node
    (format-string "DELETE FROM ")
    (format-sql-identifier table)
-   (format-where where)))
+   (format-sql-where where)))

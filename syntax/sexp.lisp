@@ -74,7 +74,7 @@
   (cond ((typep node 'sql-syntax-node)
          node)
         ((sexp-sql-unquote-p node)
-         (funcall visitor (compile-sexp-sql-unquote node)))
+         (compile-sexp-sql-unquote node))
         (t (funcall visitor node))))
 
 (defun sql-function-name-p (thing)
@@ -104,7 +104,7 @@
   (if (typep body 'sql-unquote)
       body
       (progn
-        (unless (<= 2 (length body) 3)
+        (unless (= 3 (length body))
           (sql-compile-error body))
         (make-instance 'sql-unquote :form (second body) :spliced (third body)))))
 
