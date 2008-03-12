@@ -141,6 +141,10 @@
                     ,(if expand-as-constant-values? *binding-values* '*binding-values*))
                   '(values))))
         `(lambda ()
+           ,@(when toplevel
+               `((unless (typep *database* ',(class-name (class-of *database*)))
+                   (error "The current value of *database* (~A) is not subtypep of the compile-time value of *database* (~S)."
+                          *database* ',(class-name (class-of *database*))))))
            ,@(if bindings
                  `((bind ,bindings
                      ,@body
@@ -240,7 +244,7 @@
       (progn
         (assert (not (spliced-p nodes)))
         (push-form-into-command-elements
-         `(format-separated-list ,(form-of nodes) ,separator ,database ',format-fn)))
+         `(format-separated-list ,(form-of nodes) ,separator *database* ',format-fn)))
       (iter (for node :in-sequence nodes)
             (unless (first-iteration-p)
               (unless (eq #\, separator)
@@ -252,7 +256,7 @@
             (if (typep node 'sql-unquote)
                 (if (spliced-p node)
                     (push-form-into-command-elements
-                     `(format-separated-list ,(form-of node) ,separator ,database ',format-fn))
+                     `(format-separated-list ,(form-of node) ,separator *database* ',format-fn))
                     (expand-sql-unquote node database format-fn))
                 (funcall format-fn node database)))))
 

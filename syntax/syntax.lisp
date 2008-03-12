@@ -165,6 +165,7 @@
 ;; (sql-unquote :form #<SQL-BOOLEAN-TYPE 1234>)                    -> ,#<SQL-BOOLEAN-TYPE 1234>
 ;; (sql-unquote :form (sql-quote :value #<SQL-BOOLEAN-TYPE 1234>)) -> ,'#<SQL-BOOLEAN-TYPE 1234>
 (defun expand-sql-unquote (unqoute-node database formatter)
+  (declare (ignore database))
   (labels ((process (node)
              (cond ((consp node)
                     (cons (process (car node))
@@ -183,7 +184,7 @@
      `(,@(if (symbolp formatter)
              `(,formatter)
              `(funcall ',formatter))
-         ,(process (form-of unqoute-node)) ,database))))
+         ,(process (form-of unqoute-node)) *database*))))
 
 (defmethod format-sql-syntax-node ((thunk function) database)
   (funcall thunk))
