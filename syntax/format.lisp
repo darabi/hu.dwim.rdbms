@@ -219,8 +219,6 @@
            ,@(remove-if (lambda (option)
                           (starts-with (string-downcase (first option)) "format"))
                         options))
-         (defmethod make-load-form ((self ,name) &optional env)
-           (make-load-form-saving-slots self :environment env))
          (pushnew ',name *sql-syntax-node-names*)
          ,(awhen (find :format-sql-syntax-node options :key #'first)
                  (define-format-method 'format-sql-syntax-node (rest it)))
