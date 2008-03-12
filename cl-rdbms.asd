@@ -35,7 +35,17 @@
     (call-next-method)))
 
 (defclass cl-rdbms-backend-system (system)
-  ((database-factory-form :initarg :database-factory-form :accessor database-factory-form-of)))
+  ((runtime-database-factory-form
+    :initarg :runtime-database-factory-form
+    :accessor runtime-database-factory-form-of)
+   (compile-time-database-factory-form
+    :initform nil
+    :initarg :compile-time-database-factory-form
+    :accessor compile-time-database-factory-form-of)))
+
+(defmethod compile-time-database-factory-form-of :around ((self cl-rdbms-backend-system))
+  (or (call-next-method)
+      (runtime-database-factory-form-of self)))
 
 (defsystem :cl-rdbms
   :version "1.0"
@@ -94,8 +104,10 @@
 
 (defsystem :cl-rdbms.postmodern
   :class cl-rdbms-backend-system
-  :database-factory-form "(make-instance 'postgresql-postmodern :connection-specification
-                                         '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
+  :runtime-database-factory-form
+  "(make-instance 'postgresql-postmodern :connection-specification
+                  '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
+  :compile-time-database-factory-form "(make-instance 'postgresql)"
   :description "cl-rdbms with Postmodern backend"
   :depends-on (:arnesi :iterate :defclass-star :cl-rdbms.postgresql :cl-postgres)
   :default-component-class local-cl-source-file
@@ -105,14 +117,15 @@
 
 (defsystem :cl-rdbms.oracle
   :class cl-rdbms-backend-system
-  :database-factory-form "(make-instance 'oracle
-                                         :connection-specification
-                                         '(:datasource \"(ADDRESS =
-                                                           (PROTOCOL = TCP)
-                                                           (HOST = localhost)
-                                                           (PORT = 1521))\"
-                                           :user-name \"perec-test\"
-                                           :password \"test123\"))"
+  :runtime-database-factory-form
+  "(make-instance 'oracle
+                  :connection-specification
+                  '(:datasource \"(ADDRESS =
+                                    (PROTOCOL = TCP)
+                                    (HOST = localhost)
+                                    (PORT = 1521))\"
+                    :user-name \"perec-test\"
+                    :password \"test123\"))"
   :description "cl-rdbms with Oracle backend"
   :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
   :default-component-class local-cl-source-file
@@ -131,9 +144,10 @@
 
 (defsystem :cl-rdbms.sqlite
   :class cl-rdbms-backend-system
-  :database-factory-form "(make-instance 'sqlite
-                                         :connection-specification
-                                         '(:file-name \"/tmp/perec-test\"))"
+  :runtime-database-factory-form
+  "(make-instance 'sqlite
+                  :connection-specification
+                  '(:file-name \"/tmp/perec-test\"))"
   :description "cl-rdbms with Sqlite backend"
   :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
   :default-component-class local-cl-source-file
@@ -172,14 +186,19 @@
   (operate 'load-op system)
   (in-package :cl-rdbms)
   ;; set it before compiling, so the SEXP SQL compiler will use the specified database type to format sql
-  (eval (read-from-string
-         (concatenate 'string "(progn
-                                 (setf *database* " (database-factory-form-of system) "))")))
-  (operate 'load-op :cl-rdbms-test)
+  (progv
+      (list (read-from-string "*database*"))
+      (list (eval
+             (read-from-string
+              (compile-time-database-factory-form-of system))))
+    (operate 'load-op :cl-rdbms-test))
   (in-package :cl-rdbms-test)
+  (setf (symbol-value (read-from-string "*database*"))
+        (eval
+         (read-from-string
+          (runtime-database-factory-form-of system))))
   (eval (read-from-string
-         (concatenate 'string "(progn
-                                 (setf *test-database* *database*))")))
+         "(setf *test-database* *database*)"))
   (declaim (optimize (debug 3)))
   (warn "(declaim (optimize (debug 3))) was issued to help later C-c C-c'ing")
   (eval (read-from-string "(progn
