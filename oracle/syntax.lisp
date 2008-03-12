@@ -106,19 +106,6 @@
     (call-next-method)
     (write-char #\" *sql-stream*)))
 
-#+nil
-(defmethod format-sql-identifier :around ((identifier string) (database oracle))
-  (if (and (alpha-char-p (char identifier 0))
-           (not (reserved-word-p identifier))
-           (every #L(or (alphanumericp !1)
-                        (member !1 '(#\_ #\$ #\#) :test #'char=))
-                  identifier))
-      (call-next-method)
-      (progn
-        (write-char #\" *sql-stream*)
-        (call-next-method)
-        (write-char #\" *sql-stream*))))
-
 (defvar *oracle-sql-reserved-words* (make-hash-table :test 'equal))
 
 (eval-when (:load-toplevel)

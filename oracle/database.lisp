@@ -86,7 +86,6 @@
 
 (defconstant +maximum-rdbms-name-length+ 30)
 
-;; this name mapping is not injective, different lisp names _may_ be mapped to the same rdbms name
 (defmethod calculate-rdbms-name ((db oracle) thing name)
-  (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+ :prefix "_"))
+  (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+))
 
