@@ -152,11 +152,10 @@
   (:format-sql-syntax-node
    (expand-sql-unquote self database 'format-sql-syntax-node)))
 
-(defun push-form-into-sql-stream-elements (form &optional (flush? #t))
-  (when flush?
-    (vector-push-extend (get-output-stream-string *sql-stream*) *sql-stream-elements*)
-    (setf *sql-stream* (make-string-output-stream)))
-  (vector-push-extend form *sql-stream-elements*))
+(defun push-form-into-command-elements (form)
+  (vector-push-extend (get-output-stream-string *sql-stream*) *command-elements*)
+  (setf *sql-stream* (make-string-output-stream))
+  (vector-push-extend form *command-elements*))
 
 ;; TODO: consider having an sql-quote node which should be checked instead of being an instance of sql-syntax-node here
 ;; (sql-unquote :form (sql-boolean-type))                          -> ,(sql-boolean-type)
@@ -177,41 +176,28 @@
                             (write-string ,form *sql-stream*)))
                         (cons form))))
                    (t node))))
-    (push-form-into-sql-stream-elements `(funcall ',formatter ,(process (form-of unqoute-node)) ,database))))
+    (push-form-into-command-elements
+     `(,@(if (symbolp formatter)
+             `(,formatter)
+             `(funcall ',formatter))
+         ,(process (form-of unqoute-node)) ,database))))
 
 (defmethod format-sql-syntax-node ((thunk function) database)
   (funcall thunk))
 
 (defun unquote-aware-format-sql-literal (literal)
-  (let ((type (type-of literal))
-        (value (value-of literal)))
+  (bind ((type (type-of literal)))
     (if type
         (progn
           (vector-push-extend nil *binding-variables*)
-          (if (typep type 'sql-unquote)
-              (bind ((index (length *binding-types*)))
-                (push-form-into-sql-stream-elements
-                 `(setf (aref *binding-types* ,index) ,(form-of type)))
-                (vector-push-extend nil *binding-types*))
-              (vector-push-extend type *binding-types*))
-          (if (typep value 'sql-unquote)
-              (bind ((index (length *binding-values*)))
-                (vector-push-extend nil *binding-values*)
-                (push-form-into-sql-stream-elements
-                 `(setf (aref *binding-values* ,index) ,(form-of value)) #f))
-              (vector-push-extend value *binding-values*))
+          (vector-push-extend type *binding-types*)
+          (vector-push-extend (value-of literal) *binding-values*)
           #t)
         #f)))
 
 (defun unquote-aware-format-sql-binding-variable (variable)
   (vector-push-extend variable *binding-variables*)
-  (bind ((type (type-of variable)))
-    (if (typep type 'sql-unquote)
-        (bind ((index (length *binding-types*)))
-          (push-form-into-sql-stream-elements
-           `(setf (aref *binding-types* ,index) ,(form-of type)))
-          (vector-push-extend nil *binding-types*))
-        (vector-push-extend type *binding-types*)))
+  (vector-push-extend (type-of variable) *binding-types*)
   (vector-push-extend nil *binding-values*))
 
 (defmethod format-sql-literal ((node sql-unquote) database)

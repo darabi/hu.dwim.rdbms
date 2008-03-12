@@ -19,7 +19,7 @@
   (import *sql-constructor-names* package))
 
 (defvar *sql-stream*)
-(defvar *sql-stream-elements*)
+(defvar *command-elements*)
 (defvar *binding-variables*)
 (defvar *binding-types*)
 (defvar *binding-values*)
@@ -33,18 +33,48 @@
   (:method (node database)
            (format-sql-literal node database)))
 
+(defun reduce-subsequences (sequence predicate reducer)
+  (iter (with completely-reduced? = #t)
+        (for index :from 0 :below (length sequence))
+        (for reducibles = (iter (while (< index (length sequence)))
+                                (for element = (elt sequence index))
+                                (while (funcall predicate element))
+                                (collect element)
+                                (incf index)))
+        (collect (if (zerop (length reducibles))
+                     (progn
+                       (setf completely-reduced? #f)
+                       (elt sequence index))
+                     (progn
+                       (decf index)
+                       (apply reducer reducibles)))
+          :into result
+          :result-type vector)
+        (finally (return (values result completely-reduced?)))))
+
+(defun vector-extend (extension vector)
+  (bind ((original-length (length vector))
+         (extension-length (length extension))
+         (new-length (+ original-length extension-length))
+         (original-dimension (array-dimension vector 0)))
+    (when (< original-dimension new-length)
+      (setf vector (adjust-array vector (max (* 2 original-dimension) new-length))))
+    (setf (fill-pointer vector) new-length)
+    (replace vector extension :start1 original-length)
+    vector))
+
 ;; TODO: if sql-quote is added this should return a lambda returning the syntax-node unless it is an sql-quote in which case it can process
 (defun expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
   (let ((*print-pretty* #f)
         (*print-circle* #f)
         (*sql-stream* (make-string-output-stream))
-        (*sql-stream-elements* (make-array 8 :adjustable #t :fill-pointer 0))
         (*database* (or database
                         (and (boundp '*database*)
                              *database*)
                         (progn
                           (simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
                           (make-instance 'database))))
+        (*command-elements* (make-array 8 :adjustable #t :fill-pointer 0))
         (*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))
         (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
         (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
@@ -52,64 +82,71 @@
     ;; TODO (?) this formatting could be put in a load-time-value and then loading the fasl's would react to
     ;; changing *database* before loading them and use the syntax customizations specified by it.
     (format-sql-syntax-node syntax-node *database*)
-    (flet ((copy-array (array)
-             (let ((length (length array)))
-               (if (and (zerop length)
-                        (every 'stringp *sql-stream-elements*))
-                   #()
-                   `(make-array ,length :adjustable #t :fill-pointer ,length
-                                :initial-contents ,array)))))
-      (bind ((strings-only? (every #'stringp *sql-stream-elements*))
-             (command
-              (when strings-only?
-                (apply #'concatenate 'string (append (coerce *sql-stream-elements* 'list)
-                                                     (list (get-output-stream-string *sql-stream*)))))))
-        (if (and strings-only?
-                 (every #'null *binding-variables*))
-            (if (zerop (length *binding-types*))
-                command
-                `(lambda ()
-                   (values ,command ,*binding-variables* ,*binding-types* ,*binding-values*)))
-            (let ((body
-                   `(,@(iter (for element :in-vector *sql-stream-elements*)
-                             (collect (if (stringp element)
-                                          (unless (zerop (length element))
-                                            `(write-string ,element *sql-stream*))
-                                          element)))
-                       ,(let ((last-chunk (get-output-stream-string *sql-stream*)))
-                             (unless (zerop (length last-chunk))
-                               `(write-string ,last-chunk *sql-stream*)))
-                       ,(if toplevel
-                            `(values ,(if strings-only?
-                                          command
-                                          '(get-output-stream-string *sql-stream*))
-                                     ,(if strings-only?
-                                          *binding-variables*
-                                          '*binding-variables*)
-                                     ,(if strings-only?
-                                          *binding-types*
-                                          '*binding-types*)
-                                     ,(if (and strings-only?
-                                               (zerop (length *binding-variables*)))
-                                          *binding-values*
-                                          '*binding-values*))
-                            '(values)))))
+    (bind ((last-command-element (get-output-stream-string *sql-stream*)))
+      (unless (zerop (length last-command-element))
+        (vector-push-extend last-command-element *command-elements*)))
+    (flet ((constant-command-element-p (element)
+             (stringp element))
+           (constant-variable-p (element)
+             (or (null element)
+                 (not (typep element 'sql-unquote))))
+           (constant-type-p (element)
+             (not (typep element 'sql-unquote)))
+           (constant-value-p (element)
+             (not (typep element 'sql-unquote)))
+           (process-elements (sequence vector)
+             (iter (for element :in-vector sequence)
+                   (collect (if (arrayp element)
+                                (unless (zerop (length element))
+                                  `(vector-extend ,element ,vector))
+                                `(vector-push-extend ,(form-of element) ,vector))))))
+      (bind (((:values command-elements constant-command-elements?) (reduce-subsequences *command-elements* #'constant-command-element-p #'strcat))
+             ((:values variables constant-variables?) (reduce-subsequences *binding-variables* #'constant-variable-p #'vector))
+             ((:values types constant-types?) (reduce-subsequences *binding-types* #'constant-type-p #'vector))
+             ((:values values constant-values?) (reduce-subsequences *binding-values* #'constant-value-p #'vector))
+             (expand-as-constant-command-elements? (and toplevel constant-command-elements?))
+             (expand-as-constant-variables? (and toplevel constant-variables? constant-command-elements?))
+             (expand-as-constant-types? (and toplevel constant-types? constant-command-elements?))
+             (expand-as-constant-values? (and toplevel constant-values? constant-command-elements? (every #'null *binding-variables*)))
+             (body
+              `(,@(unless expand-as-constant-variables?
+                          (process-elements variables '*binding-variables*))
+                  ,@(unless expand-as-constant-types?
+                            (process-elements types '*binding-types*))
+                  ,@(unless expand-as-constant-values?
+                            (process-elements values '*binding-values*))
+                  ,@(unless expand-as-constant-command-elements?
+                            (iter (for element :in-vector command-elements)
+                                  (collect (if (stringp element)
+                                               `(write-string ,element *sql-stream*)
+                                               element))))))
+             (bindings
+              (when toplevel
+                `(,@(unless expand-as-constant-command-elements?
+                            '((*print-pretty* #f)
+                              (*print-circle* #f)
+                              (*sql-stream* (make-string-output-stream))))
+                    ,@(unless expand-as-constant-variables?
+                              '((*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))))
+                    ,@(unless expand-as-constant-types?
+                              '((*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))))
+                    ,@(unless expand-as-constant-values?
+                              '((*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))))))
+             (result
               (if toplevel
-                  `(lambda ()
-                     (bind (,@(unless strings-only?
-                                      `((*print-pretty* #f)
-                                        (*print-circle* #f)
-                                        (*sql-stream* (make-string-output-stream))))
-                              ,@(unless strings-only?
-                                        `((*binding-variables* ,(copy-array *binding-variables*))))
-                              ,@(unless strings-only?
-                                        `((*binding-types* ,(copy-array *binding-types*))))
-                              ,@(unless (and strings-only?
-                                             (zerop (length *binding-variables*)))
-                                        `((*binding-values* ,(copy-array *binding-values*)))))
-                       ,@body))
-                  `(lambda ()
-                     ,@body))))))))
+                  `(values
+                    ,(if expand-as-constant-command-elements? (first* command-elements) '(get-output-stream-string *sql-stream*))
+                    ,(if expand-as-constant-variables? *binding-variables* '*binding-variables*)
+                    ,(if expand-as-constant-types? *binding-types* '*binding-types*)
+                    ,(if expand-as-constant-values? *binding-values* '*binding-values*))
+                  '(values))))
+        `(lambda ()
+           ,@(if bindings
+                 `((bind ,bindings
+                     ,@body
+                     ,result))
+                 `(,@body
+                   ,result)))))))
 
 (defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
   (bind (((:values command binding-variables binding-types binding-values) (funcall command)))
@@ -204,7 +241,7 @@
   (if (typep nodes 'sql-unquote)
       (progn
         (assert (not (spliced-p nodes)))
-        (push-form-into-sql-stream-elements
+        (push-form-into-command-elements
          `(format-separated-list ,(form-of nodes) ,separator ,database ',format-fn)))
       (iter (for node :in-sequence nodes)
             (unless (first-iteration-p)
@@ -215,10 +252,10 @@
                   (write-string separator *sql-stream*))
               (write-char #\Space *sql-stream*))
             (if (typep node 'sql-unquote)
-                (push-form-into-sql-stream-elements
-                 (if (spliced-p node)
-                     `(format-separated-list ,(form-of node) ,separator ,database ',format-fn)
-                     (expand-sql-unquote node database format-fn)))
+                (if (spliced-p node)
+                    (push-form-into-command-elements
+                     `(format-separated-list ,(form-of node) ,separator ,database ',format-fn))
+                    (expand-sql-unquote node database format-fn))
                 (funcall format-fn node database)))))
 
 (defmacro format-char (character)
