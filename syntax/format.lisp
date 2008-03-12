@@ -63,21 +63,23 @@
     (replace vector extension :start1 original-length)
     vector))
 
-;; TODO: if sql-quote is added this should return a lambda returning the syntax-node unless it is an sql-quote in which case it can process
+;; TODO: if sql-quote is added this should return a lambda returning
+;; the syntax-node unaltered unless it is an sql-quote in which case
+;; it can be process
 (defun expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
-  (let ((*print-pretty* #f)
-        (*print-circle* #f)
-        (*sql-stream* (make-string-output-stream))
-        (*database* (or database
-                        (and (boundp '*database*)
-                             *database*)
-                        (progn
-                          (simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
-                          (make-instance 'database))))
-        (*command-elements* (make-array 8 :adjustable #t :fill-pointer 0))
-        (*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))
-        (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
-        (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
+  (bind ((*print-pretty* #f)
+         (*print-circle* #f)
+         (*sql-stream* (make-string-output-stream))
+         (*database* (or database
+                         (and (boundp '*database*)
+                              *database*)
+                         (progn
+                           (simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
+                           (make-instance 'database))))
+         (*command-elements* (make-array 8 :adjustable #t :fill-pointer 0))
+         (*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))
+         (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))
+         (*binding-values* (make-array 16 :adjustable #t :fill-pointer 0)))
     (assert *database*)
     ;; TODO (?) this formatting could be put in a load-time-value and then loading the fasl's would react to
     ;; changing *database* before loading them and use the syntax customizations specified by it.
