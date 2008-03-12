@@ -18,7 +18,7 @@
    (compile-sexp-sql body)
    :toplevel (and (consp body)
                   (member (first body) '(select insert update delete create drop)
-                          :test 'sql-symbol-equal))))
+                          :test #'sql-symbol-equal))))
 
 (defcondition* sql-compile-error (error)
   ((whole-form)
@@ -45,12 +45,13 @@
       (select (compile-sexp-sql-select form))
       (insert (compile-sexp-sql-insert form))
       (update (compile-sexp-sql-update form))
-      ;; TODO this should work based on a constant list of operators
-      ((and or not) (compile-sexp-sql-expression form))
       (delete (compile-sexp-sql-delete form))
       (create (compile-sexp-sql-create form))
       (drop   (compile-sexp-sql-drop form))
-      (otherwise (sql-compile-error form)))))
+      (t
+       (if (member first *sql-operator-names* :test #'sql-symbol-equal)
+           (compile-sexp-sql-expression form)
+           (sql-compile-error form))))))
 
 (defun process-sexp-sql-syntax-list (body visitor &key function-call-allowed-p)
   (if (and function-call-allowed-p
@@ -78,12 +79,7 @@
         (t (funcall visitor node))))
 
 (defun sql-function-name-p (thing)
-  (let ((name (cond ((and thing (symbolp thing))
-                     (string-downcase thing))
-                    ((stringp thing)
-                     thing))))
-    ;; TODO
-    (string= name "count")))
+  (member thing *sql-function-names* :test #'sql-symbol-equal))
 
 (defun stringify (name)
   (typecase name
@@ -114,8 +110,11 @@
     (make-instance 'sql-select
                    :columns (process-sexp-sql-syntax-list columns #'compile-sexp-sql-column-alias :function-call-allowed-p #t)
                    :tables (process-sexp-sql-syntax-list tables #'compile-sexp-sql-table-alias)
-                   ;; TODO process where
-                   :where (process-sexp-sql-syntax-node where))))
+                   :where (compile-sexp-sql-where where))))
+
+(def function compile-sexp-sql-where (body)
+  (when body
+    (compile-sexp-sql-expression body)))
 
 (defun compile-sexp-sql-create (body)
   (let ((whole-body body)
@@ -157,10 +156,10 @@
   (bind (((table &optional where) body))
     (make-instance 'sql-delete
                    :table (process-sexp-sql-syntax-node table #'compile-sexp-sql-table-alias)
-                   ;; TODO process where
-                   :where (process-sexp-sql-syntax-node where))))
+                   :where (compile-sexp-sql-where where))))
 
 (defun compile-sexp-sql-update (body)
+  (declare (ignore body))
   (error "Not yet implemented"))
 
 (defun compile-sexp-sql-function-call (body)
@@ -298,13 +297,16 @@
   (cond
     ((sexp-sql-unquote-p body)
      (compile-sexp-sql-unquote body))
+    ((and (not (null body))
+          (symbolp body))
+     (sql-identifier :name body))
+    ((sql-function-call-form-p body)
+     (compile-sexp-sql-function-call body))
     ((atom body)
      (sql-literal :value body))
     (t
      (bind ((operator (pop body))
-            (constructor (eswitch (operator :test #'sql-symbol-equal)
-                           ;; TODO this should work based on a constant list of operators
-                           (and #'sql-and)
-                           (or  #'sql-or)
-                           (not #'sql-not))))
+            (constructor (if (member operator *sql-operator-names* :test #'sql-symbol-equal)
+                             (sql-constructor-name operator)
+                             (sql-compile-error body operator))))
        (apply constructor (mapcar #'compile-sexp-sql-expression body))))))

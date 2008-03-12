@@ -8,6 +8,12 @@
 
 #.(file-header)
 
+(def special-variable *sql-operator-names* (list)
+  "A list of symbols that name an SQL operator")
+
+(def special-variable *sql-function-names* (list)
+  "A list of symbols that name an SQL function")
+
 ;;;;;;;;;;;;;;;
 ;;; Expressions
 
@@ -39,6 +45,7 @@
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
+      (pushnew ',name *sql-operator-names*)
       (defun ,constructor-name (&rest subqueries)
         (make-instance 'sql-set-operation-expression
                        :set-operation ,(intern (symbol-name name) (find-package :keyword))
@@ -101,6 +108,7 @@
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
+      (pushnew ',name *sql-operator-names*)
       (defun ,constructor-name (expression)
         (make-instance 'sql-unary-operator
                        :name ,(sql-operator-name name)
@@ -111,6 +119,7 @@
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
+      (pushnew ',name *sql-operator-names*)
       (defun ,constructor-name (left right)
         (make-instance 'sql-binary-operator
                        :name ,(string-upcase name)
@@ -121,6 +130,7 @@
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
+      (pushnew ',name *sql-operator-names*)
       (defun ,constructor-name (&rest expressions)
         (make-instance 'sql-n-ary-operator
                        :name ,(string-upcase name)
@@ -130,6 +140,7 @@
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
+      (pushnew ',name *sql-operator-names*)
       (defun ,constructor-name (&rest expressions)
         (if (length=1 expressions)
             (make-instance 'sql-unary-operator
@@ -283,6 +294,7 @@
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
+      (pushnew ',name *sql-function-names*)
       (defun ,constructor-name (&rest arguments)
         (make-instance 'sql-function-call
                        :name ,(string-upcase name)
