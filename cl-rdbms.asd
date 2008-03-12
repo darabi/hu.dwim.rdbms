@@ -75,7 +75,7 @@
             :depends-on ("database" "transaction" "ddl" "logging")
             :components ((:file "format")
                          (:file "syntax" :depends-on ("format"))
-                         (:file "sexp" :depends-on ("syntax"))
+                         (:file "sexp" :depends-on ("syntax" "expression"))
                          (:file "type" :depends-on ("syntax"))
                          (:file "constraint" :depends-on ("syntax"))
                          (:file "create-table" :depends-on ("syntax"))
