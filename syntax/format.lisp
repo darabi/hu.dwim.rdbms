@@ -101,7 +101,11 @@
                    (collect (if (arrayp element)
                                 (unless (zerop (length element))
                                   `(vector-extend ,element ,vector))
-                                `(vector-push-extend ,(form-of element) ,vector))))))
+                                `(vector-push-extend ,(form-of element) ,vector)))))
+           (optimize-vector (vector)
+             (if (zerop (length vector))
+                 #()
+                 vector)))
       (bind (((:values command-elements constant-command-elements?) (reduce-subsequences *command-elements* #'constant-command-element-p #'strcat))
              ((:values variables constant-variables?) (reduce-subsequences *binding-variables* #'constant-variable-p #'vector))
              ((:values types constant-types?) (reduce-subsequences *binding-types* #'constant-type-p #'vector))
@@ -138,9 +142,9 @@
               (if toplevel
                   `(values
                     ,(if expand-as-constant-command-elements? (first* command-elements) '(get-output-stream-string *sql-stream*))
-                    ,(if expand-as-constant-variables? *binding-variables* '*binding-variables*)
-                    ,(if expand-as-constant-types? *binding-types* '*binding-types*)
-                    ,(if expand-as-constant-values? *binding-values* '*binding-values*))
+                    ,(if expand-as-constant-variables? (optimize-vector *binding-variables*) '*binding-variables*)
+                    ,(if expand-as-constant-types?     (optimize-vector *binding-types*)     '*binding-types*)
+                    ,(if expand-as-constant-values?    (optimize-vector *binding-values*)    '*binding-values*))
                   '(values))))
         `(lambda ()
            ,@(when toplevel
