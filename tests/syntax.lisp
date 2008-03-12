@@ -87,8 +87,8 @@
 
   (bind ((columns (list (sql-column :name 'col1 :type (sql-integer-type))
                         (sql-column :name 'col2 :type (sql-character-varying-type))
-                        (sql-column :name 'col3 :type (sql-character-varying-type))
-                        (sql-column :name 'col4 :type (sql-float-type :bit-size 32)))))
+                        (sql-identifier :name 'col3)
+                        (sql-identifier :name 'col4))))
     [insert t ,columns (42
                         ,(sql-literal :value (string-upcase "some random text")
                                       :type (sql-character-varying-type))
@@ -97,7 +97,7 @@
                         (? 'static-binding (float 32)))])
   ((postgresql "INSERT INTO t (col1, col2, col3, col4) VALUES (42, $2::CHARACTER VARYING, $3::CHARACTER VARYING, $1::FLOAT4)")))
 
-(def syntax-test test/syntax/expand-sql-ast/unquote/1 postgresql (&optional (n 3))
+(def syntax-test test/syntax/expand-sql-ast/unquote/1 postgresql-postmodern (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
                            (apply 'concatenate 'string
@@ -105,29 +105,31 @@
                                         (unless (first-iteration-p)
                                           (collect " OR "))
                                         (collect "t.b"))))))
-    ;; advanced use of the reader: the criteria is generated into a variable,
-    ;; it could even be the input of the function.
+    ;; advanced use of the reader: the criteria is generated into a variable.
+    ;; which means that it could even be the input of this function.
     (bind ((criteria [or ,@(iter (repeat (1- n))
                                  (collect (sql-column-alias :table 't :column 'b)))
                          ,(sql-column-alias :table 't :column 'b)]))
       (is (string= expected
                    (funcall [select (a b) t ,criteria]))))
-    ;; building the AST by hand
-    (is (string=
-         expected
-         (funcall
-          (compile
-           nil
-           (expand-sql-ast-into-lambda-form
-            (sql-select :columns '(a b)
-                        :tables '(t)
-                        :where (sql-unquote
-                                 :form
-                                 `(apply 'sql-or
-                                         (iter (repeat ,n)
-                                               (collect ,(sql-column-alias :table 't :column 'b)))))))))))))
 
-(def syntax-test test/syntax/expand-sql-ast/unquote/2 postgresql (&optional (n 3))
+    ;; building the AST by hand
+    (bind ((criteria (sql-unquote
+                       :form
+                       `(apply 'sql-or
+                               (iter (repeat ,n)
+                                     (collect ,(sql-column-alias :table 't :column 'b)))))))
+      (is (string=
+           expected
+           (funcall
+            (compile
+             nil
+             (expand-sql-ast-into-lambda-form
+              (sql-select :columns '(a b)
+                          :tables '(t)
+                          :where criteria)))))))))
+
+(def syntax-test test/syntax/expand-sql-ast/unquote/2 postgresql-postmodern (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE ((a = (b + $1::NUMERIC + 1)) OR (a = (b + $2::NUMERIC + 2)) OR (a = (b + $3::NUMERIC + 3)))"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
                            (apply 'concatenate 'string
@@ -135,6 +137,7 @@
                                         (unless (first-iteration-p)
                                           (collect " OR "))
                                         (collect (format nil "(a = (b + $~d::NUMERIC + ~d))" i i)))))))
+    ;; using the [] reader
     (bind ((criteria [or ,@(iter (for i :from 1 :to n)
                                  (rebind (i)
                                    (collect (sql-= (sql-identifier :name 'a)
@@ -147,25 +150,54 @@
            expected
            (funcall
             [select (a b) t ,criteria]))))
-    (is (string=
-         expected
-         (funcall
-          (compile
-           nil
-           (expand-sql-ast-into-lambda-form
-            (sql-select :columns '(a b)
-                        :tables '(t)
-                        :where (sql-unquote
-                                 :form
-                                 `(apply 'sql-or
-                                         (iter (for i :from 1 :to ,n)
-                                               (rebind (i)
-                                                 (collect ,(sql-= (sql-identifier :name 'a)
-                                                                  (sql-+ (sql-identifier :name 'b)
-                                                                         (sql-unquote :form '(sql-binding-variable
-                                                                                              :type (sql-integer-type)
-                                                                                              :name i))
-                                                                         (sql-unquote :form '(sql-literal :value i)))))))))))))))))
+
+    ;; building the AST by hand
+    (bind ((criteria (sql-unquote
+                       :form
+                       `(apply 'sql-or
+                               (iter (for i :from 1 :to ,n)
+                                     (rebind (i)
+                                       (collect
+                                         ,(sql-= (sql-identifier :name 'a)
+                                                 (sql-+ (sql-identifier :name 'b)
+                                                        (sql-unquote :form '(sql-binding-variable
+                                                                             :type (sql-integer-type)
+                                                                             :name i))
+                                                        (sql-unquote :form '(sql-literal :value i)))))))))))
+      (is (string=
+           expected
+           (funcall
+            (compile
+             nil
+             (expand-sql-ast-into-lambda-form
+              (sql-select :columns '(a b)
+                          :tables '(t)
+                          :where criteria)))))))))
+
+(def syntax-test test/syntax/expand-sql-ast/unquote/3 postgresql-postmodern (&optional (n 3))
+  (bind ((criteria [or ,@(iter (for i :from 1 :to n)
+                               (rebind (i)
+                                 (collect [= a
+                                             (+ b
+                                                ,(sql-binding-variable
+                                                  :type (sql-integer-type)
+                                                  :name (concatenate-symbol (find-package :cl-rdbms-test)
+                                                                            "var-" i))
+                                                ,i)])))])
+         (extra-columns '(c d)))
+    (bind (((:values command binding-variables binding-types binding-values)
+            (funcall [select (a b ,@extra-columns)
+                             table
+                             (and (= a 42)
+                                  (not (= b ,(sql-literal :type (sql-integer-type)
+                                                          :value 43)))
+                                  ,criteria)])))
+      (is (string= command "SELECT a, b, c, d FROM table WHERE ((a = 42) AND (NOT (b = $1::NUMERIC)) AND ((a = (b + $2::NUMERIC + 1)) OR (a = (b + $3::NUMERIC + 2)) OR (a = (b + $4::NUMERIC + 3))))"))
+      (is (null (first* binding-variables)))
+      (is (every (rcurry #'typep 'sql-binding-variable) (subseq binding-variables 1)))
+      (is (every (rcurry #'typep 'sql-integer-type) binding-types))
+      (is (eql (first* binding-values) 43))
+      (is (every #'null (subseq binding-values 1))))))
 
 (def suite (formatting :in-suite 'syntax))
 (in-suite formatting)

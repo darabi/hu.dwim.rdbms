@@ -14,7 +14,7 @@
   (use-package :stefil)
   (import (let ((*package* (find-package :cl-rdbms)))
             ;; we intentionally not import all internal cl-rdbms symbols here to test the proper exporting of the symbols, too
-            (read-from-string "(enable-sharp-boolean-syntax
+            (read-from-string "(enable-sharp-boolean-syntax concatenate-symbol *sql-stream*
                                 connection-specification-of *database* *transaction*
                                 with-transaction* process-sql-syntax-list compile-sexp-sql-column compile-sexp-sql-columns
                                 compile-sexp-sql compile-sexp-sql-type expand-sql-ast-into-lambda-form
