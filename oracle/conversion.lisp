@@ -411,8 +411,8 @@
   "Returns the bytes of RATIONAL encoded as an Oracle NUMBER."
   (assert (<= 1 precision 38))
   (assert (<= -84 scale 127))
-  (cond ((zerop rational) #(128))
-        ((= rational 1) #(193 2))
+  (cond ((zerop rational) #.(coerce #(128) '(vector (unsigned-byte 8))))
+        ((= rational 1) #.(coerce #(193 2) '(vector (unsigned-byte 8))))
         (t (let* ((negativep (< rational 0))
                   (mantissa)
                   (base-100-exponent)
