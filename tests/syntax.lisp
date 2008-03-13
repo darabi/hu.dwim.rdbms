@@ -70,11 +70,13 @@
 
   '(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
   ((oracle "CREATE GLOBAL TEMPORARY TABLE \"alma\" (\"col1\" VARCHAR2, \"col2\" NUMBER(10)) ON COMMIT DROP")
-   (t "CREATE GLOBAL TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP"))
+   (postgresql "CREATE GLOBAL TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP")
+   (sqlite "CREATE GLOBAL TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INTEGER) ON COMMIT DROP"))
 
   '(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
   ((oracle "CREATE GLOBAL TEMPORARY TABLE \"alma\" (\"col2\" NUMBER(10)) ON COMMIT DELETE ROWS")
-   (t "CREATE GLOBAL TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")))
+   (postgresql "CREATE GLOBAL TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")
+   (sqlite "CREATE GLOBAL TEMPORARY TABLE alma (col2 INTEGER) ON COMMIT DELETE ROWS")))
 
 (def reader-dialect-test test/syntax/sql-reader
   [select "bar" table]

@@ -104,6 +104,15 @@
   12345678901234567890123456789012345678
   -12345678901234567890123456789012345678)
 
+(def simple-type-test test/types/float float
+  0.0
+  1.0
+  -1.0
+  0.5
+  -0.5
+  1.23e+9
+  -1.23e+9)
+
 (def simple-type-test test/types/blob blob
   (coerce #(1 2 3 4 5 6 7 8 9 0) '(vector (unsigned-byte 8))))
 

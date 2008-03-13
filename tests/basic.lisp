@@ -17,7 +17,7 @@
 (def test* test/basic/connect ()
   (finishes
     (with-transaction
-      (execute "set transaction read only"))))
+      (execute "select 1"))))
 
 (def test* test/basic/create-table ()
   (finishes
