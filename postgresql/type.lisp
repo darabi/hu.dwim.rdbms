@@ -10,10 +10,13 @@
 
 (defmethod format-sql-syntax-node ((type sql-float-type) (database postgresql))
   (let ((bit-size (bit-size-of type)))
-    (cond ((<= bit-size 32)
+    (cond ((null bit-size)
+           (format-string "FLOAT8"))
+          ((<= bit-size 32)
            (format-string "FLOAT4"))
           ((<= bit-size 64)
-           (format-string "FLOAT8")))))
+           (format-string "FLOAT8"))
+          (t (error "Unknown bit size for ~A" type)))))
 
 (defmethod format-sql-syntax-node ((type sql-character-large-object-type) (database postgresql))
   (format-string "TEXT"))
