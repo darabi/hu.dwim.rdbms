@@ -21,85 +21,90 @@
   (cl-postgres:prepare-query (connection-of tr) name command)
   (make-instance 'prepared-statement :name name :query command))
 
+(def special-variable *cl-postgres-sql-readtable* (cl-postgres:copy-sql-readtable))
+
+(local-time:set-local-time-cl-postgres-readers *cl-postgres-sql-readtable*)
+
 (defun execute-postmodern-prepared-statement (db connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
   (assert (not (and visitor (not (zerop (length binding-values)))))
           (visitor binding-values) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
-  (cl-postgres:exec-prepared
-   connection statement-name
-   ;; TODO could use a vector to send the bindings to cl-postgres
-   (iter (for type :in-vector binding-types)
-         (for value :in-vector binding-values)
-         (collect (cond
-                    ;; be careful when reordering stuff here! the order of these nested conds
-                    ;; and etypecase'es is important.
-                    ((eq value :null)
-                     :null)
-                    ((typep type 'sql-boolean-type)
-                     (if (stringp value)
-                         value
-                         (if value "TRUE" "FALSE")))
-                    ((eq value nil)
-                     :null)
-                    (t
-                     (etypecase type
-                       ((or sql-timestamp-type
-                            sql-date-type
-                            sql-time-type)
-                        (if (stringp value)
-                            ;; let the user talk to PostgreSQL directly with strings
-                            value
-                            (etypecase type
-                              (sql-timestamp-type
-                                (unless (or (with-timezone-p type)
-                                            (eq (local-time:timezone-of value)
-                                                local-time:+utc-zone+))
-                                  (cerror "continue"
-                                          "Binding a local-time timestamp with non-UTC timezone while the specified binding type is a timestamp *without* timezone. PostgreSQL will silently drop the timezone information. The timestamp in question is: ~A"
-                                          value))
-                                (local-time:format-rfc3339-timestring value))
-                              (sql-date-type
-                                (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
-                                             (zerop (local-time:sec-of value))
-                                             (zerop (local-time:nsec-of value)))
-                                  (cerror "continue"
-                                          "Binding a local-time date that has either time values or a non-UTC timezone which is about to be silently dropped. The date in question is: ~A"
-                                          value))
-                                (local-time:format-rfc3339-timestring value :omit-time-part-p #t))
-                              (sql-time-type
-                                (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
-                                             (zerop (local-time:day-of value)))
-                                  (cerror "continue"
-                                          "Binding a local-time time that has either day value or a non-UTC timezone which is about to be silently dropped. The time in question is: ~A"
-                                          value))
-                                (local-time:format-rfc3339-timestring value :omit-date-part-p #t)))))
-                       ((or sql-simple-type
-                            sql-string-type
-                            sql-float-type
-                            sql-integer-type
-                            sql-binary-large-object-type)
-                        value))))))
-   (if visitor
-       (cl-postgres:row-reader (fields)
-         (ecase result-type
-           (vector (loop
-                      with row = (make-array (length fields))
+  (bind ((cl-postgres:*sql-readtable* *cl-postgres-sql-readtable*))
+    (cl-postgres:exec-prepared
+     connection statement-name
+     ;; TODO could use a vector to send the bindings to cl-postgres
+     (iter (for type :in-vector binding-types)
+           (for value :in-vector binding-values)
+           (collect (cond
+                      ;; be careful when reordering stuff here! the order of these nested conds
+                      ;; and etypecase'es is important.
+                      ((eq value :null)
+                       :null)
+                      ((typep type 'sql-boolean-type)
+                       (if (stringp value)
+                           value
+                           (if value "TRUE" "FALSE")))
+                      ((eq value nil)
+                       :null)
+                      (t
+                       (etypecase type
+                         ((or sql-timestamp-type
+                              sql-date-type
+                              sql-time-type)
+                          (if (stringp value)
+                              ;; let the user talk to PostgreSQL directly with strings
+                              value
+                              (etypecase type
+                                (sql-timestamp-type
+                                  (unless (or (with-timezone-p type)
+                                              (eq (local-time:timezone-of value)
+                                                  local-time:+utc-zone+))
+                                    (cerror "continue"
+                                            "Binding a local-time timestamp with non-UTC timezone while the specified binding type is a timestamp *without* timezone. PostgreSQL will silently drop the timezone information. The timestamp in question is: ~A"
+                                            value))
+                                  (local-time:format-rfc3339-timestring value))
+                                (sql-date-type
+                                  (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
+                                               (zerop (local-time:sec-of value))
+                                               (zerop (local-time:nsec-of value)))
+                                    (cerror "continue"
+                                            "Binding a local-time date that has either time values or a non-UTC timezone which is about to be silently dropped. The date in question is: ~A"
+                                            value))
+                                  (local-time:format-rfc3339-timestring value :omit-time-part-p #t))
+                                (sql-time-type
+                                  (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
+                                               (zerop (local-time:day-of value)))
+                                    (cerror "continue"
+                                            "Binding a local-time time that has either day value or a non-UTC timezone which is about to be silently dropped. The time in question is: ~A"
+                                            value))
+                                  (local-time:format-rfc3339-timestring value :omit-date-part-p #t)))))
+                         ((or sql-simple-type
+                              sql-string-type
+                              sql-float-type
+                              sql-integer-type
+                              sql-binary-large-object-type)
+                          value))))))
+     (if visitor
+         (cl-postgres:row-reader (fields)
+           (ecase result-type
+             (vector (loop
+                        with row = (make-array (length fields))
+                        while (cl-postgres:next-row)
+                        do (progn
+                             (loop
+                                for field :across fields
+                                for next-field = (cl-postgres:next-field field)
+                                for idx :upfrom 0
+                                do (setf (aref row idx) next-field))
+                             (funcall visitor row))))
+             (list (loop
                       while (cl-postgres:next-row)
-                      do (progn
-                           (loop
-                              for field :across fields
-                              for next-field = (cl-postgres:next-field field)
-                              for idx :upfrom 0
-                              do (setf (aref row idx) next-field))
-                           (funcall visitor row))))
-          (list (loop
-                   while (cl-postgres:next-row)
-                   do (let ((row (loop
-                                    for field :across fields
-                                    collect (cl-postgres:next-field field))))
-                        (funcall visitor row))))))
-       (ecase result-type
-         (list #'cl-postgres:list-row-reader)
-         (vector #'cl-postgres:vector-row-reader)))))
+                      do (let ((row (loop
+                                       for field :across fields
+                                       collect (cl-postgres:next-field field))))
+                           (funcall visitor row))))))
+         (ecase result-type
+           (list #'cl-postgres:list-row-reader)
+           (vector #'cl-postgres:vector-row-reader))))))
 
 (defmethod execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
   (if (muffle-warnings-p tr)
