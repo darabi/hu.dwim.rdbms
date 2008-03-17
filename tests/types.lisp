@@ -10,9 +10,9 @@
 
 (enable-sql-syntax)
 
-(def suite (types :in-suite 'test))
+(def suite (test/types :in-suite 'test))
 
-(in-suite types)
+(in-suite test/types)
 
 (def definer type-test (name type &body values)
   `(def test* ,name ()

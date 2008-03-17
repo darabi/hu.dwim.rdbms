@@ -10,9 +10,9 @@
 
 (enable-sql-syntax)
 
-(def suite (basic :in-suite 'test))
+(def suite (test/basic :in-suite 'test))
 
-(in-suite basic)
+(in-suite test/basic)
 
 (def test* test/basic/connect ()
   (finishes
