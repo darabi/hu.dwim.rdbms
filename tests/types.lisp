@@ -125,6 +125,18 @@
   1.23e+9
   -1.23e+9)
 
+(def simple-type-test test/types/double-float (float 64)
+  (nil :null)
+  0.0
+  1.0
+  -1.0
+  0.5
+  -0.5
+  1.23e+9
+  -1.23e+9
+  ;; we test here that ratio's precision is lost only up to double-float
+  (1/3 #.(coerce 1/3 'double-float)))
+
 (def simple-type-test test/types/blob blob
   (nil :null)
   #.(coerce #(1 2 3 4 5 6 7 8 9 0) '(vector (unsigned-byte 8))))
