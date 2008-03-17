@@ -8,3 +8,6 @@ same applies to sql-create-index, sql-drop-index, sql-create-sequence, sql-drop-
 
 introduce a named-sql-syntax-node, add a print-object method for it.
 
+
+:null should be converted back to cl:nil in the query results, except for boolean columns (the columns of the result
+contain the type information necessary for this). this needs changes in cl-perec.
