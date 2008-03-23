@@ -21,6 +21,14 @@
    :metabang-bind
    :defclass-star
    :cl-rdbms-system
+   :cl-syntax-sugar
+   )
+
+  (:shadowing-import-from :cl-syntax-sugar
+   ;; some clashes with arnesi
+   #:enable-sharp-l-syntax
+   #:with-sharp-l-syntax
+   #:with-package
    )
 
   (:export

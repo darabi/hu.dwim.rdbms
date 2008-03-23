@@ -66,6 +66,8 @@
                :arnesi
                :ironclad
                :local-time
+               :cl-walker
+               :cl-syntax-sugar
                )
   :default-component-class local-cl-source-file
   :components
