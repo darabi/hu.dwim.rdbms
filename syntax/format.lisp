@@ -149,7 +149,7 @@
         `(lambda ()
            ,@(when toplevel
                `((unless (typep *database* ',(class-name (class-of *database*)))
-                   (error "The current value of *database* (~A) is not subtypep of the compile-time value of *database* (~S)."
+                   (error "The current value of *database* (~A) is not subtypep of the compile-time type of *database* (~S)."
                           *database* ',(class-name (class-of *database*))))))
            ,@(if bindings
                  `((bind ,bindings

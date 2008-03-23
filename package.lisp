@@ -12,12 +12,21 @@
   (:shadow #:log #:type-of #:type)
 
   ;; TODO drop :arnesi, use :alexandria
-  (:use :cl :sb-pcl :iterate :arnesi :cl-def :metabang-bind :defclass-star :cl-rdbms-system)
+  (:use
+   #:common-lisp
+   #:sb-pcl
+   :iterate
+   :arnesi
+   :cl-def
+   :metabang-bind
+   :defclass-star
+   :cl-rdbms-system
+   )
 
   (:export
    #:rdbms-error
    #:unable-to-obtain-lock-error
-   
+
    #:database
    #:postgresql
    #:postgresql-postmodern
@@ -143,7 +152,14 @@
 (defpackage :cl-rdbms-test
   (:nicknames :rdbmst)
 
-  (:use :cl :iterate :arnesi :cl-rdbms :cl-def :metabang-bind)
+  (:use
+   #:common-lisp
+   :iterate
+   :arnesi
+   :cl-rdbms
+   :cl-def
+   :metabang-bind
+   )
 
   (:shadowing-import-from :cl-rdbms
-                          #:log))
+   #:log))
