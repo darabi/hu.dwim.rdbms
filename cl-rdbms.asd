@@ -173,10 +173,6 @@
                          (:file "syntax")
                          (:file "types")))))
 
-(defmethod perform :after ((op load-op) (system (eql (find-system :cl-rdbms-test))))
-  (in-package :cl-rdbms-test)
-  (eval (read-from-string "(cl-rdbms::enable-sharp-boolean-syntax)")))
-
 (defmethod perform ((op test-op) (system (eql (find-system :cl-rdbms))))
   ;; we will test the postmodern backend by default
   (operate 'test-op :cl-rdbms.postmodern)
