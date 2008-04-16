@@ -94,10 +94,8 @@
    #:sequence-next
 
    #:create-index
-   #:create-index*
    #:drop-index
    #:update-index
-   #:update-index*
    #:list-table-indices
 
    #:sql

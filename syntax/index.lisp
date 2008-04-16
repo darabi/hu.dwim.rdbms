@@ -9,7 +9,10 @@
 #.(file-header)
 
 (define-syntax-node sql-index (named-sql-syntax-node)
-  ((table-name
+  ((unique
+    #f
+    :type boolean)
+   (table-name
     :type sql-identifier*)
    (columns
     nil
@@ -20,7 +23,10 @@
   ()
   (:documentation "An SQL CREATE INDEX statement.")
   (:format-sql-syntax-node
-   (format-string "CREATE INDEX ")
+   (format-string "CREATE ")
+   (when unique
+     (format-string "UNIQUE "))
+   (format-string "INDEX ")
    (format-sql-identifier name)
    (format-string " ON ")
    (format-sql-identifier table-name)

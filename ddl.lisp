@@ -225,28 +225,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop index
 
-(defun create-index (name table-name columns)
+(defun create-index (name table-name columns &key (unique #f))
   (execute-ddl (make-instance 'sql-create-index
                               :name name
                               :table-name table-name
-                              :columns columns)))
-
-(defun create-index* (index)
-  (create-index (name-of index) (table-name-of index) (columns-of index)))
+                              :columns columns
+                              :unique unique)))
 
 (defun drop-index (name)
   (execute-ddl (make-instance 'sql-drop-index :name name)))
 
-(defun update-index (name table-name columns)
+(defun update-index (name table-name columns &key (unique #f))
+  ;; TODO: where clause for unique
   (unless (find name (list-table-indices table-name)
                 :key 'name-of
                 :test (lambda (o1 o2)
                         (equalp (string-downcase o1)
                                 (string-downcase o2))))
-    (create-index name table-name columns)))
-
-(defun update-index* (index)
-  (update-index (name-of index) (table-name-of index) (columns-of index)))
+    (create-index name table-name columns :unique unique)))
 
 (defun list-table-indices (name)
   (database-list-table-indices name *database*))
