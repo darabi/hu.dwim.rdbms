@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.postgresql)
 
-#.(file-header)
-
 (defmethod format-sql-syntax-node ((type sql-float-type) (database postgresql))
   (let ((bit-size (bit-size-of type)))
     (cond ((null bit-size)

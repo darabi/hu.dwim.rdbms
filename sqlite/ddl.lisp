@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.sqlite)
 
-#.(file-header)
-
 (defmethod database-list-sequences ((database sqlite))
   (error "Not implemented"))
 

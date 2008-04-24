@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.sqlite)
 
-#.(file-header)
-
 (defmethod format-sql-syntax-node ((type sql-integer-type) (database sqlite))
   (format-string "INTEGER"))
 

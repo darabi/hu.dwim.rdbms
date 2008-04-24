@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (define-syntax-node sql-insert (sql-dml-statement)
   ((table
     :type sql-identifier*)

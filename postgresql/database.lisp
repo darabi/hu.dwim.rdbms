@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.postgresql)
 
-#.(file-header)
-
 (defclass* postgresql-transaction ()
   ())
 

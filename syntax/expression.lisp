@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (def special-variable *sql-operator-names* (list)
   "A list of symbols that name an SQL operator")
 

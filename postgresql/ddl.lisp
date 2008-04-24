@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.postgresql)
 
-#.(file-header)
-
 (defun list-objects (type)
   (map 'list #L(elt !1 0) (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
 

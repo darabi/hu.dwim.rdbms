@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (define-syntax-node sql-delete (sql-dml-statement)
   ((table
     :type sql-identifier*)

@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (define-syntax-node sql-index (named-sql-syntax-node)
   ((unique
     #f

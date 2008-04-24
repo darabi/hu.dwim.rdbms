@@ -8,8 +8,6 @@
 ;;;; TODO: implement proper error handling
 (in-package :cl-rdbms.sqlite)
 
-#.(file-header)
-
 (defclass* sqlite-transaction (transaction)
   ((connection-pointer nil)))
 

@@ -33,16 +33,6 @@
          ,@body)
        (values)))
 
-(defun inline-declaration ()
-  (if *load-as-production-p*
-      '(inline begin commit rollback execute assert-transaction-in-progress in-transaction-p)
-      (values)))
-
-(defun file-header ()
-  `(eval-always
-    (declaim ,(inline-declaration))
-    (setup-readtable)))
-
 (defun setup-readtable ()
   (enable-sharp-boolean-syntax)
   (enable-sharp-l-syntax)

@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop and alter table
 

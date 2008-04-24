@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.postgresql)
 
-#.(file-header)
-
 (defmethod format-sql-syntax-node ((action sql-add-column-action) (database postgresql))
   (format-string "ADD ")
   (format-sql-identifier (name-of action) database)

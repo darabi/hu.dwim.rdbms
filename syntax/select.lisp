@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 ;; TODO: rename columns and tables to something more general?
 (define-syntax-node sql-select (sql-dml-statement)
   ((distinct

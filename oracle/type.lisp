@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.oracle)
 
-#.(file-header)
-
 (defstruct typemap
   external-type
   lisp-to-oci

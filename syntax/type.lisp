@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 ;; Types from:
 ;; http://savage.net.au/SQL/sql-2003-2.bnf.html
 

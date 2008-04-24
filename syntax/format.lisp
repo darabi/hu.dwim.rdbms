@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (defparameter *sql-syntax-node-names* nil)
 
 (defparameter *sql-constructor-names* nil)

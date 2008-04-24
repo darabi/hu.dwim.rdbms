@@ -1,7 +1,5 @@
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (define-syntax-node sql-constraint (named-sql-syntax-node)
   ()
   (:documentation "An SQL constraint."))

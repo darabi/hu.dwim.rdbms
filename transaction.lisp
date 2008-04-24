@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (defvar *transaction*)
 
 (defcondition* transaction-error (simple-rdbms-error)
@@ -171,7 +169,7 @@
   (or (timestamp-of *transaction*)
       (setf (timestamp-of *transaction*) (first* (first* (execute "select now()"))))))
 
-(defun in-transaction-p ()
+(def (function io) in-transaction-p ()
   (and (boundp '*transaction*)
        *transaction*
        (transaction-in-progress-p *transaction*)))
@@ -184,16 +182,16 @@
   (and (transaction-in-progress-p transaction)
        (not (eq (terminal-action-of transaction) :marked-for-rollback-only))))
 
-(defun assert-transaction-in-progress ()
+(def (function io) assert-transaction-in-progress ()
   (unless (in-transaction-p)
     (error 'transaction-error :format-control "No transaction in progress")))
 
-(defun begin (&rest args)
+(def (function io) begin (&rest args)
   "Starts a new transaction. This transaction must be closed by an explicit call to either rollback or commit. See with-transaction for convenience and safety. This is for debug purposes."
   (assert (not (boundp '*transaction*)))
   (setf *transaction* (apply #'make-transaction *database* args)))
 
-(defun commit ()
+(def (function io) commit ()
   "Commits the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
   (unwind-protect
@@ -202,7 +200,7 @@
     (makunbound '*transaction*))
   (values))
 
-(defun rollback ()
+(def (function io) rollback ()
   "Rolls back the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
   (unwind-protect
@@ -211,7 +209,7 @@
     (makunbound '*transaction*))
   (values))
 
-(defun execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
+(def (function io) execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
   "Executes an SQL command. If VISITOR is not present the result is returned in a sequence. The type of the sequence is determined by RESULT-TYPE which is either LIST or VECTOR. When VISITOR is present it will be called for each row in the result."
   (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
   (flet ((%execute-command ()

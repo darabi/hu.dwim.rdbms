@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (defun sql-literal-values-for (columns values)
   (map 'list (lambda (column value)
                (if (or (typep value 'sql-literal)

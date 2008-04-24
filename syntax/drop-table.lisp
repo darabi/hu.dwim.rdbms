@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 (define-syntax-node sql-drop-table (sql-ddl-statement)
   ((name
     :type string)

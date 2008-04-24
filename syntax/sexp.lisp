@@ -8,8 +8,6 @@
 
 (in-package :cl-rdbms)
 
-#.(file-header)
-
 ;; TODO support [select (count *) !(some lisp generating the from part)] syntax
 
 (defmacro sql (body)

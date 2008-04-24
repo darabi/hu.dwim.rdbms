@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.oracle)
 
-#.(file-header)
-
 (defmethod transaction-mixin-class list ((db oracle))
   'oracle-transaction)
 

@@ -6,12 +6,30 @@
 
 (in-package :cl-user)
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (flet ((try (system)
+           (unless (asdf:find-system system nil)
+             (warn "Trying to install required dependency: ~S" system)
+             (when (find-package :asdf-install)
+               (funcall (read-from-string "asdf-install:install") system))
+             (unless (asdf:find-system system nil)
+               (error "The ~A system requires ~A." (or *compile-file-pathname* *load-pathname*) system)))
+           (asdf:operate 'asdf:load-op system)))
+    (try :cl-syntax-sugar)
+    (try :alexandria)))
+
 (defpackage #:cl-rdbms-system
-  (:use :cl :asdf)
+  (:use
+   #:common-lisp
+   :asdf
+   :alexandria
+   :cl-syntax-sugar
+   )
   (:export
    #:optimize-declaration
    #:project-relative-pathname
-   #:*load-as-production-p*))
+   #:*load-as-production-p*
+   ))
 
 (in-package #:cl-rdbms-system)
 
@@ -25,7 +43,7 @@
       '(optimize (speed 3) (debug 0) (safety 0))
       '(optimize (debug 3) (safety 3))))
 
-(defclass local-cl-source-file (cl-source-file)
+(defclass local-cl-source-file (cl-source-file-with-readtable)
   ())
 
 (defmethod perform :around ((op operation) (component local-cl-source-file))
@@ -34,7 +52,7 @@
       (pushnew :debug *features*))
     (call-next-method)))
 
-(defclass cl-rdbms-backend-system (system)
+(defclass cl-rdbms-backend-system (system-with-readtable)
   ((runtime-database-factory-form
     :initarg :runtime-database-factory-form
     :accessor runtime-database-factory-form-of)
@@ -47,7 +65,19 @@
   (or (call-next-method)
       (runtime-database-factory-form-of self)))
 
-(defsystem :cl-rdbms
+(defmacro defsystem* (name &rest body &key
+                      (default-component-class 'local-cl-source-file)
+                      (class 'system-with-readtable)
+                      (setup-readtable-function "cl-rdbms::setup-readtable")
+                      &allow-other-keys)
+  (remove-from-plistf body :default-component-class :class)
+  `(defsystem ,name
+     :default-component-class ,default-component-class
+     :class ,class
+     :setup-readtable-function ,setup-readtable-function
+     ,@body))
+
+(defsystem* :cl-rdbms
   :version "1.0"
   :author ("Attila Lendvai <attila.lendvai@gmail.com>"
 	   "Tamás Borbély <tomi.borbely@gmail.com>"
@@ -69,7 +99,6 @@
                :cl-walker
                :cl-syntax-sugar
                )
-  :default-component-class local-cl-source-file
   :components
   ((:file "package")
    (:file "duplicates" :depends-on ("package"))
@@ -99,10 +128,9 @@
                          (:file "sequence" :depends-on ("syntax"))
                          (:file "index" :depends-on ("syntax"))))))
 
-(defsystem :cl-rdbms.postgresql
+(defsystem* :cl-rdbms.postgresql
   :description "Common stuff for Postgresql backends for cl-rdbms"
   :depends-on (:arnesi :iterate :defclass-star :cl-rdbms)
-  :default-component-class local-cl-source-file
   :components
   ((:module "postgresql"
             :serial t
@@ -112,7 +140,7 @@
                          (:file "type")
                          (:file "ddl")))))
 
-(defsystem :cl-rdbms.postmodern
+(defsystem* :cl-rdbms.postmodern
   :class cl-rdbms-backend-system
   :runtime-database-factory-form
   "(make-instance 'postgresql-postmodern :connection-specification
@@ -120,12 +148,11 @@
   :compile-time-database-factory-form "(make-instance 'postgresql)"
   :description "cl-rdbms with Postmodern backend"
   :depends-on (:arnesi :iterate :defclass-star :cl-rdbms.postgresql :cl-postgres)
-  :default-component-class local-cl-source-file
   :components
   ((:module "postgresql"
             :components ((:file "postmodern-backend")))))
 
-(defsystem :cl-rdbms.oracle
+(defsystem* :cl-rdbms.oracle
   :class cl-rdbms-backend-system
   :runtime-database-factory-form
   "(make-instance 'oracle
@@ -138,7 +165,6 @@
                     :password \"test123\"))"
   :description "cl-rdbms with Oracle backend"
   :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
-  :default-component-class local-cl-source-file
   :components
   ((:module "oracle"
             :serial t
@@ -152,7 +178,7 @@
                          (:file "type")
                          (:file "backend")))))
 
-(defsystem :cl-rdbms.sqlite
+(defsystem* :cl-rdbms.sqlite
   :class cl-rdbms-backend-system
   :runtime-database-factory-form
   "(make-instance 'sqlite
@@ -160,7 +186,6 @@
                   '(:file-name \"/tmp/perec-test\"))"
   :description "cl-rdbms with Sqlite backend"
   :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
-  :default-component-class local-cl-source-file
   :components
   ((:module "sqlite"
             :serial t
@@ -171,10 +196,9 @@
                          (:file "ddl")
                          (:file "type")))))
 
-(defsystem :cl-rdbms-test
+(defsystem* :cl-rdbms-test
   :description "Tests for the cl-rdbms system."
   :depends-on (:iterate :stefil :cl-rdbms :closer-mop)
-  :default-component-class local-cl-source-file
   :components
   ((:module "tests"
             :serial t

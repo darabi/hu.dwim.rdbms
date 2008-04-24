@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.oracle)
 
-#.(file-header)
-
 (defmethod database-list-sequences ((database oracle))
   (mapcar #'first (execute "select sequence_name from user_sequences" :result-type 'list)))
 

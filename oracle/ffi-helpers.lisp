@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms.oracle)
 
-#.(file-header)
-
 (define-symbol-macro null (cffi:null-pointer))
 
 (defun make-void-pointer ()
