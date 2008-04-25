@@ -28,10 +28,10 @@
                                                             :name (name-of column)
                                                             :type (type-of column))))))
 
-(defun drop-column (name column-name)
+(defun drop-column (name column-name &optional (cascade #f))
   (execute-ddl (make-instance 'sql-alter-table
                               :name name
-                              :actions (list (make-instance 'sql-drop-column-action :name column-name)))))
+                              :actions (list (make-instance 'sql-drop-column-action :name column-name :cascade cascade)))))
 
 (defun alter-column-type (name column)
   (execute-ddl (make-instance 'sql-alter-table
@@ -155,7 +155,7 @@
                                   :old-type (type-of table-column)
                                   :new-type (type-of column)
                                   :new-rdbms-type new-type))
-                         (drop-column name column-name)
+                         (drop-column name column-name #t)
                          (add-column name column)))))
             ;; add missing columns not present in the table
             (progn
@@ -171,7 +171,7 @@
           (with-simple-restart
               (continue "Alter the table and let the data go")
             (error 'unconfirmed-destructive-drop-column-error :table-name name :column-name column-name))
-	  (drop-column name column-name))))))
+	  (drop-column name column-name #t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop view

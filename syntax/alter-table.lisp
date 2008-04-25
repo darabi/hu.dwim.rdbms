@@ -29,10 +29,12 @@
    (format-char ")")))
 
 (define-syntax-node sql-drop-column-action (sql-column)
-  ()
+  ((cascade #f :type boolean))
   (:format-sql-syntax-node
    (format-string "DROP COLUMN ")
-   (format-sql-identifier name)))
+   (format-sql-identifier name)
+   (when cascade
+     (format-string " CASCADE"))))
 
 (define-syntax-node sql-alter-column-type-action (sql-column)
   ()
