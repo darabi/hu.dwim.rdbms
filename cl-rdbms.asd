@@ -117,7 +117,7 @@
                          (:file "sexp" :depends-on ("syntax" "expression"))
                          (:file "type" :depends-on ("syntax"))
                          (:file "constraint" :depends-on ("syntax"))
-                         (:file "create-table" :depends-on ("syntax"))
+                         (:file "create-table" :depends-on ("syntax" "expression"))
                          (:file "drop-table" :depends-on ("syntax"))
                          (:file "alter-table" :depends-on ("create-table"))
                          (:file "expression" :depends-on ("syntax"))
