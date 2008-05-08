@@ -16,6 +16,7 @@
                (error "The ~A system requires ~A." (or *compile-file-pathname* *load-pathname*) system)))
            (asdf:operate 'asdf:load-op system)))
     (try :cl-syntax-sugar)
+    (try :asdf-system-connections)
     (try :alexandria)))
 
 (defpackage #:cl-rdbms-system
@@ -23,6 +24,7 @@
    #:common-lisp
    :asdf
    :alexandria
+   :asdf-system-connections
    :cl-syntax-sugar
    )
   (:export
@@ -127,6 +129,10 @@
                          (:file "delete" :depends-on ("syntax"))
                          (:file "sequence" :depends-on ("syntax"))
                          (:file "index" :depends-on ("syntax"))))))
+
+(defsystem-connection cl-rdbms-and-slime
+  :requires (:cl-rdbms :swank)
+  :components ((:file "swank-integration")))
 
 (defsystem* :cl-rdbms.postgresql
   :description "Common stuff for Postgresql backends for cl-rdbms"

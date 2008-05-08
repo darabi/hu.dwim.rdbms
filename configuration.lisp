@@ -38,6 +38,3 @@
   (enable-sharp-l-syntax)
   (enable-sql-syntax))
 
-#+#.(cl:when (cl:find-package "SWANK") '(:and))
-(register-readtable-for-swank
- '("CL-RDBMS" "CL-RDBMS-TEST" "CL-RDBMS.POSTGRESQL" "CL-RDBMS.ORACLE") 'setup-readtable)
