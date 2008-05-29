@@ -20,7 +20,7 @@
   ()
   (:documentation "Base class for all kind of SQL syntax elements.")
   (:format-sql-syntax-node
-   (error "No formatter method for ~A" self)))
+   (error "No formatter method for ~A" -self-)))
 
 (defmethod make-load-form ((self sql-syntax-node) &optional env)
   (make-load-form-saving-slots self :environment env))
