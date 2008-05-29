@@ -73,7 +73,7 @@
    (when type
      (format-char " ")
      (format-sql-syntax-node type))
-   (when (slot-boundp self 'default-value)
+   (when (slot-boundp -self- 'default-value)
      (format-string " DEFAULT ")
      (format-sql-literal default-value))
    (mapc (lambda (constraint) (format-sql-syntax-node constraint)) constraints))

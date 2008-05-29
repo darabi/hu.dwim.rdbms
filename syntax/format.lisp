@@ -199,7 +199,7 @@
                           (append (mapcan (lambda (super) (copy-list (get super :slot-names))) supers)
                                   (mapcar #'first slots)))))
     (flet ((define-format-method (method-name body)
-             `(defmethod ,method-name ((self ,name) database)
+             `(defmethod ,method-name ((-self- ,name) database)
                 (macrolet ((format-sql-syntax-node (node)
                              `(funcall 'format-sql-syntax-node ,node database))
                            (format-sql-literal (node)
@@ -218,7 +218,7 @@
                                                (list format-fn))))
                            (format-sql-where (expression)
                              `(funcall 'format-sql-where ,expression database)))
-                  (with-slots ,effective-slots self
+                  (with-slots ,effective-slots -self-
                     ,@body)))))
       `(progn
          (eval-always

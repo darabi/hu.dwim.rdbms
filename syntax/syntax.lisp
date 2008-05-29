@@ -44,7 +44,7 @@
     :type sql-type))
   (:documentation "Represents an SQL literal.")
   (:format-sql-syntax-node
-   (format-sql-literal self)))
+   (format-sql-literal -self-)))
 
 (deftype sql-literal* ()
   '(or null boolean string symbol number sql-literal))
@@ -106,7 +106,7 @@
   ()
   (:documentation "Represents an SQL identifier.")
   (:format-sql-syntax-node
-   (format-sql-identifier self)))
+   (format-sql-identifier -self-)))
 
 (deftype sql-identifier* ()
   '(or string symbol sql-identifier))
@@ -151,7 +151,7 @@
   ((form nil)
    (spliced #f :type boolean))
   (:format-sql-syntax-node
-   (expand-sql-unquote self database 'format-sql-syntax-node)))
+   (expand-sql-unquote -self- database 'format-sql-syntax-node)))
 
 (defun push-form-into-command-elements (form)
   (vector-push-extend (get-output-stream-string *sql-stream*) *command-elements*)
