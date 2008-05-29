@@ -148,15 +148,15 @@
                                  :new-rdbms-type new-type)))
                       (alter-column-type name column))
                   (error (e)
-                         (declare (ignore e))
-                         (with-simple-restart
-                             (continue "Alter the table and let the data go")
-                           (error 'unconfirmed-destructive-alter-column-type-error :table-name name :column-name column-name
-                                  :old-type (type-of table-column)
-                                  :new-type (type-of column)
-                                  :new-rdbms-type new-type))
-                         (drop-column name column-name #t)
-                         (add-column name column)))))
+                    (declare (ignore e))
+                    (with-simple-restart
+                        (continue "Alter the table and let the data go")
+                      (error 'unconfirmed-destructive-alter-column-type-error :table-name name :column-name column-name
+                             :old-type (type-of table-column)
+                             :new-type (type-of column)
+                             :new-rdbms-type new-type))
+                    (drop-column name column-name #t)
+                    (add-column name column)))))
             ;; add missing columns not present in the table
             (progn
               (with-simple-restart
