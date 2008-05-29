@@ -58,3 +58,7 @@
   (format-char " ")
   (format-sql-syntax-node (pattern-of regexp-like) database)
   (format-char ")"))
+
+(defmethod equal-type-p ((type-1 sql-binary-large-object-type) (type-2 sql-binary-large-object-type) (database postgresql))
+  ;; don't compare size, because postgresql has no fixed size binary, so it can't be extracted from the schema
+  (eq (class-of type-1) (class-of type-2)))
