@@ -30,7 +30,7 @@
 
 (defun process-error-code (error-code error-message message &rest args)
   (unless (= sqlite3-cffi-bindings:+sqlite-ok+ error-code)
-    (apply 'error (concatenate 'string message "~%Error Code: ~A, Error Message: ~A")
+    (apply 'error (concatenate-string message "~%Error Code: ~A, Error Message: ~A")
            (append args (list error-code error-message)))))
 
 (defun ensure-connected (tr)

@@ -13,8 +13,8 @@
   ((name nil
     :type sql-identifier*)))
 
-(defprint-object (self named-sql-syntax-node)
-  (princ (name-of self)))
+(def print-object named-sql-syntax-node
+  (princ (name-of -self-)))
 
 (define-syntax-node sql-syntax-node ()
   ()
@@ -225,13 +225,13 @@
 ;;; Execute
 
 (defcondition* unbound-binding-variable-error (rdbms-error)
-  ((variable))
+  ((variable-name))
   (:report (lambda (error stream)
-             (format stream "The variable ~A was not bound while executing a query" (variable-of error)))))
+             (format stream "The variable ~A was not bound while executing a query" (variable-name-of error)))))
 
 (defmethod execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
   (bind (((:values string binding-variables binding-types binding-values) (format-sql-to-string command)))
     (update-binding-values binding-variables binding-types binding-values bindings)
-    (alexandria:remove-from-plistf args :bindings)
+    (remove-from-plistf args :bindings)
     (apply 'execute-command database transaction string
            :binding-types binding-types :binding-values binding-values args)))

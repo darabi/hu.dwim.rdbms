@@ -10,9 +10,10 @@
                         +info+
                         +debug+))
 
-(defvar *compile-time-log-level* (if *load-as-production-p*
-                                     +debug+
-                                     +dribble+))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *compile-time-log-level* (if *load-as-production-p*
+                                       +debug+
+                                       +dribble+)))
 
 (deflogger log ()
   :level *log-level*
@@ -29,11 +30,11 @@
   :appenders ((make-instance 'sql-log-appender :stream *debug-io*)))
 
 (defun start-sql-recording ()
-  (setf (log.level (get-logger 'sql-log)) +info+)
+  (setf (log-level (find-logger 'sql-log)) +info+)
   (values))
 
 (defun stop-sql-recording ()
-  (setf (log.level (get-logger 'sql-log)) +warn+)
+  (setf (log-level (find-logger 'sql-log)) +warn+)
   (values))
 
 (defun enable-sql-recording ()
@@ -43,4 +44,4 @@
   (stop-sql-recording))
 
 (defmethod append-message ((category log-category) (appender sql-log-appender) message level)
-  (format (arnesi::log-stream appender) "~&~A~%" message))
+  (format (cl-yalog::log-stream appender) "~&~A~%" message))

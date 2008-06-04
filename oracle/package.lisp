@@ -10,9 +10,20 @@
   (:shadowing-import-from #:cl-rdbms
     #:type #:type-of #:log)
 
-  ;; TODO drop :arnesi, use :alexandria
-  (:use :cl :iterate :arnesi :cl-def :metabang-bind :defclass-star :cl-rdbms-system :cl-rdbms :local-time)
-  
+  (:use
+   :common-lisp
+   :iterate
+   :alexandria
+   :anaphora
+   :cl-def
+   :cl-yalog
+   :metabang-bind
+   :defclass-star
+   :cl-rdbms-system
+   :cl-rdbms
+   :local-time
+   )
+
   (:shadow
    #:null)
 

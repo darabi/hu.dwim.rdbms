@@ -36,7 +36,7 @@
   (:format-sql-syntax-node
    (format-char "(")
    (format-separated-list subqueries
-                          (concatenate 'string (symbol-name set-operation) (if all " ALL" "")))
+                          (concatenate-string (symbol-name set-operation) (if all " ALL" "")))
    (format-char ")")))
 
 (defmacro define-set-operation (name)

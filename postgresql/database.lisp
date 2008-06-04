@@ -11,8 +11,8 @@
 
 (defparameter *unique-counter* 0)
 
-(defun generate-unique-postgresql-name (base)
-  (strcat base (incf *unique-counter*)))
+(def (function i) generate-unique-postgresql-name (base)
+  (concatenate-string (string base) (princ-to-string (incf *unique-counter*))))
 
 (defconstant +maximum-rdbms-name-length+ 63)
 

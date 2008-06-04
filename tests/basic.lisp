@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms-test)
 
-(enable-sql-syntax)
-
 (def suite (test/basic :in-suite 'test))
 
 (in-suite test/basic)

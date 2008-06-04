@@ -10,12 +10,22 @@
   (:shadowing-import-from #:cl-rdbms
     #:type #:type-of #:log)
 
-  ;; TODO drop :arnesi, use :alexandria
-  (:use :cl :iterate :arnesi :cl-def :metabang-bind :defclass-star :cl-rdbms-system :cl-rdbms)
+  (:use
+   :common-lisp
+   :iterate
+   :alexandria
+   :anaphora
+   :cl-def
+   :cl-yalog
+   :metabang-bind
+   :defclass-star
+   :cl-rdbms-system
+   :cl-rdbms
+   )
 
   (:shadowing-import-from :cl-rdbms
    #:unable-to-obtain-lock-error)
-  
+
   (:export
    ))
 

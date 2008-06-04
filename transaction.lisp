@@ -41,9 +41,9 @@
     :type boolean))
   (:documentation "An object representing a transaction context. The actual backend connection/transaction is usually lazily created."))
 
-(defprint-object (self transaction)
+(def print-object transaction
   (princ ":begin-executed-p ")
-  (princ (if (begin-was-executed-p self)
+  (princ (if (begin-was-executed-p -self-)
              "#t" "#f")))
 
 (defclass* command-counter ()
@@ -52,11 +52,15 @@
    (update-counter 0 :type integer)
    (delete-counter 0 :type integer)))
 
-(defprint-object (self command-counter)
-  (princ (strcat "insert: " (insert-counter-of self)
-                 ", select: " (select-counter-of self)
-                 ", update: " (update-counter-of self)
-                 ", delete: " (delete-counter-of self))))
+(def print-object command-counter
+  (write-string "insert: ")
+  (write (insert-counter-of -self-))
+  (write-string ", select: ")
+  (write (select-counter-of -self-))
+  (write-string ", update: ")
+  (write (update-counter-of -self-))
+  (write-string ", delete: ")
+  (write (delete-counter-of -self-)))
 
 (defun current-insert-counter ()
   (insert-counter-of (command-counter-of *transaction*)))
@@ -120,7 +124,7 @@
            (setf *transaction*
                  (apply #'make-transaction *database*
                         :terminal-action default-terminal-action
-                        (remf-keywords args :database :default-terminal-action)))
+                        (remove-from-plistf args :database :default-terminal-action)))
            (multiple-value-prog1
                (restart-case (call-in-transaction *database* *transaction* function)
                  (terminate-transaction ()
@@ -229,7 +233,7 @@
 
 (defmethod transaction-mixin-class list (database)
   'transaction)
-  
+
 (defgeneric make-transaction (database &key &allow-other-keys)
   (:documentation "Extension point for with-transaction.")
 
@@ -271,7 +275,7 @@
              (call-next-method))
            (setf (state-of transaction) :rolled-back)
            (values))
-  
+
   (:method (database transaction)
            (execute-command database transaction "ROLLBACK")))
 
@@ -291,7 +295,7 @@
                  (value (getf name-value-bindings name 'not-specified)))
             (assert name nil "Binding variables must have a name")
             (when (eq value 'not-specified)
-              (error 'unbound-binding-variable-error :variable name))
+              (error 'unbound-binding-variable-error :variable-name name))
             (setf (aref binding-values index) value)))))
 
 (defgeneric notify-transaction-event (transaction event)
@@ -330,16 +334,16 @@
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
            (let ((command-counter (command-counter-of transaction)))
-             (cond ((starts-with command "INSERT" :test #'equalp)
+             (cond ((starts-with-subseq "INSERT" command :test #'equalp)
                     (incf (insert-counter-of command-counter))
                     (notify-transaction-event transaction :insert))
-                   ((starts-with command "SELECT" :test #'equalp)
+                   ((starts-with-subseq "SELECT" command :test #'equalp)
                     (incf (select-counter-of command-counter))
                     (notify-transaction-event transaction :select))
-                   ((starts-with command "UPDATE" :test #'equalp)
+                   ((starts-with-subseq "UPDATE" command :test #'equalp)
                     (incf (update-counter-of command-counter))
                     (notify-transaction-event transaction :update))
-                   ((starts-with command "DELETE" :test #'equalp)
+                   ((starts-with-subseq "DELETE" command :test #'equalp)
                     (incf (delete-counter-of command-counter))
                     (notify-transaction-event transaction :delete))))))
 
@@ -347,8 +351,8 @@
   ((hooks nil :type list)))
 
 (defclass* transaction-hook ()
-  ((function :type (or symbol function))
-   (when :type (member :before :after))
+  ((function :type (or symbol function) :accessor function-of)
+   (when :type (member :before :after) :accessor when-of)
    (action :type (member :commit :rollback :always))))
 
 (defun funcall-transaction-hooks (transaction when action)

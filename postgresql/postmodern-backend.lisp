@@ -15,7 +15,8 @@
 (defmethod transaction-mixin-class list ((db postgresql-postmodern))
   'postgresql-postmodern-transaction)
 
-(defmethod prepare-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string) &key (name (generate-unique-postgresql-name)))
+(defmethod prepare-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
+                            &key (name (generate-unique-postgresql-name "prepared_")))
   (cl-postgres:prepare-query (connection-of tr) name command)
   (make-instance 'prepared-statement :name name :query command))
 
@@ -128,7 +129,7 @@
   (aif (call-next-method)
        it
        (let ((db (database-of tr)))
-         (log.debug "Opening Postmodern connection the first time it was needed, using ~S" (remove-keywords (connection-specification-of db) :password))
+         (log.debug "Opening Postmodern connection the first time it was needed, using ~S" (remove-from-plist (connection-specification-of db) :password))
          (aprog1
              (loop
                (with-simple-restart (retry "Retry connecting")

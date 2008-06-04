@@ -72,7 +72,7 @@
                          (and (boundp '*database*)
                               *database*)
                          (progn
-                           (alexandria:simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
+                           (simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
                            (make-instance 'database))))
          (*command-elements* (make-array 8 :adjustable #t :fill-pointer 0))
          (*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))
@@ -104,14 +104,30 @@
              (if (zerop (length vector))
                  #()
                  vector)))
-      (bind (((:values command-elements constant-command-elements?) (reduce-subsequences *command-elements* #'constant-command-element-p #'strcat))
-             ((:values variables constant-variables?) (reduce-subsequences *binding-variables* #'constant-variable-p #'vector))
-             ((:values types constant-types?) (reduce-subsequences *binding-types* #'constant-type-p #'vector))
-             ((:values values constant-values?) (reduce-subsequences *binding-values* #'constant-value-p #'vector))
-             (expand-as-constant-command-elements? (and toplevel constant-command-elements?))
-             (expand-as-constant-variables? (and toplevel constant-variables? constant-command-elements?))
-             (expand-as-constant-types? (and toplevel constant-types? constant-command-elements?))
-             (expand-as-constant-values? (and toplevel constant-values? constant-command-elements? (every #'null *binding-variables*)))
+      (bind (((:values command-elements constant-command-elements?) (reduce-subsequences *command-elements*
+                                                                                         #'constant-command-element-p
+                                                                                         #'concatenate-string))
+             ((:values variables constant-variables?)               (reduce-subsequences *binding-variables*
+                                                                                         #'constant-variable-p
+                                                                                         #'vector))
+             ((:values types constant-types?)                       (reduce-subsequences *binding-types*
+                                                                                         #'constant-type-p
+                                                                                         #'vector))
+             ((:values values constant-values?)                     (reduce-subsequences *binding-values*
+                                                                                         #'constant-value-p
+                                                                                         #'vector))
+             (expand-as-constant-command-elements? (and toplevel
+                                                        constant-command-elements?))
+             (expand-as-constant-variables?        (and toplevel
+                                                        constant-variables?
+                                                        constant-command-elements?))
+             (expand-as-constant-types?            (and toplevel
+                                                        constant-types?
+                                                        constant-command-elements?))
+             (expand-as-constant-values?           (and toplevel
+                                                        constant-values?
+                                                        constant-command-elements?
+                                                        (every #'null *binding-variables*)))
              (body
               `(,@(unless expand-as-constant-variables?
                           (process-elements variables '*binding-variables*))
@@ -159,7 +175,7 @@
 (defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
   (bind (((:values command binding-variables binding-types binding-values) (funcall command)))
     (update-binding-values binding-variables binding-types binding-values bindings)
-    (alexandria:remove-from-plistf args :bindings)
+    (remove-from-plistf args :bindings)
     (apply #'execute-command database transaction command
            :binding-types binding-types :binding-values binding-values args)))
 
@@ -225,7 +241,7 @@
            (setf (get ',name :slot-names) ',effective-slots))
          (defclass* ,name ,supers ,slots
            ,@(remove-if (lambda (option)
-                          (starts-with (string-downcase (first option)) "format"))
+                          (starts-with-subseq "format" (string-downcase (first option))))
                         options))
          (pushnew ',name *sql-syntax-node-names*)
          ,(awhen (find :format-sql-syntax-node options :key #'first)

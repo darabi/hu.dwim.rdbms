@@ -9,26 +9,26 @@
 (defpackage :cl-rdbms
   (:nicknames :rdbms)
 
-  (:shadow #:log #:type-of #:type)
+  (:shadow
+   #:log
+   #:type-of
+   #:type
+   #:as
+   )
 
-  ;; TODO drop :arnesi, use :alexandria
   (:use
-   #:common-lisp
-   #:sb-pcl
+   :common-lisp
+   :closer-mop
    :iterate
-   :arnesi
+   :alexandria
+   :anaphora
    :cl-def
+   :cl-yalog
    :metabang-bind
    :defclass-star
    :cl-rdbms-system
    :cl-syntax-sugar
-   )
-
-  (:shadowing-import-from :cl-syntax-sugar
-   ;; some clashes with arnesi
-   #:enable-sharp-l-syntax
-   #:with-sharp-l-syntax
-   #:with-package
+   :babel
    )
 
   (:export
@@ -138,17 +138,3 @@
    #:current-update-counter
    #:current-delete-counter))
 
-(defpackage :cl-rdbms-test
-  (:nicknames :rdbmst)
-
-  (:use
-   #:common-lisp
-   :iterate
-   :arnesi
-   :cl-rdbms
-   :cl-def
-   :metabang-bind
-   )
-
-  (:shadowing-import-from :cl-rdbms
-   #:log))

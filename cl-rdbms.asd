@@ -89,15 +89,17 @@
 	       "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD"
   :description "rdbms lib with sql syntax and sql backend abstractions"
-  ;; TODO drop arnesi dependency
   :depends-on (:alexandria
+               :anaphora
                :iterate
                :cl-def
+               :closer-mop
+               :cl-yalog
                :metabang-bind
                :defclass-star
-               :arnesi
                :ironclad
                :local-time
+               :babel
                :cl-walker
                :cl-syntax-sugar
                )
@@ -136,7 +138,10 @@
 
 (defsystem* :cl-rdbms.postgresql
   :description "Common stuff for Postgresql backends for cl-rdbms"
-  :depends-on (:arnesi :iterate :defclass-star :cl-rdbms)
+  :depends-on (:iterate
+               :defclass-star
+               :cl-rdbms
+               )
   :components
   ((:module "postgresql"
             :serial t
@@ -153,7 +158,11 @@
                   '(:database \"rdbms-test\" :user-name \"rdbms-test\" :password \"test123\"))"
   :compile-time-database-factory-form "(make-instance 'postgresql)"
   :description "cl-rdbms with Postmodern backend"
-  :depends-on (:arnesi :iterate :defclass-star :cl-rdbms.postgresql :cl-postgres)
+  :depends-on (:iterate
+               :defclass-star
+               :cl-rdbms.postgresql
+               :cl-postgres
+               )
   :components
   ((:module "postgresql"
             :components ((:file "postmodern-backend")))))
@@ -170,7 +179,11 @@
                     :user-name \"perec-test\"
                     :password \"test123\"))"
   :description "cl-rdbms with Oracle backend"
-  :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
+  :depends-on (:iterate
+               :defclass-star
+               :verrazano-runtime
+               :cl-rdbms
+               )
   :components
   ((:module "oracle"
             :serial t
@@ -191,7 +204,11 @@
                   :connection-specification
                   '(:file-name \"/tmp/perec-test\"))"
   :description "cl-rdbms with Sqlite backend"
-  :depends-on (:arnesi :iterate :defclass-star :verrazano-runtime :cl-rdbms)
+  :depends-on (:iterate
+               :defclass-star
+               :verrazano-runtime
+               :cl-rdbms
+               )
   :components
   ((:module "sqlite"
             :serial t
@@ -208,7 +225,8 @@
   :components
   ((:module "tests"
             :serial t
-            :components ((:file "test-environment")
+            :components ((:file "package")
+                         (:file "test-environment")
                          (:file "basic")
                          (:file "syntax")
                          (:file "types")))))

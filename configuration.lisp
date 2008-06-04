@@ -6,8 +6,6 @@
 
 (in-package :cl-rdbms)
 
-(enable-sharp-boolean-syntax)
-
 ;;; These definitions need to be available by the time we are reading the other files, therefore
 ;;; they are in a standalone file.
 
