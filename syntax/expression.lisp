@@ -140,7 +140,7 @@
       (pushnew ',constructor-name *sql-constructor-names*)
       (pushnew ',name *sql-operator-names*)
       (defun ,constructor-name (&rest expressions)
-        (if (length=1 expressions)
+        (if (length= 1 expressions)
             (make-instance 'sql-unary-operator
                            :name ,(string-upcase name)
                            :expression (first expressions))

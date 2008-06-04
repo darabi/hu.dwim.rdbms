@@ -99,7 +99,6 @@
    #:second*
    #:third*
    #:last*
-   #:length=1
 
    #:insert-record
    #:update-records

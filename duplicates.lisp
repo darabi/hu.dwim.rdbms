@@ -35,12 +35,6 @@
         (intern symbol-name package)
         (intern symbol-name))))
 
-(def (function io) length=1 (sequence)
-  (if (listp sequence)
-      (and sequence
-           (null (rest sequence)))
-      (= 1 (length sequence))))
-
 ;; TODO these should probably hide their cl counterparts, because then inlined they reduce
 ;; to a mere CL:FIRST call if type information is available
 (def (function io) first* (sequence)

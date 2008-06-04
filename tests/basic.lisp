@@ -148,27 +148,27 @@
        (with-transaction
          (execute-ddl [create table alma ((a boolean))])
          (execute [insert alma (a) (t)])
-         (is (length=1 (execute
-                        (compile
-                         nil
-                         (expand-sql-ast-into-lambda-form
-                          (sql-select :columns '(a)
-                                      :tables '(alma)
-                                      :where (sql-= (sql-identifier :name 'a)
-                                                    (sql-unquote :form '(sql-binding-variable :name 'a :type (sql-boolean-type)))))))
-                        :bindings '(a t))))
-         (is (length=1 (execute
-                        (compile
-                         nil
-                         (expand-sql-ast-into-lambda-form
-                          (sql-select :columns '(a)
-                                      :tables '(alma)
-                                      :where (sql-= (sql-identifier :name 'a)
-                                                    (sql-binding-variable :name 'a
-                                                                          :type
-                                                                          (sql-unquote
-                                                                            :form
-                                                                            `(sql-boolean-type)))))))
-                        :bindings '(a t)))))
+         (is (length= 1 (execute
+                         (compile
+                          nil
+                          (expand-sql-ast-into-lambda-form
+                           (sql-select :columns '(a)
+                                       :tables '(alma)
+                                       :where (sql-= (sql-identifier :name 'a)
+                                                     (sql-unquote :form '(sql-binding-variable :name 'a :type (sql-boolean-type)))))))
+                         :bindings '(a t))))
+         (is (length= 1 (execute
+                         (compile
+                          nil
+                          (expand-sql-ast-into-lambda-form
+                           (sql-select :columns '(a)
+                                       :tables '(alma)
+                                       :where (sql-= (sql-identifier :name 'a)
+                                                     (sql-binding-variable :name 'a
+                                                                           :type
+                                                                           (sql-unquote
+                                                                             :form
+                                                                             `(sql-boolean-type)))))))
+                         :bindings '(a t)))))
     (ignore-errors
       (execute-ddl [drop table alma]))))
