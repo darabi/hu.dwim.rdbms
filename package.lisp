@@ -64,16 +64,6 @@
    #:transaction-timestamp
    #:rdbms-name-for
 
-   #:create-table
-   #:drop-table
-   #:alter-table
-   #:add-column
-   #:drop-column
-   #:alter-column-type
-   #:add-primary-key-constraint
-   #:update-table
-   #:list-tables
-   #:list-table-columns
    #:table-exists-p
    #:unconfirmed-destructive-alter-table-error
    #:unconfirmed-destructive-alter-column-type-error
@@ -89,14 +79,8 @@
 
    #:create-sequence
    #:drop-sequence
-   #:list-sequences
    #:sequence-exists-p
    #:sequence-next
-
-   #:create-index
-   #:drop-index
-   #:update-index
-   #:list-table-indices
 
    #:sql
    #:format-sql
