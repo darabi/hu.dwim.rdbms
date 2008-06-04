@@ -221,7 +221,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop index
 
-(def (function e) (name table-name columns &key (unique #f))
+(def (function e) create-index (name table-name columns &key (unique #f))
   (execute-ddl (make-instance 'sql-create-index
                               :name name
                               :table-name table-name
