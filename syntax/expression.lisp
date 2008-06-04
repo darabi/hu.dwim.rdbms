@@ -206,7 +206,7 @@
 ;;; Pattern matching
 
 (define-syntax-node sql-like (sql-expression)
-  ((string :type  sql-expression)
+  ((string :type  sql-expression :accessor string-of)
    (pattern :type sql-expression)
    (case-sensitive-p #t :type boolean))
   (:format-sql-syntax-node
@@ -225,7 +225,7 @@
          (format-string "))")))))
 
 (define-syntax-node sql-regexp-like (sql-expression)
-  ((string :type sql-expression)
+  ((string :type sql-expression :accessor string-of)
    (pattern :type sql-expression)
    (case-sensitive-p #t :type boolean)))
 

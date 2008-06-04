@@ -36,7 +36,8 @@
     :type number)
    (for
     nil
-    :type (member :update :share))
+    :type (member :update :share)
+    :accessor for-of)
    (wait
     #t
     :type boolean))

@@ -12,7 +12,8 @@
    (columns
     :type (list sql-identifier*))
    (values
-    :type (list sql-literal*))
+    :type (list sql-literal*)
+    :accessor values-of)
    (where
     nil
     :type sql-expression))

@@ -12,7 +12,8 @@
    (columns
     :type (list sql-identifier*))
    (values
-    :type (list sql-literal*))
+    :type (list sql-literal*)
+    :accessor values-of)
    (subselect))
   (:documentation "An SQL INSERT statement.")
   (:format-sql-syntax-node

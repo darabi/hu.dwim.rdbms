@@ -122,7 +122,7 @@
   ())
 
 (defclass* postgresql-postmodern (postgresql)
-  ((muffle-warnings #f :type boolean)))
+  ((muffle-warnings #f :type boolean :accessor muffle-warnings?)))
 
 (let ((loaded-p #f))
   (defmethod initialize-instance :before ((self postgresql-postmodern) &key &allow-other-keys)

@@ -42,7 +42,8 @@
 (define-syntax-node sql-create-view (sql-create-table)
   ((replace
     #f
-    :type boolean))
+    :type boolean
+    :accessor replace-p))
   (:documentation "An SQL CREATE TABLE statement.")
   (:format-sql-syntax-node
    (format-string "CREATE")

@@ -10,7 +10,7 @@
   ((connection
     nil
     :documentation "The Postmodern connection")
-   (muffle-warnings (muffle-warnings-p *database*) :type boolean)))
+   (muffle-warnings (muffle-warnings? *database*) :type boolean :accessor muffle-warnings?)))
 
 (defmethod transaction-mixin-class list ((db postgresql-postmodern))
   'postgresql-postmodern-transaction)
@@ -106,7 +106,7 @@
            (vector #'cl-postgres:vector-row-reader))))))
 
 (defmethod execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
-  (if (muffle-warnings-p tr)
+  (if (muffle-warnings? tr)
       (handler-bind ((cl-postgres:postgresql-warning #'muffle-warning))
         (call-next-method))
       (call-next-method)))
