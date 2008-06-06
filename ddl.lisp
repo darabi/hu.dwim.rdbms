@@ -13,7 +13,7 @@
   (execute-ddl (make-instance 'sql-create-table :temporary temporary :name name :columns columns)))
 
 (def (function e) create-temporary-table (name &rest columns)
-  (execute-ddl (make-instance 'sql-create-table :name name :columns columns)))
+  (execute-ddl (make-instance 'sql-create-table :name name :temporary :drop :columns columns)))
 
 (def (function e) drop-table (name &key cascade)
   (execute-ddl (make-instance 'sql-drop-table :name name :cascade cascade)))
