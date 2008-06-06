@@ -42,7 +42,7 @@
             :collect (list symbol-name symbol-name))
      ,@body))
 
-(def (function eo) concatenate-string (&rest args)
+(def (function o) concatenate-string (&rest args)
   ;; don't inline, otherwise the compiler macro is kicked
   (apply #'concatenate 'string args))
 
