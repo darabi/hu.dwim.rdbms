@@ -50,7 +50,7 @@
                               sql-date-type
                               sql-time-type)
                           (if (stringp value)
-                              ;; let the user talk to PostgreSQL directly with strings
+                              ;; let the user talk to PostgreSQL directly using strings
                               value
                               (etypecase type
                                 (sql-timestamp-type

@@ -75,7 +75,7 @@
   (:documentation "Returns the corresponding SQL type object slots filled in."))
 
 (defgeneric column-value (cursor index)
-  (:documentation "Returns values of type (or (member :null nil t number string local-time) (vector (unsigned-byte 8)))."))
+  (:documentation "Returns values of type (or (member :null nil t) number string local-time (vector (unsigned-byte 8)))."))
 
 ;;;;;;;;;;;;;;;;;;;
 ;;; Cursor user API
