@@ -29,7 +29,7 @@
 
 (import (let ((*package* (find-package :cl-rdbms)))
           ;; we intentionally not import all internal cl-rdbms symbols here to test the proper exporting of the symbols, too
-          (read-from-string "(concatenate-symbol *sql-stream* eval-always rebind
+          (read-from-string "(concatenate-symbol concatenate-string *sql-stream* eval-always rebind
                               connection-specification-of *database* *transaction*
                               with-transaction* process-sql-syntax-list compile-sexp-sql-column compile-sexp-sql-columns
                               compile-sexp-sql compile-sexp-sql-type expand-sql-ast-into-lambda-form

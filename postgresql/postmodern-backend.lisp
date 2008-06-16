@@ -54,28 +54,20 @@
                               value
                               (etypecase type
                                 (sql-timestamp-type
-                                  (unless (or (with-timezone-p type)
-                                              (eq (local-time:timezone-of value)
-                                                  local-time:+utc-zone+))
-                                    (cerror "continue"
-                                            "Binding a local-time timestamp with non-UTC timezone while the specified binding type is a timestamp *without* timezone. PostgreSQL will silently drop the timezone information. The timestamp in question is: ~A"
-                                            value))
-                                  (local-time:format-rfc3339-timestring value))
+                                  (local-time:format-rfc3339-timestring nil value :timezone local-time:+utc-zone+))
                                 (sql-date-type
-                                  (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
-                                               (zerop (local-time:sec-of value))
+                                  (unless (and (zerop (local-time:sec-of value))
                                                (zerop (local-time:nsec-of value)))
                                     (cerror "continue"
-                                            "Binding a local-time date that has either time values or a non-UTC timezone which is about to be silently dropped. The date in question is: ~A"
+                                            "Binding a local-time date that has time values which is about to be silently dropped. The binding value in question is: ~A"
                                             value))
-                                  (local-time:format-rfc3339-timestring value :omit-time-part-p #t))
+                                  (local-time:format-rfc3339-timestring nil value :omit-time-part #t :timezone local-time:+utc-zone+))
                                 (sql-time-type
-                                  (unless (and (eq (local-time:timezone-of value) local-time:+utc-zone+)
-                                               (zerop (local-time:day-of value)))
+                                  (unless (zerop (local-time:day-of value))
                                     (cerror "continue"
-                                            "Binding a local-time time that has either day value or a non-UTC timezone which is about to be silently dropped. The time in question is: ~A"
+                                            "Binding a local-time time that has day value which is about to be silently dropped. The binding value in question is: ~A"
                                             value))
-                                  (local-time:format-rfc3339-timestring value :omit-date-part-p #t)))))
+                                  (local-time:format-rfc3339-timestring nil value :omit-date-part #t :timezone local-time:+utc-zone+)))))
                          ((or sql-simple-type
                               sql-string-type
                               sql-float-type
