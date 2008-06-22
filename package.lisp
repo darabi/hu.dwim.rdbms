@@ -138,3 +138,10 @@
    #:current-update-counter
    #:current-delete-counter))
 
+(in-package :local-time)
+
+;; KLUDGE TODO oh, god, please FIXME when local-time gets date/time support
+(defun parse-datestring (string)
+  (parse-timestring string))
+
+(export 'parse-datestring)
