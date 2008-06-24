@@ -44,7 +44,7 @@
   `(def dialect-test ,name :reader ,@body))
 
 
-(def suite (test/syntax :in-suite 'test))
+(def suite (test/syntax :in test))
 (in-suite test/syntax)
 
 (def sexp-sql-dialect-test test/syntax/sexp-dialect
@@ -199,7 +199,7 @@
       (is (eql (first* binding-values) 43))
       (is (every #'null (subseq binding-values 1))))))
 
-(def suite (test/formatting :in-suite 'syntax))
+(def suite (test/formatting :in test/syntax))
 (in-suite test/formatting)
 
 (def ast-dialect-test test/syntax/formatting/identifier

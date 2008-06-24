@@ -8,7 +8,7 @@
 
 (enable-sql-syntax)
 
-(def suite (test/types :in-suite 'test))
+(def suite (test/types :in test))
 
 (in-suite test/types)
 

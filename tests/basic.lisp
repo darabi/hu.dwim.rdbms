@@ -6,7 +6,7 @@
 
 (in-package :cl-rdbms-test)
 
-(def suite (test/basic :in-suite 'test))
+(def suite (test/basic :in test))
 
 (in-suite test/basic)
 
