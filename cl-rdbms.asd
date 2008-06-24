@@ -130,7 +130,8 @@
                          (:file "update" :depends-on ("syntax"))
                          (:file "delete" :depends-on ("syntax"))
                          (:file "sequence" :depends-on ("syntax"))
-                         (:file "index" :depends-on ("syntax"))))))
+                         (:file "index" :depends-on ("syntax"))
+                         (:file "lock" :depends-on ("syntax"))))))
 
 (defsystem-connection cl-rdbms-and-slime
   :requires (:cl-rdbms :swank)

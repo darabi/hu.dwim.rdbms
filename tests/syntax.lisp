@@ -318,6 +318,12 @@
   ((oracle "SELECT a.nextval FROM dual ")
    (t "SELECT NEXTVAL('a')")))
 
+(def ast-dialect-test test/syntax/formatting/lock
+  (sql-lock-table :table "a"
+                  :mode :share
+                  :wait #f)
+  "LOCK TABLE a IN SHARE MODE NOWAIT")
+
 #|
 this variant runs the tests for all dialects, but it's not useful because
 that would require all the backends to be loaded (for their syntax customizations)
