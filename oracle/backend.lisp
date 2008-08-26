@@ -52,7 +52,7 @@
   (execute-prepared-statement transaction prepared-statement binding-types binding-values visitor result-type
                               :start-row start-row :row-limit row-limit))
 
-(defmethod cleanup-transaction ((transaction oracle-transaction))
+(defmethod cleanup-transaction :after ((transaction oracle-transaction))
   (when (environment-handle-pointer transaction)
     (log.debug "Cleaning up Oracle transaction ~A to database ~A" transaction (database-of transaction))
     (disconnect transaction)))

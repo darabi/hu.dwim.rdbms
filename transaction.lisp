@@ -280,7 +280,10 @@
            (execute-command database transaction "ROLLBACK")))
 
 (defgeneric cleanup-transaction (transaction)
-  (:documentation "Extension point with-transaction and commit/rollback."))
+  (:documentation "Extension point with-transaction and commit/rollback.")
+  (:method ((transaction t))
+    ;; nop
+    ))
 
 (defgeneric prepare-command (database transaction command &key name)
   (:documentation "Sends a query to the database for parsing and returns a handler (a prepared-statement CLOS object) that can be used as a command for EXECUTE-COMMAND."))

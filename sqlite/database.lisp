@@ -65,7 +65,7 @@
     (sqlite3-cffi-bindings:sqlite-3-clear-bindings foreign-statement) 
     (execute-prepared-statment foreign-statement binding-types binding-values result-type)))
 
-(defmethod cleanup-transaction ((tr sqlite-transaction))
+(defmethod cleanup-transaction :after ((tr sqlite-transaction))
   (awhen (connection-pointer-of tr)
     (process-error-code (sqlite3-cffi-bindings:sqlite-3-close it) nil "Error during closing database")))
 

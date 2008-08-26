@@ -134,7 +134,7 @@
            (log.debug "Succesfully opened Postmodern connection ~A for transaction ~A in database ~A"
                       it tr db)))))
 
-(defmethod cleanup-transaction ((tr postgresql-postmodern-transaction))
+(defmethod cleanup-transaction :after ((tr postgresql-postmodern-transaction))
   (awhen (slot-value tr 'connection)
     (log.debug "Closing Postmodern connection ~A of transaction ~A in database ~A" it tr (database-of tr))
     (cl-postgres:close-database it)
