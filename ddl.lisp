@@ -106,7 +106,7 @@
              (format stream "DESTRUCTIVE: Dropping the column ~S from table ~S is a destructive transformation"
                      (column-name-of error) (table-name-of error)))))
 
-(def (macro e) with-confirmed-descructive-changes (&body body)
+(def (macro e) with-confirmed-destructive-changes (&body body)
   `(handler-bind ((unconfirmed-destructive-alter-table-error #'continue))
     ,@body))
 
