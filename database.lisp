@@ -55,12 +55,12 @@
                                                    (cons (find-class it) classes)
                                                    classes)))))
 
-(defgeneric transaction-mixin-class (database)
-  (:documentation "Collects the transaction mixin classes which will be inherited by the transaction class instantiated by with-transaction.")
+(def (generic e) transaction-mixin-class (database)
+  (:documentation "Collects the transaction mixin classes which will be inherited by the transaction class instantiated by with-transaction when using this database.")
 
   (:method-combination list))
 
-(defmacro with-database (database &body body)
+(def (macro e) with-database (database &body body)
   `(let ((*database* ,database))
     ,@body))
 
