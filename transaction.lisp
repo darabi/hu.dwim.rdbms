@@ -380,8 +380,9 @@
       (call-next-method)
     (funcall-transaction-hooks transaction :after :rollback)))
 
-(defun register-transaction-hook (when action function)
-  (register-hook-in-transaction *transaction* when action function))
+(def macro register-transaction-hook (when action &body forms)
+  `(register-hook-in-transaction *transaction* ,when ,action
+                                 (lambda () ,@forms)))
 
 (defgeneric register-hook-in-transaction (transaction when action function)
   (:method ((transaction transaction-with-hooks-mixin) when action (function function))
