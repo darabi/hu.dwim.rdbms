@@ -203,6 +203,20 @@
 (define-unary-operator @)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Bitwise operators
+(define-binary-operator &)
+
+(define-binary-operator \|)
+
+(define-binary-operator \#)
+
+(define-unary-operator ~)
+
+(define-binary-operator |<<|)
+
+(define-binary-operator |>>|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pattern matching
 
 (define-syntax-node sql-like (sql-expression)
