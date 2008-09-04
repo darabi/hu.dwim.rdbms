@@ -302,6 +302,8 @@
      (compile-sexp-sql-function-call body))
     ((atom body)
      (sql-literal :value body))
+    ((sql-symbol-equal (first body) 'select)
+     (sql-subquery :query (compile-sexp-sql-select body)))
     (t
      (bind ((operator (pop body))
             (constructor (if (member operator *sql-operator-names* :test #'sql-symbol-equal)
