@@ -278,18 +278,18 @@
   (process-sexp-sql-syntax-list body #'compile-sexp-sql-column))
 
 (defun compile-sexp-sql-table-alias (body)
-  (let ((whole-body body)
-        (name)
-        (alias))
-    (if (consp body)
-        (progn
-          (setf name (pop body))
-          (setf alias (pop body))
-          (when body
-            (sql-compile-error whole-body body)))
-        (progn
-          (setf name body)))
-    (make-instance 'sql-table-alias :name name :alias alias)))
+  (cond
+    ((sexp-sql-unquote-p body)
+     (compile-sexp-sql-unquote body))
+    ((consp body)
+     (let ((whole-body body)
+           (name (pop body))
+           (alias (pop body)))
+       (when body
+         (sql-compile-error whole-body body))
+       (make-instance 'sql-table-alias :name name :alias alias)))
+    (t
+     (make-instance 'sql-table-alias :name body))))
 
 (defun compile-sexp-sql-expression (body)
   (cond
