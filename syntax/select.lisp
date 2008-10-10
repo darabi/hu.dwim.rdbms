@@ -30,10 +30,10 @@
     :type list)                         ; TODO: element type
    (offset
     nil
-    :type number)
+    :type (or null number))
    (limit
     nil
-    :type number)
+    :type (or null number))
    (for
     nil
     :type (member :update :share)
