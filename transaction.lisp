@@ -129,17 +129,18 @@
                (restart-case (call-in-transaction *database* *transaction* function)
                  (terminate-transaction ()
                    :report (lambda (stream)
-                             (format stream "return from the WITH-TRANSACTION block executing the current terminal action ~S" (terminal-action-of *transaction*)))
-                   (values nil t))
+                             (format stream "return (values) from the WITH-TRANSACTION block executing the current terminal action ~S" (terminal-action-of *transaction*)))
+                   (values))
                  (commit-transaction ()
                    :report (lambda (stream)
-                             (format stream "mark transaction for commit only and return from the WITH-TRANSACTION block"))
+                             (format stream "mark transaction for commit only and return (values) from the WITH-TRANSACTION block"))
                    (mark-transaction-for-commit-only)
-                   (values nil t))
+                   (values))
                  (rollback-transaction ()
                    :report (lambda (stream)
-                             (format stream "mark transaction for rollback only and return from the WITH-TRANSACTION block"))
-                   (mark-transaction-for-rollback-only)))
+                             (format stream "mark transaction for rollback only and return (values) from the WITH-TRANSACTION block"))
+                   (mark-transaction-for-rollback-only)
+                   (values)))
              (setf body-finished-p #t)
              (ecase (terminal-action-of *transaction*)
                ((:commit :marked-for-commit-only)
@@ -358,7 +359,7 @@
    (when :type (member :before :after) :accessor when-of)
    (action :type (member :commit :rollback :always))))
 
-(defun funcall-transaction-hooks (transaction when action)
+(defun call-transaction-hooks (transaction when action)
   (loop for hook :in (hooks-of transaction) do
         (let ((hook-action (action-of hook)))
           (when (and (eq when (when-of hook))
@@ -369,16 +370,20 @@
 (defmethod commit-transaction :around (database (transaction transaction-with-hooks-mixin))
   ;; this must be an around method because the default around does not
   ;; do call-next-method when begin-transaction was not executed
-  (prog2 (funcall-transaction-hooks transaction :before :commit)
-      (call-next-method)
-    (funcall-transaction-hooks transaction :after :commit)))
+  (progn
+    (call-transaction-hooks transaction :before :commit)
+    (multiple-value-prog1
+        (call-next-method)
+      (call-transaction-hooks transaction :after :commit))))
 
 (defmethod rollback-transaction :around (database (transaction transaction-with-hooks-mixin))
   ;; this must be an around method because the default around does not
   ;; do call-next-method when begin-transaction was not executed
-  (prog2 (funcall-transaction-hooks transaction :before :rollback)
-      (call-next-method)
-    (funcall-transaction-hooks transaction :after :rollback)))
+  (progn
+    (call-transaction-hooks transaction :before :rollback)
+    (multiple-value-prog1
+        (call-next-method)
+      (call-transaction-hooks transaction :after :rollback))))
 
 (def macro register-transaction-hook (when action &body forms)
   `(register-hook-in-transaction *transaction* ,when ,action
