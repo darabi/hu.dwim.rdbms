@@ -24,7 +24,6 @@
    #:common-lisp
    :asdf
    :alexandria
-   :asdf-system-connections
    :cl-syntax-sugar
    )
   (:export
