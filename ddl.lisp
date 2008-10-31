@@ -174,11 +174,12 @@
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop view
 
-(def (function e) create-view (name columns as)
+(def (function e) create-view (name columns as &key replace)
   (execute-ddl (make-instance 'sql-create-view
                               :name name
                               :columns columns
-                              :as as)))
+                              :as as
+                              :replace replace)))
 
 (def (function e) drop-view (name)
   (execute-ddl (make-instance 'sql-drop-view :name name)))
@@ -187,9 +188,7 @@
   (not (null (member (string-downcase name) (list-views) :test 'equalp))))
 
 (def (function e) update-view (name column as)
-  (when (view-exists-p name)
-    (drop-view name))
-  (create-view name column as))
+  (create-view name column as :replace #t))
 
 (def (function e) list-views ()
   (database-list-views *database*))
