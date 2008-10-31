@@ -21,8 +21,13 @@
 
 (define-syntax-node sql-drop-view (sql-ddl-statement)
   ((name
-    :type string))
+    :type string)
+   (ignore-missing
+    #f
+    :type boolean))
   (:documentation "An SQL DROP VIEW  statement.")
   (:format-sql-syntax-node
     (format-string "DROP VIEW ")
+    (when ignore-missing
+      (format-string "IF EXISTS "))
     (format-sql-identifier name)))

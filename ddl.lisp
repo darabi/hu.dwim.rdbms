@@ -181,14 +181,17 @@
                               :as as
                               :replace replace)))
 
-(def (function e) drop-view (name)
-  (execute-ddl (make-instance 'sql-drop-view :name name)))
+(def (function e) drop-view (name &key ignore-missing)
+  (execute-ddl (make-instance 'sql-drop-view
+                              :name name
+                              :ignore-missing ignore-missing)))
 
 (def (function e) view-exists-p (name)
   (not (null (member (string-downcase name) (list-views) :test 'equalp))))
 
 (def (function e) update-view (name column as)
-  (create-view name column as :replace #t))
+  (drop-view name :ignore-missing #t)
+  (create-view name column as))
 
 (def (function e) list-views ()
   (database-list-views *database*))
