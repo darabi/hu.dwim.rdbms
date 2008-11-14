@@ -24,12 +24,7 @@
 
 (local-time:set-local-time-cl-postgres-readers *cl-postgres-sql-readtable*)
 
-(defun execute-postmodern-prepared-statement (db connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
-  ;; commented out the assert, query compiler may generate such queries for updates (tomi)
-  (declare (ignore db))
-  #+nil
-  (assert (not (and visitor (not (zerop (length binding-values)))))
-          (visitor binding-values) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
+(defun execute-postmodern-prepared-statement (connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
   (bind ((cl-postgres:*sql-readtable* *cl-postgres-sql-readtable*))
     (cl-postgres:exec-prepared
      connection statement-name
@@ -112,13 +107,13 @@
         (statement-name "")) ; unnamed prepared statement
     (cl-postgres:prepare-query connection statement-name command)
     (handler-case
-        (apply #'execute-postmodern-prepared-statement db connection statement-name args)
+        (apply #'execute-postmodern-prepared-statement connection statement-name args)
       (cl-postgres-error:lock-not-available (error)
         (unable-to-obtain-lock-error error)))))
 
 (defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
                             &rest args)
-  (apply #'execute-postmodern-prepared-statement db (connection-of tr) (name-of prepared-statement) args))
+  (apply #'execute-postmodern-prepared-statement (connection-of tr) (name-of prepared-statement) args))
 
 (defmethod connection-of :around ((tr postgresql-postmodern-transaction))
   (aif (call-next-method)
