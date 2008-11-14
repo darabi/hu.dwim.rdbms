@@ -25,6 +25,9 @@
 (local-time:set-local-time-cl-postgres-readers *cl-postgres-sql-readtable*)
 
 (defun execute-postmodern-prepared-statement (db connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
+  ;; commented out the assert, query compiler may generate such queries for updates (tomi)
+  (declare (ignore db))
+  #+nil
   (assert (not (and visitor (not (zerop (length binding-values)))))
           (visitor binding-values) "Using a visitor and bindings at the same time is not supported by the ~A backend" db)
   (bind ((cl-postgres:*sql-readtable* *cl-postgres-sql-readtable*))
