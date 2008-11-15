@@ -8,11 +8,7 @@
 
 ;;; please note that cl-perec tests cl-rdbms throughout, this is only a limited test file here
 
-(in-root-suite)
-
-(def suite test)
-
-(in-suite test)
+(defsuite* (test :in root-suite))
 
 ;; e.g. (make-instance 'postgresql-postmodern :connection-specification '(:database "dwim" :user-name "root" :password "admin123"))
 (defvar *test-database*)
