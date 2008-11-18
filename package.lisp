@@ -141,7 +141,15 @@
 (in-package :local-time)
 
 ;; KLUDGE TODO oh, god, please FIXME when local-time gets date/time support
+(export '(parse-datestring))
+
 (defun parse-datestring (string)
-  (parse-timestring string))
+  (let* ((*default-timezone* +utc-zone+)
+         (date (parse-timestring string :offset 0)))
+    (unless (and date
+                 (zerop (sec-of date))
+                 (zerop (nsec-of date)))
+      (error "~S is not a valid date string" string))
+    date))
 
 (export 'parse-datestring)
