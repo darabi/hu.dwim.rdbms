@@ -359,6 +359,10 @@
    (when :type (member :before :after) :accessor when-of)
    (action :type (member :commit :rollback :always))))
 
+(def constructor (transaction-hook when action)
+  (check-type when (member :before :after))
+  (check-type action (member :commit :rollback :always)))
+
 (defun call-transaction-hooks (transaction when action)
   (loop for hook :in (hooks-of transaction) do
         (let ((hook-action (action-of hook)))
@@ -391,9 +395,9 @@
 
 (defgeneric register-hook-in-transaction (transaction when action function)
   (:method ((transaction transaction-with-hooks-mixin) when action (function function))
-           (prog1-bind hook
-               (make-instance 'transaction-hook
-                              :function function
-                              :when when
-                              :action action)
-             (push hook (hooks-of transaction)))))
+    (aprog1
+        (make-instance 'transaction-hook
+                       :function function
+                       :when when
+                       :action action)
+      (push it (hooks-of transaction)))))
