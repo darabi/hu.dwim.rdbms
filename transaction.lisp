@@ -118,43 +118,47 @@
     (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction*"))
   (let* ((*database* (or database *database*))
          (*transaction* nil)
-         (body-finished-p #f))
-    (unwind-protect
-         (progn
-           (setf *transaction*
-                 (apply #'make-transaction *database*
-                        :terminal-action default-terminal-action
-                        (remove-from-plistf args :database :default-terminal-action)))
-           (multiple-value-prog1
-               (restart-case (call-in-transaction *database* *transaction* function)
-                 (terminate-transaction ()
-                   :report (lambda (stream)
-                             (format stream "return (values) from the WITH-TRANSACTION block executing the current terminal action ~S" (terminal-action-of *transaction*)))
-                   (values))
-                 (commit-transaction ()
-                   :report (lambda (stream)
-                             (format stream "mark transaction for commit only and return (values) from the WITH-TRANSACTION block"))
-                   (mark-transaction-for-commit-only)
-                   (values))
-                 (rollback-transaction ()
-                   :report (lambda (stream)
-                             (format stream "mark transaction for rollback only and return (values) from the WITH-TRANSACTION block"))
-                   (mark-transaction-for-rollback-only)
-                   (values)))
-             (setf body-finished-p #t)
-             (ecase (terminal-action-of *transaction*)
-               ((:commit :marked-for-commit-only)
-                (commit-transaction *database* *transaction*))
-               ((:rollback :marked-for-rollback-only)
-                (rollback-transaction *database* *transaction*)))))
-      (when *transaction*
-        (unwind-protect
-             (unless body-finished-p
-               (handler-case
-                   (rollback-transaction *database* *transaction*)
-                 (serious-condition (condition)
-                   (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
-          (cleanup-transaction *transaction*))))))
+         (body-finished? #f))
+    (iter restart-transaction-loop
+       (with-simple-restart (restart-transaction "rollback the transaction by unwinding the stack and restart the WITH-TRANSACTION block in a new database transaction")
+         (unwind-protect
+              (progn
+                (setf body-finished? #f)
+                (setf *transaction*
+                      (apply #'make-transaction *database*
+                             :terminal-action default-terminal-action
+                             (remove-from-plistf args :database :default-terminal-action)))
+                (return-from restart-transaction-loop
+                  (multiple-value-prog1
+                      (restart-case (call-in-transaction *database* *transaction* function)
+                        (terminate-transaction ()
+                          :report (lambda (stream)
+                                    (format stream "return (values) from the WITH-TRANSACTION block executing the current terminal action ~S" (terminal-action-of *transaction*)))
+                          (values))
+                        (commit-transaction ()
+                          :report (lambda (stream)
+                                    (format stream "mark transaction for commit only and return (values) from the WITH-TRANSACTION block"))
+                          (mark-transaction-for-commit-only)
+                          (values))
+                        (rollback-transaction ()
+                          :report (lambda (stream)
+                                    (format stream "mark transaction for rollback only and return (values) from the WITH-TRANSACTION block"))
+                          (mark-transaction-for-rollback-only)
+                          (values)))
+                    (setf body-finished? #t)
+                    (ecase (terminal-action-of *transaction*)
+                      ((:commit :marked-for-commit-only)
+                       (commit-transaction *database* *transaction*))
+                      ((:rollback :marked-for-rollback-only)
+                       (rollback-transaction *database* *transaction*))))))
+           (when *transaction*
+             (unwind-protect
+                  (unless body-finished?
+                    (handler-case
+                        (rollback-transaction *database* *transaction*)
+                      (serious-condition (condition)
+                        (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
+               (cleanup-transaction *transaction*))))))))
 
 (defmethod (setf terminal-action-of) :before (new-value (transaction transaction))
   (when (and (member (terminal-action-of *transaction*) '(:marked-for-rollback-only :marked-for-commit-only))
