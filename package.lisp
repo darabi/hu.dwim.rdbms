@@ -32,9 +32,6 @@
    )
 
   (:export
-   #:rdbms-error
-   #:unable-to-obtain-lock-error
-
    #:database
    #:postgresql
    #:postgresql-postmodern
