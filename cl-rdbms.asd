@@ -133,7 +133,7 @@
                          (:file "lock" :depends-on ("syntax"))))))
 
 (defsystem-connection cl-rdbms-and-slime
-  :requires (:cl-rdbms :swank)
+  :requires (:cl-rdbms :swank :cl-syntax-sugar-and-swank)
   :components ((:file "swank-integration")))
 
 (defsystem* :cl-rdbms.postgresql
