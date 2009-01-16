@@ -94,17 +94,9 @@
      (mark-transaction-for-rollback-only)
      ,@body))
 
-(defmacro with-transaction (&body forms)
+(def (macro e) with-transaction (&body forms)
   `(with-transaction* ()
     ,@forms))
-
-(defmacro with-transaction* ((&rest args &key database (default-terminal-action :commit) &allow-other-keys)
-                             &body forms)
-  (declare (ignore database default-terminal-action))
-  `(call-with-transaction
-    (lambda ()
-      ,@forms)
-    ,@args))
 
 (defgeneric call-in-transaction (database transaction function)
   (:documentation "Extension point for with-transaction macro.")
@@ -113,10 +105,10 @@
            (declare (ignore database transaction))
            (funcall function)))
 
-(defun call-with-transaction (function &rest args &key (default-terminal-action :commit) database &allow-other-keys)
+(def (with-macro* e) with-transaction* (&rest args &key (default-terminal-action :commit) database &allow-other-keys)
   (unless (or database (boundp '*database*))
     (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction*"))
-  (let* ((*database* (or database *database*))
+  (bind ((*database* (or database *database*))
          (*transaction* nil)
          (body-finished? #f))
     (iter restart-transaction-loop
@@ -125,12 +117,12 @@
               (progn
                 (setf body-finished? #f)
                 (setf *transaction*
-                      (apply #'make-transaction *database*
+                      (apply 'make-transaction *database*
                              :terminal-action default-terminal-action
-                             (remove-from-plistf args :database :default-terminal-action)))
+                             (remove-from-plist args :database :default-terminal-action)))
                 (return-from restart-transaction-loop
                   (multiple-value-prog1
-                      (restart-case (call-in-transaction *database* *transaction* function)
+                      (restart-case (call-in-transaction *database* *transaction* #'-body-)
                         (terminate-transaction ()
                           :report (lambda (stream)
                                     (format stream "return (values) from the WITH-TRANSACTION block executing the current terminal action ~S" (terminal-action-of *transaction*)))
