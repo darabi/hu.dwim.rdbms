@@ -350,14 +350,20 @@
 (defclass* transaction-with-hooks-mixin ()
   ((hooks nil :type list)))
 
+(def cl:type transaction-hook-invocation-time ()
+  `(member :before :after))
+
+(def cl:type transaction-hook-action ()
+  `(member :commit :rollback :always))
+
 (defclass* transaction-hook ()
   ((function :type (or symbol function) :accessor function-of)
-   (when :type (member :before :after) :accessor when-of)
-   (action :type (member :commit :rollback :always))))
+   (when :type transaction-hook-invocation-time :accessor when-of)
+   (action :type transaction-hook-action)))
 
 (def constructor (transaction-hook when action)
-  (check-type when (member :before :after))
-  (check-type action (member :commit :rollback :always)))
+  (check-type when transaction-hook-invocation-time)
+  (check-type action transaction-hook-action))
 
 (defun call-transaction-hooks (transaction when action)
   (loop for hook :in (hooks-of transaction) do
@@ -391,6 +397,8 @@
 
 (defgeneric register-hook-in-transaction (transaction when action function)
   (:method ((transaction transaction-with-hooks-mixin) when action (function function))
+    (check-type when transaction-hook-invocation-time)
+    (check-type action transaction-hook-action)
     (aprog1
         (make-instance 'transaction-hook
                        :function function
