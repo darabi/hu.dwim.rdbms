@@ -44,3 +44,15 @@
        (execute
         (format nil "select indexname from pg_indexes where tablename = '~A'"
                 (string-downcase name)))))
+
+(defmethod database-list-dependent-views (table column (database postgresql))
+  (execute
+   (format nil "select distinct c3.relname
+                  from pg_attribute a
+                       JOIN pg_class c ON (a.attrelid=c.oid)
+                       JOIN pg_depend d ON (d.refobjid=c.oid AND d.refobjsubid=a.attnum)
+                       JOIN pg_class c2 ON (d.classid=c2.oid AND c2.relname='pg_rewrite')
+                       JOIN pg_rewrite r ON (d.objid=r.oid)
+                       JOIN pg_class c3 ON (r.ev_class=c3.oid)
+                  where c.relname='~A' and a.attname='~A' AND c3.relkind='v'"
+           (string-downcase table) (string-downcase column))))

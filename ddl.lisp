@@ -196,8 +196,14 @@
 (def (function e) list-views ()
   (database-list-views *database*))
 
+(def (function e) list-dependent-views (table column)
+  (database-list-dependent-views table column *database*))
+
 (defgeneric database-list-views (database)
   (:documentation "Returns the list of view names present in the database."))
+
+(defgeneric database-list-dependent-views (table column database)
+  (:documentation "Returns the list of view names that depends on the specified column."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Create, drop sequence
