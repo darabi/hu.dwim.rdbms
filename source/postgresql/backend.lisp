@@ -109,7 +109,9 @@
     (handler-case
         (apply #'execute-prepared-statement connection statement-name args)
       (cl-postgres-error:lock-not-available (error)
-        (unable-to-obtain-lock-error error)))))
+        (unable-to-obtain-lock-error error))
+      (cl-postgres-error:deadlock-detected (error)
+        (deadlock-detected-error error)))))
 
 (def method execute-command ((db postgresql) (tr postgresql-transaction) (prepared-statement prepared-statement) &rest args)
   (apply #'execute-prepared-statement (connection-of tr) (name-of prepared-statement) args))
