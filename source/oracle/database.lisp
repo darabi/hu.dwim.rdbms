@@ -95,5 +95,5 @@
 
 (def constant +maximum-rdbms-name-length+ 30)
 
-(def method calculate-rdbms-name ((db oracle) thing name)
+(defmethod calculate-rdbms-name ((db oracle) thing name)
   (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+))
