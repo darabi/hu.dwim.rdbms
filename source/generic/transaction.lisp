@@ -126,7 +126,8 @@
                              (remove-from-plist args :database :default-terminal-action)))
                 (return-from restart-transaction-loop
                   (multiple-value-prog1
-                      (restart-case (call-in-transaction *database* *transaction* #'-body-)
+                      (restart-case
+                          (call-in-transaction *database* *transaction* #'-body-)
                         (terminate-transaction ()
                           :report (lambda (stream)
                                     (format stream "return (values) from the WITH-TRANSACTION block executing the current terminal action ~S" (terminal-action-of *transaction*)))

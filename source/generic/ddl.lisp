@@ -129,7 +129,7 @@
   (let ((table-columns (list-table-columns name)))
     ;; create new columns that are missing from the table
     (dolist (column columns)
-      (let* ((column-name (name-of column))
+      (bind ((column-name (name-of column))
              (table-column (find (string-downcase column-name) table-columns :key #'name-of :test #'equalp)))
         (if table-column
             ;; change column type where needed
@@ -137,9 +137,9 @@
               (unless (equal-type-p (type-of table-column) new-type *database*)
                 (handler-case
                     (with-transaction
-                      (with-simple-restart
-                          (continue "Alter the table by adding the new column")
-                        (when *signal-non-destructive-alter-table-commands*
+                      (when *signal-non-destructive-alter-table-commands*
+                        (with-simple-restart
+                            (continue "Alter the table ~S by adding the new column ~S" name column-name)
                           (error 'unconfirmed-alter-column-type-error :table-name name :column-name column-name
                                  :old-type (type-of table-column)
                                  :new-type (type-of column)
@@ -148,7 +148,7 @@
                   (error (e)
                     (declare (ignore e))
                     (with-simple-restart
-                        (continue "Alter the table and let the data go")
+                        (continue "Drop column ~S in table ~S to workaround error coming from the previous ALTER TABLE SQL statement" name column-name)
                       (error 'unconfirmed-destructive-alter-column-type-error :table-name name :column-name column-name
                              :old-type (type-of table-column)
                              :new-type (type-of column)
@@ -157,10 +157,10 @@
                     (add-column name column)))))
             ;; add missing columns not present in the table
             (progn
-              (with-simple-restart
-                  (continue "Alter the table by adding the new column")
-                (when *signal-non-destructive-alter-table-commands*
-                  (error 'unconfirmed-add-column-error :table-name name :column-name (name-of column) :column-type (type-of column))))
+              (when *signal-non-destructive-alter-table-commands*
+                (with-simple-restart
+                    (continue "Alter the table ~S by adding the new column ~S" name column-name)
+                  (error 'unconfirmed-add-column-error :table-name name :column-name column-name :column-type (type-of column))))
               (add-column name column)))))
     ;; drop extra columns that are present in the table
     (dolist (table-column table-columns)
