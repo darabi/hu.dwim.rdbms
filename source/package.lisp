@@ -1,0 +1,133 @@
+;;; -*- mode: Lisp; Syntax: Common-Lisp; -*-
+;;;
+;;; Copyright (c) 2006 by the authors.
+;;;
+;;; See LICENCE for details.
+
+(in-package :common-lisp-user)
+
+(defpackage :hu.dwim.rdbms
+  (:use :hu.dwim.asdf
+        :hu.dwim.common-lisp
+        :hu.dwim.def
+        :hu.dwim.defclass-star
+        :hu.dwim.logger
+        :hu.dwim.syntax-sugar
+        :babel)
+
+  (:shadow #:log
+           #:type-of
+           #:type
+           #:as)
+
+  (:export #:database
+           #:postgresql
+           #:postgresql-postmodern
+           #:oracle
+           #:sqlite
+           #:*database*
+           #:with-database
+           #:transaction
+           #:*transaction*
+           #:execute
+           #:execute-ddl
+
+           #:with-transaction
+           #:with-transaction*
+           #:call-in-transaction
+           #:make-transaction
+           #:begin-transaction
+           #:commit-transaction
+           #:rollback-transaction
+           #:cleanup-transaction
+           #:notify-transaction-event
+           #:in-transaction-p
+           #:transaction-in-progress-p
+           #:transaction-valid-p
+           #:register-transaction-hook
+           #:transaction-with-hooks-mixin
+           #:transaction-timestamp
+           #:rdbms-name-for
+
+           #:table-exists-p
+           #:unconfirmed-destructive-alter-table-error
+           #:unconfirmed-destructive-alter-column-type-error
+           #:unconfirmed-destructive-drop-column-error
+           #:unbound-binding-variable-error
+           #:with-confirmed-destructive-changes
+
+           #:create-view
+           #:drop-view
+           #:update-view
+           #:list-views
+           #:view-exists-p
+
+           #:create-sequence
+           #:drop-sequence
+           #:sequence-exists-p
+           #:sequence-next
+
+           #:sql
+           #:format-sql
+           #:format-sql-to-string
+           #:import-sql-syntax-node-names
+           #:import-sql-constructor-names
+
+           #:sql-cond
+           #:sql-if
+
+           #:mark-transaction-for-commit-only
+           #:mark-transaction-for-rollback-only
+
+           #:insert-record
+           #:update-records
+           #:delete-records
+           #:select-records
+           #:select-count-*
+
+           #:make-cursor
+           #:cursor-position
+           #:column-count
+           #:row-count
+           #:column-name
+           #:column-type
+           #:column-value
+           #:for-each-row
+           #:collect-rows
+           #:current-row)
+
+  ;; for debug purposes
+  (:export #:begin
+           #:commit
+           #:rollback
+
+           #:start-sql-recording
+           #:stop-sql-recording
+           #:enable-sql-recording
+           #:disable-sql-recording
+
+           #:command-counter-of
+           #:insert-counter-of
+           #:select-counter-of
+           #:update-counter-of
+           #:delete-counter-of
+           #:current-insert-counter
+           #:current-select-counter
+           #:current-update-counter
+           #:current-delete-counter))
+
+(in-package :local-time)
+
+;; KLUDGE TODO oh, god, please FIXME when local-time gets date/time support
+(export '(parse-datestring))
+
+(defun parse-datestring (string)
+  (let* ((*default-timezone* +utc-zone+)
+         (date (parse-timestring string :offset 0)))
+    (unless (and date
+                 (zerop (sec-of date))
+                 (zerop (nsec-of date)))
+      (error "~S is not a valid date string" string))
+    date))
+
+(export 'parse-datestring)

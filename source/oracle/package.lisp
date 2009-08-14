@@ -1,0 +1,35 @@
+;;; -*- mode: Lisp; Syntax: Common-Lisp; -*-
+;;;
+;;; Copyright (c) 2006 by the authors.
+;;;
+;;; See LICENCE for details.
+
+(in-package :common-lisp-user)
+
+(defpackage :hu.dwim.rdbms.oracle
+  (:use :hu.dwim.common-lisp
+        :hu.dwim.def
+        :hu.dwim.defclass-star
+        :hu.dwim.logger
+        :hu.dwim.rdbms
+        :local-time)
+
+  (:shadowing-import-from #:hu.dwim.rdbms
+                          #:type #:type-of #:log)
+
+  (:shadow #:null))
+
+(in-package :hu.dwim.rdbms.oracle)
+
+;; import all the internal symbol of :hu.dwim.rdbms into :hu.dwim.rdbms.oracle
+(do-symbols (symbol :hu.dwim.rdbms)
+  (when (and (eq (symbol-package symbol) #.(find-package :hu.dwim.rdbms))
+             (not (find-symbol (symbol-name symbol) #.(find-package :hu.dwim.rdbms.oracle))))
+    (import symbol)))
+
+(cffi:define-foreign-library oracle-oci
+  (:unix "libocixe.so")
+  (:windows "libocixe.dll")
+  (t (:default "libocixe")))
+
+
