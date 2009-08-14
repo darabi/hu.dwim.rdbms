@@ -6,25 +6,24 @@
 
 (in-package :hu.dwim.rdbms.oracle)
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Backend API
-;;;
 
-(defmethod begin-transaction ((database oracle) (transaction oracle-transaction))
+(def method begin-transaction ((database oracle) (transaction oracle-transaction))
   ;; nop, because oracle implicitly has transactions
   )
 
-(defmethod commit-transaction ((database oracle) (transaction oracle-transaction))
+(def method commit-transaction ((database oracle) (transaction oracle-transaction))
   (oci-call (oci:trans-commit (service-context-handle-of transaction)
                               (error-handle-of transaction)
                               *default-oci-flags*)))
 
-(defmethod rollback-transaction ((database oracle) (transaction oracle-transaction))
+(def method rollback-transaction ((database oracle) (transaction oracle-transaction))
   (oci-call (oci:trans-rollback (service-context-handle-of transaction)
                                 (error-handle-of transaction)
                                 *default-oci-flags*)))
 
-(defmethod prepare-command ((database oracle)
+(def method prepare-command ((database oracle)
                             (transaction oracle-transaction)
                             (command string)
                             &key &allow-other-keys)
@@ -32,7 +31,7 @@
   (log.debug "Preparing command: ~S" command)
   (make-prepared-statement command))
 
-(defmethod execute-command ((database oracle)
+(def method execute-command ((database oracle)
                             (transaction oracle-transaction)
                             (command string)
                             &key visitor binding-types binding-values result-type start-row row-limit
@@ -44,7 +43,7 @@
                                      :start-row start-row :row-limit row-limit)
       (free-prepared-statement statement))))
 
-(defmethod execute-command ((database oracle)
+(def method execute-command ((database oracle)
                             (transaction oracle-transaction)
                             (prepared-statement prepared-statement)
                             &key visitor binding-types binding-values result-type start-row row-limit
@@ -52,20 +51,19 @@
   (execute-prepared-statement transaction prepared-statement binding-types binding-values visitor result-type
                               :start-row start-row :row-limit row-limit))
 
-(defmethod cleanup-transaction :after ((transaction oracle-transaction))
+(def method cleanup-transaction :after ((transaction oracle-transaction))
   (when (environment-handle-pointer transaction)
     (log.debug "Cleaning up Oracle transaction ~A to database ~A" transaction (database-of transaction))
     (disconnect transaction)))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Connection
-;;;
 
-(defun ensure-connected (transaction)
+(def function ensure-connected (transaction)
   (when (cl:null (environment-handle-pointer transaction))
     (connect transaction)))
 
-(defun connect (transaction)
+(def function connect (transaction)
   (assert (cl:null (environment-handle-pointer transaction)))
 
   (destructuring-bind (&key datasource user-name (password ""))
@@ -130,7 +128,7 @@
             (oci-call (oci:handle-free (session-handle-of transaction) oci:+htype-session+))
             (setf (session-handle-of transaction) null)))))
 
-(defmacro ignore-errors* (&body body)
+(def macro ignore-errors* (&body body)
   `(block nil
     (handler-bind ((serious-condition
                     (lambda (error)
@@ -138,7 +136,7 @@
                       (return))))
       ,@body)))
 
-(defun disconnect (transaction)
+(def function disconnect (transaction)
   (assert (environment-handle-pointer transaction))
   
   (ignore-errors*
@@ -163,11 +161,10 @@
      service-context-handle
      session-handle)))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Prepared statement
-;;;
 
-(defun make-prepared-statement (command &optional (name ""))
+(def function make-prepared-statement (command &optional (name ""))
   (let ((statement (make-instance 'oracle-prepared-statement
                                   :name name
                                   :statement-handle-pointer (make-void-pointer)
@@ -182,12 +179,12 @@
                                   oci:+stmt-select+))
     statement))
 
-(defun free-prepared-statement (statement)
+(def function free-prepared-statement (statement)
   (oci-call (oci:handle-free (statement-handle-of statement) oci:+htype-stmt+))
   (free-bindings (bindings-of statement))
   (cffi:foreign-free (statement-handle-pointer statement)))
 
-(defun execute-prepared-statement (transaction statement binding-types binding-values visitor result-type
+(def function execute-prepared-statement (transaction statement binding-types binding-values visitor result-type
                                                &key (start-row 0) row-limit)
 
   (let ((needs-scrollable-cursor-p (and start-row (> start-row 0))))
@@ -219,10 +216,10 @@
       (t
        nil))))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Binding
-;;;
-(defclass* oracle-binding ()
+
+(def class* oracle-binding ()
   ((bind-handle-pointer)
    (sql-type)
    (typemap)
@@ -230,13 +227,13 @@
    (data-size)
    (indicator)))
 
-(defun make-bindings (statement transaction binding-types binding-values)
+(def function make-bindings (statement transaction binding-types binding-values)
   (iter (for type :in-vector binding-types)
         (for value :in-vector binding-values)
         (for position :from 1)
         (collect (make-binding statement transaction position type value))))
 
-(defun make-binding (statement transaction position sql-type value)
+(def function make-binding (statement transaction position sql-type value)
   (let* ((statement-handle (statement-handle-of statement))
          (error-handle (error-handle-of transaction))
          (typemap (typemap-for-sql-type sql-type))
@@ -272,23 +269,22 @@
                      :data-size data-size
                      :indicator indicator))))
 
-(defun free-bindings (bindings)
+(def function free-bindings (bindings)
   (mapc 'free-binding bindings))
 
-(defun free-binding (binding)
+(def function free-binding (binding)
   (cffi:foreign-free (bind-handle-pointer-of binding))
   (cffi:foreign-free (indicator-of binding))
   (let ((data-pointer (data-pointer-of binding)))
     (unless (cffi:null-pointer-p data-pointer)
       (cffi:foreign-free data-pointer))))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Cursor
-;;;
-(defconstant +number-of-buffered-rows+ 1) ; TODO prefetching rows probably superfluous,
-                                          ; because OCI does that
 
-(defclass* column-descriptor ()
+(def constant +number-of-buffered-rows+ 1) ; TODO prefetching rows probably superfluous, because OCI does that
+
+(def class* column-descriptor ()
   ((define-handle-pointer)
    (name)
    (size)
@@ -297,7 +293,7 @@
    (indicators)
    (return-codes)))
 
-(defun allocate-buffer-for-column (typemap column-size number-of-rows)
+(def function allocate-buffer-for-column (typemap column-size number-of-rows)
   "Returns buffer, buffer-size"
   (let* ((external-type (typemap-external-type typemap))
          (size (data-size-for external-type column-size))
@@ -312,7 +308,7 @@
      ptr
      size)))
 
-(defun free-column-descriptor (descriptor)
+(def function free-column-descriptor (descriptor)
   (with-slots (size typemap buffer indicators return-codes) descriptor
     (let ((destructor (typemap-free-instance typemap)))
       (when destructor
@@ -322,28 +318,27 @@
     (cffi:foreign-free indicators)
     (cffi:foreign-free return-codes)))
 
-(defclass* oracle-cursor (cursor)
+(def class* oracle-cursor (cursor)
   ((statement)
    (column-descriptors)
    (current-position 0)
    (buffer-start-position 0)
    (buffer-end-position 0)))
 
-(defgeneric column-descriptor-of (cursor index)
+(def generic column-descriptor-of (cursor index)
   (:method ((cursor oracle-cursor) index)
            (svref (column-descriptors-of cursor) index)))
 
-(defclass* oracle-sequential-access-cursor (oracle-cursor sequential-access-cursor)
+(def class* oracle-sequential-access-cursor (oracle-cursor sequential-access-cursor)
   ((end-seen #f :type boolean)))
 
-(defclass* oracle-random-access-cursor (oracle-cursor random-access-cursor)
+(def class* oracle-random-access-cursor (oracle-cursor random-access-cursor)
   ((row-count nil)))
 
+;;;;;;
+;;; Cursor API
 
-;;
-;; Cursor API
-;;
-(defmethod make-cursor ((transaction oracle-transaction)
+(def method make-cursor ((transaction oracle-transaction)
                         &key statement random-access-p &allow-other-keys)
   (if random-access-p
       (aprog1 (make-instance 'oracle-random-access-cursor
@@ -356,26 +351,26 @@
                      :statement statement
                      :column-descriptors (make-column-descriptors statement transaction))))
 
-(defmethod close-cursor ((cursor oracle-cursor))
+(def method close-cursor ((cursor oracle-cursor))
   (loop for descriptor across (column-descriptors-of cursor)
         do (free-column-descriptor descriptor)))
 
-(defmethod cursor-position ((cursor oracle-sequential-access-cursor))
+(def method cursor-position ((cursor oracle-sequential-access-cursor))
   (unless (end-seen-p cursor)
     (current-position-of cursor)))
 
-(defmethod cursor-position ((cursor oracle-random-access-cursor))
+(def method cursor-position ((cursor oracle-random-access-cursor))
   (with-slots (current-position row-count) cursor
     (when (and (<= 0 current-position) (< current-position row-count))
       current-position)))
 
-(defmethod (setf cursor-position) (where (cursor oracle-sequential-access-cursor))
+(def method (setf cursor-position) (where (cursor oracle-sequential-access-cursor))
   (ecase where
     (:first (setf (current-position-of cursor) 0))
     (:next (incf (current-position-of cursor))))
   (ensure-current-position-is-buffered cursor)) ; TODO delay this call
 
-(defmethod (setf cursor-position) (where (cursor oracle-random-access-cursor))
+(def method (setf cursor-position) (where (cursor oracle-random-access-cursor))
   (if (integerp where)
       (incf (current-position-of cursor) where)
       (ecase where
@@ -384,16 +379,16 @@
         (:previous (decf (current-position-of cursor)))
         (:next (incf (current-position-of cursor))))))
 
-(defmethod absolute-cursor-position ((cursor oracle-cursor))
+(def method absolute-cursor-position ((cursor oracle-cursor))
   (current-position-of cursor)) ; FIXME always the same as (cursor-position cursor) ?
 
-(defmethod (setf absolute-cursor-position) (where (cursor oracle-random-access-cursor))
+(def method (setf absolute-cursor-position) (where (cursor oracle-random-access-cursor))
   (setf (current-position-of cursor) where))
 
-(defmethod row-count ((cursor oracle-sequential-access-cursor))
+(def method row-count ((cursor oracle-sequential-access-cursor))
   (error "Row count not supported by ~S" cursor))
 
-(defmethod row-count ((cursor oracle-random-access-cursor))
+(def method row-count ((cursor oracle-random-access-cursor))
   (with-slots (row-count statement buffer-start-position buffer-end-position) cursor
     (unless row-count
       (if (stmt-fetch-last statement)
@@ -403,23 +398,23 @@
           (setf row-count 0)))
     row-count))
 
-(defmethod column-count ((cursor oracle-cursor))
+(def method column-count ((cursor oracle-cursor))
   (length (column-descriptors-of cursor)))
 
-(defmethod column-name ((cursor oracle-cursor) index)
+(def method column-name ((cursor oracle-cursor) index)
   (name-of (column-descriptor-of cursor index)))
 
-(defmethod column-type ((cursor oracle-cursor) index)
+(def method column-type ((cursor oracle-cursor) index)
   nil) ; TODO
 
-(defmethod column-value ((cursor oracle-cursor) index)
+(def method column-value ((cursor oracle-cursor) index)
   (when (ensure-current-position-is-buffered cursor)
     (fetch-column-value (column-descriptor-of cursor index)
                         (- (current-position-of cursor)
                            (buffer-start-position-of cursor)))))
 
 #|
-(defun current-row (cursor &key result-type)
+(def function current-row (cursor &key result-type)
   (when (ensure-current-position-is-buffered cursor)
     (with-slots (column-descriptors current-position buffer-start-position default-result-type) cursor
       (let ((row-index (- current-position buffer-start-position)))
@@ -433,10 +428,10 @@
                       collect (fetch-column-value descriptor row-index))))))))
 |#
 
-;;;
+;;;;;;
 ;;; Cursor helpers
-;;;
-(defun make-column-descriptors (statement transaction)
+
+(def function make-column-descriptors (statement transaction)
   (coerce (cffi:with-foreign-objects ((param-descriptor-pointer :pointer))
             (loop for column-index from 1  ; OCI 1-based indexing
                   while (eql (oci:param-get (statement-handle-of statement)
@@ -451,7 +446,7 @@
                                                   (cffi:mem-ref param-descriptor-pointer :pointer))))
           'simple-vector))
 
-(defun make-column-descriptor (statement transaction position param-descriptor)
+(def function make-column-descriptor (statement transaction position param-descriptor)
   (cffi:with-foreign-objects ((attribute-value :uint8 8) ; 8 byte buffer for attribute values
                               (attribute-value-length 'oci:ub-4))
     (flet ((oci-attr-get (attribute-id cffi-type)
@@ -518,7 +513,7 @@
                          :return-codes return-codes
                          :indicators indicators))))))
 
-(defgeneric ensure-current-position-is-buffered (cursor)
+(def generic ensure-current-position-is-buffered (cursor)
   (:method ((cursor oracle-sequential-access-cursor))
            (with-slots (statement current-position
                                   buffer-start-position buffer-end-position end-seen) cursor
@@ -557,7 +552,7 @@
                (t
                 #t)))))
 
-(defun fetch-column-value (column-descriptor row-index)
+(def function fetch-column-value (column-descriptor row-index)
   (log.debug "Fetching ~S from buffer at index ~D" (name-of column-descriptor) row-index)
   (aprog1 (let* ((indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
             (if (= indicator -1)
@@ -577,9 +572,3 @@
                            (cffi:inc-pointer buffer (* row-index size))
                            size))))
     (log.debug "Fetched: ~S" it)))
-
-
-
-
-
-

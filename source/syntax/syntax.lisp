@@ -9,26 +9,26 @@
 ;;;;;;
 ;;; Syntax node
 
-(define-syntax-node named-sql-syntax-node (sql-syntax-node)
+(def syntax-node named-sql-syntax-node (sql-syntax-node)
   ((name nil
     :type sql-identifier*)))
 
 (def print-object named-sql-syntax-node
   (princ (name-of -self-)))
 
-(define-syntax-node sql-syntax-node ()
+(def syntax-node sql-syntax-node ()
   ()
   (:documentation "Base class for all kind of SQL syntax elements.")
   (:format-sql-syntax-node
    (error "No formatter method for ~A" -self-)))
 
-(defmethod make-load-form ((self sql-syntax-node) &optional env)
+(def method make-load-form ((self sql-syntax-node) &optional env)
   (make-load-form-saving-slots self :environment env))
 
 ;;;;;;
 ;;; Fragment
 
-(define-syntax-node sql-fragment ()
+(def syntax-node sql-fragment ()
   ((sql :type string))
   (:documentation "Represents an embedded SQL string.")
   (:format-sql-syntax-node
@@ -37,7 +37,7 @@
 ;;;;;;
 ;;; Literal
 
-(define-syntax-node sql-literal (sql-syntax-node)
+(def syntax-node sql-literal (sql-syntax-node)
   ((value
     :type (or null boolean number string symbol))
    (type nil
@@ -46,14 +46,14 @@
   (:format-sql-syntax-node
    (format-sql-literal -self-)))
 
-(deftype sql-literal* ()
+(def type sql-literal* ()
   '(or null boolean string symbol number sql-literal))
 
-(define-syntax-node sql-binding-variable (named-sql-syntax-node)
+(def syntax-node sql-binding-variable (named-sql-syntax-node)
   ((type nil
     :type sql-type)))
 
-(defgeneric format-sql-literal (literal database)
+(def generic format-sql-literal (literal database)
   (:documentation "Formats an SQL literal into *sql-stream*.")
 
   (:method ((literal null) database)
@@ -102,16 +102,16 @@
 ;;;;;;
 ;;; Identifier
 
-(define-syntax-node sql-identifier (named-sql-syntax-node)
+(def syntax-node sql-identifier (named-sql-syntax-node)
   ()
   (:documentation "Represents an SQL identifier.")
   (:format-sql-syntax-node
    (format-sql-identifier -self-)))
 
-(deftype sql-identifier* ()
+(def type sql-identifier* ()
   '(or string symbol sql-identifier))
 
-(defgeneric format-sql-identifier (identifier database)
+(def generic format-sql-identifier (identifier database)
   (:documentation "Formats an SQL identifier into *sql-stream*.")
 
   ;; allows to put other AST nodes in place of identifiers (e.g. table name of select statements)
@@ -130,14 +130,14 @@
 ;;;;;;
 ;;; Names
 
-(defgeneric format-sql-operator-name (name database)
+(def generic format-sql-operator-name (name database)
   (:method ((name string) database)
            (format-string name))
 
   (:method ((name symbol) database)
            (format-string (string-downcase name))))
 
-(defgeneric format-sql-function-name (name database)
+(def generic format-sql-function-name (name database)
   (:method ((name string) database)
            (format-string name))
 
@@ -147,13 +147,13 @@
 ;;;;;;
 ;;; Unquote
 
-(define-syntax-node sql-unquote (sql-syntax-node)
+(def syntax-node sql-unquote (sql-syntax-node)
   ((form nil)
    (spliced #f :type boolean))
   (:format-sql-syntax-node
    (expand-sql-unquote -self- database 'format-sql-syntax-node)))
 
-(defun push-form-into-command-elements (form)
+(def function push-form-into-command-elements (form)
   (vector-push-extend (get-output-stream-string *sql-stream*) *command-elements*)
   (setf *sql-stream* (make-string-output-stream))
   (vector-push-extend form *command-elements*))
@@ -162,7 +162,7 @@
 ;; (sql-unquote :form (sql-boolean-type))                          -> ,(sql-boolean-type)
 ;; (sql-unquote :form #<SQL-BOOLEAN-TYPE 1234>)                    -> ,#<SQL-BOOLEAN-TYPE 1234>
 ;; (sql-unquote :form (sql-quote :value #<SQL-BOOLEAN-TYPE 1234>)) -> ,'#<SQL-BOOLEAN-TYPE 1234>
-(defun expand-sql-unquote (unqoute-node database formatter)
+(def function expand-sql-unquote (unqoute-node database formatter)
   (declare (ignore database))
   (labels ((process (node)
              (cond ((consp node)
@@ -184,10 +184,10 @@
              `(funcall ',formatter))
          ,(process (form-of unqoute-node)) *database*))))
 
-(defmethod format-sql-syntax-node ((thunk function) database)
+(def method format-sql-syntax-node ((thunk function) database)
   (funcall thunk))
 
-(defun unquote-aware-format-sql-literal (literal)
+(def function unquote-aware-format-sql-literal (literal)
   (bind ((type (type-of literal)))
     (if type
         (progn
@@ -197,39 +197,39 @@
           #t)
         #f)))
 
-(defun unquote-aware-format-sql-binding-variable (variable)
+(def function unquote-aware-format-sql-binding-variable (variable)
   (vector-push-extend variable *binding-variables*)
   (vector-push-extend (type-of variable) *binding-types*)
   (vector-push-extend nil *binding-values*))
 
-(defmethod format-sql-literal ((node sql-unquote) database)
+(def method format-sql-literal ((node sql-unquote) database)
   (expand-sql-unquote node database 'format-sql-literal))
 
-(defmethod format-sql-identifier ((node sql-unquote) database)
+(def method format-sql-identifier ((node sql-unquote) database)
   (expand-sql-unquote node database 'format-sql-identifier))
 
 ;;;;;;
 ;;; Statement
 
-(defclass* sql-statement (sql-syntax-node)
+(def class* sql-statement (sql-syntax-node)
   ()
   (:documentation "Base class for all top level SQL statements which can be executed."))
 
-(defclass* sql-ddl-statement (sql-statement)
+(def class* sql-ddl-statement (sql-statement)
   ())
 
-(defclass* sql-dml-statement (sql-statement)
+(def class* sql-dml-statement (sql-statement)
   ())
 
 ;;;;;;
 ;;; Execute
 
-(defcondition* unbound-binding-variable-error (rdbms-error)
+(def condition* unbound-binding-variable-error (rdbms-error)
   ((variable-name))
   (:report (lambda (error stream)
              (format stream "The variable ~A was not bound while executing a query" (variable-name-of error)))))
 
-(defmethod execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
+(def method execute-command (database transaction (command sql-statement) &rest args &key bindings &allow-other-keys)
   (bind (((:values string binding-variables binding-types binding-values) (format-sql-to-string command)))
     (update-binding-values binding-variables binding-types binding-values bindings)
     (remove-from-plistf args :bindings)

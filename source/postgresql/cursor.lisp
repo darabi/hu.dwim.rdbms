@@ -6,6 +6,5 @@
 
 (in-package :hu.dwim.rdbms.postgresql)
 
-(defclass* postgresql-cursor (cursor)
+(def class* postgresql-cursor (cursor)
   ())
-

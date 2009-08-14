@@ -18,8 +18,8 @@
   :depends-on (:hu.dwim.def+hu.dwim.stefil
                :hu.dwim.rdbms)
   :components ((:module "test"
-                :components (#+nil(:file "basic" :depends-on ("suite"))
+                :components (#+nil(:file "basic" :depends-on ("suite")) ; split to database specific and generic
                              (:file "package")
                              (:file "suite" :depends-on ("package"))
-                             #+nil(:file "syntax" :depends-on ("suite"))
+                             #+nil(:file "syntax" :depends-on ("suite")) ; split to database specific and generic
                              (:file "type" :depends-on ("suite"))))))

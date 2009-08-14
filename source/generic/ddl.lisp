@@ -51,13 +51,13 @@
 (def (function e) list-tables ()
   (database-list-tables *database*))
 
-(defgeneric database-list-tables (database)
+(def generic database-list-tables (database)
   (:documentation "Returns the list of table names present in the database."))
 
 (def (function e) list-table-columns (name)
   (database-list-table-columns name *database*))
 
-(defgeneric database-list-table-columns (name database)
+(def generic database-list-table-columns (name database)
   (:documentation "Returns the list of columns present in the database."))
 
 (def (function e) table-exists-p (name)
@@ -66,7 +66,7 @@
 ;;;;;;
 ;;; Update table
 
-(defparameter *signal-non-destructive-alter-table-commands* #f)
+(def special-variable *signal-non-destructive-alter-table-commands* #f)
 
 (def (condition* e) unconfirmed-alter-table-error (serious-condition)
   ((table-name
@@ -115,17 +115,17 @@
       (update-existing-table name columns)
       (create-table name columns)))
 
-(defgeneric rdbms-type-for (type database)
+(def generic rdbms-type-for (type database)
   (:documentation "Maps the given type to the smallest matching type.")
 
   (:method (type database)
            type))
 
-(defgeneric equal-type-p (type-1 type-2 database)
+(def generic equal-type-p (type-1 type-2 database)
   (:method (type-1 type-2 database)
            #f))
 
-(defun update-existing-table (name columns)
+(def function update-existing-table (name columns)
   (let ((table-columns (list-table-columns name)))
     ;; create new columns that are missing from the table
     (dolist (column columns)
@@ -199,10 +199,10 @@
 (def (function e) list-dependent-views (table column)
   (database-list-dependent-views table column *database*))
 
-(defgeneric database-list-views (database)
+(def generic database-list-views (database)
   (:documentation "Returns the list of view names present in the database."))
 
-(defgeneric database-list-dependent-views (table column database)
+(def generic database-list-dependent-views (table column database)
   (:documentation "Returns the list of view names that depends on the specified column."))
 
 ;;;;;;
@@ -220,7 +220,7 @@
 (def (function e) list-sequences ()
   (database-list-sequences *database*))
 
-(defgeneric database-list-sequences (database)
+(def generic database-list-sequences (database)
   (:documentation "Returns the list of sequence names present in the database."))
 
 (def (function e) sequence-next (name)
@@ -251,5 +251,5 @@
 (def (function e) list-table-indices (name)
   (database-list-table-indices name *database*))
 
-(defgeneric database-list-table-indices (name database)
+(def generic database-list-table-indices (name database)
   (:documentation "Returns the list of table indices present in the database."))

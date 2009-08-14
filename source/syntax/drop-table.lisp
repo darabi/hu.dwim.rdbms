@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(define-syntax-node sql-drop-table (sql-ddl-statement)
+(def syntax-node sql-drop-table (sql-ddl-statement)
   ((name
     :type string)
    (cascade
@@ -19,7 +19,7 @@
     (when cascade
       (format-string " CASCADE"))))
 
-(define-syntax-node sql-drop-view (sql-ddl-statement)
+(def syntax-node sql-drop-view (sql-ddl-statement)
   ((name
     :type string)
    (ignore-missing

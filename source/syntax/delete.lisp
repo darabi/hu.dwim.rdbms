@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(define-syntax-node sql-delete (sql-dml-statement)
+(def syntax-node sql-delete (sql-dml-statement)
   ((table
     :type sql-identifier*)
    (where

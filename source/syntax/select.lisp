@@ -7,7 +7,7 @@
 (in-package :hu.dwim.rdbms)
 
 ;; TODO: rename columns and tables to something more general?
-(define-syntax-node sql-select (sql-dml-statement)
+(def syntax-node sql-select (sql-dml-statement)
   ((distinct
     nil
     :type boolean)
@@ -73,7 +73,7 @@
        (format-string " NOWAIT")))))
 
 ;; TODO shouldn't the NAME slot be called TABLE and be typed (or sql-identifier* sql-table)?
-(define-syntax-node sql-table-alias (sql-identifier)
+(def syntax-node sql-table-alias (sql-identifier)
   ((name
     :type sql-identifier*)
    (alias
@@ -85,10 +85,10 @@
      (format-string " ")
      (format-sql-identifier alias))))
 
-(deftype sql-table-alias* ()
+(def type sql-table-alias* ()
   '(or string symbol sql-identifier sql-table-alias))
 
-(define-syntax-node sql-derived-table (sql-syntax-node)
+(def syntax-node sql-derived-table (sql-syntax-node)
   ((subquery
     :type )
    (alias
@@ -100,7 +100,7 @@
      (format-char " ")
      (format-sql-identifier alias))))
 
-(define-syntax-node sql-joined-table (sql-syntax-node)
+(def syntax-node sql-joined-table (sql-syntax-node)
   ((kind
     :type (member :cross :inner :left :right :full :union))
    (left
@@ -130,15 +130,15 @@
      (format-char ")"))
    (format-char ")")))
 
-(deftype sql-table-reference ()
+(def type sql-table-reference ()
   '(or sql-table-alias* sql-derived-table sql-joined-table))
 
-(defun format-sql-table-reference (reference database)
+(def function format-sql-table-reference (reference database)
   (etypecase reference
     (sql-table-alias* (format-sql-identifier reference database))
     ((or sql-derived-table sql-joined-table sql-unquote) (format-sql-syntax-node reference database))))
 
-(define-syntax-node sql-column-alias (sql-identifier)
+(def syntax-node sql-column-alias (sql-identifier)
   ((table
     nil
     :type sql-identifier*)
@@ -156,15 +156,15 @@
      (format-string " AS ")
      (format-sql-identifier alias))))
 
-(deftype sql-column-alias* ()
+(def type sql-column-alias* ()
   '(or string symbol sql-column-alias))
 
-(define-syntax-node sql-all-columns (sql-identifier)
+(def syntax-node sql-all-columns (sql-identifier)
   ()
   (:format-sql-identifier
    (format-char "*")))
 
-(define-syntax-node sql-sort-spec (sql-syntax-node)
+(def syntax-node sql-sort-spec (sql-syntax-node)
   ((sort-key
     :type (or number sql-column-alias*))
    (ordering

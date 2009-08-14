@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(define-syntax-node sql-alter-table (sql-ddl-statement)
+(def syntax-node sql-alter-table (sql-ddl-statement)
   ((name
     :type string)
    (actions
@@ -18,7 +18,7 @@
    (format-char " ")
    (format-comma-separated-list actions)))
 
-(define-syntax-node sql-add-column-action (sql-column)
+(def syntax-node sql-add-column-action (sql-column)
   ((default-value
     :type t))
   (:format-sql-syntax-node
@@ -28,7 +28,7 @@
    (format-sql-syntax-node type)
    (format-char ")")))
 
-(define-syntax-node sql-drop-column-action (sql-column)
+(def syntax-node sql-drop-column-action (sql-column)
   ((cascade #f :type boolean))
   (:format-sql-syntax-node
    (format-string "DROP COLUMN ")
@@ -36,7 +36,7 @@
    (when cascade
      (format-string " CASCADE"))))
 
-(define-syntax-node sql-alter-column-type-action (sql-column)
+(def syntax-node sql-alter-column-type-action (sql-column)
   ()
   (:format-sql-syntax-node
    (format-string "ALTER COLUMN ")
@@ -44,12 +44,12 @@
    (format-string " TYPE ")
    (format-sql-syntax-node type)))
 
-(define-syntax-node sql-add-constraint-action (sql-syntax-node)
+(def syntax-node sql-add-constraint-action (sql-syntax-node)
   ()
   (:format-sql-syntax-node
    (format-string "ADD ")))
 
-(define-syntax-node sql-add-primary-key-constraint-action (sql-add-constraint-action)
+(def syntax-node sql-add-primary-key-constraint-action (sql-add-constraint-action)
   ((columns
     :type list))
   (:format-sql-syntax-node

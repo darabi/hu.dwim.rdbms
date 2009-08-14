@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms.postgresql)
 
-(defmethod format-sql-syntax-node ((type sql-float-type) (database postgresql))
+(def method format-sql-syntax-node ((type sql-float-type) (database postgresql))
   (let ((bit-size (bit-size-of type)))
     (cond ((null bit-size)
            (format-string "FLOAT8"))
@@ -16,13 +16,13 @@
            (format-string "FLOAT8"))
           (t (error "Unknown bit size for ~A" type)))))
 
-(defmethod format-sql-syntax-node ((type sql-character-large-object-type) (database postgresql))
+(def method format-sql-syntax-node ((type sql-character-large-object-type) (database postgresql))
   (format-string "TEXT"))
 
-(defmethod format-sql-syntax-node ((type sql-binary-large-object-type) (database postgresql))
+(def method format-sql-syntax-node ((type sql-binary-large-object-type) (database postgresql))
   (format-string "BYTEA"))
 
-(defun sql-type-for-internal-type (description)
+(def function sql-type-for-internal-type (description)
   (let ((type-name (first-elt description)))
     (flet ((native-size (x)
              (unless (= -1 x)
@@ -51,7 +51,7 @@
                        ("timestamptz" (make-instance 'sql-timestamp-type :with-timezone #t)))
         (error "Unknown internal type")))))
 
-(defgeneric internal-type-for-sql-type (type)
+(def generic internal-type-for-sql-type (type)
   (:method (type)
            (let ((str (format-sql-to-string type)))
              (string-downcase
@@ -83,6 +83,6 @@
                "timestamptz"
                "timestamp")))
 
-(defgeneric binding-type-for-sql-type (sql-type database))
+(def generic binding-type-for-sql-type (sql-type database))
 
 

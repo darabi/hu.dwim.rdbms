@@ -17,30 +17,9 @@
 
   (:shadow #:log
            #:type-of
-           #:type
            #:as)
 
-  (:export #:database
-           #:postgresql
-           #:postgresql-postmodern
-           #:oracle
-           #:sqlite
-           #:*database*
-           #:with-database
-           #:transaction
-           #:*transaction*
-           #:execute
-           #:execute-ddl
-
-           #:with-transaction
-           #:with-transaction*
-           #:call-in-transaction
-           #:make-transaction
-           #:begin-transaction
-           #:commit-transaction
-           #:rollback-transaction
-           #:cleanup-transaction
-           #:notify-transaction-event
+  (:export #:notify-transaction-event
            #:in-transaction-p
            #:transaction-in-progress-p
            #:transaction-valid-p
@@ -94,33 +73,11 @@
            #:column-value
            #:for-each-row
            #:collect-rows
-           #:current-row)
-
-  ;; for debug purposes
-  (:export #:begin
-           #:commit
-           #:rollback
-
-           #:start-sql-recording
-           #:stop-sql-recording
-           #:enable-sql-recording
-           #:disable-sql-recording
-
-           #:command-counter-of
-           #:insert-counter-of
-           #:select-counter-of
-           #:update-counter-of
-           #:delete-counter-of
-           #:current-insert-counter
-           #:current-select-counter
-           #:current-update-counter
-           #:current-delete-counter))
+           #:current-row))
 
 (in-package :local-time)
 
 ;; KLUDGE TODO oh, god, please FIXME when local-time gets date/time support
-(export '(parse-datestring))
-
 (defun parse-datestring (string)
   (let* ((*default-timezone* +utc-zone+)
          (date (parse-timestring string :offset 0)))

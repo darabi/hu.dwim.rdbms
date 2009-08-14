@@ -6,46 +6,43 @@
 
 (in-package :hu.dwim.rdbms.oracle)
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Literals
-;;;
 
-(defmethod format-sql-literal ((literal vector) (database oracle))
+(def method format-sql-literal ((literal vector) (database oracle))
   (format-string "to_Blob('")
   (loop for el across literal
         do (format *sql-stream* "~2,'0x" el))
   (format-string "')"))
 
-(defmethod format-sql-literal ((value (eql nil)) (database oracle))
+(def method format-sql-literal ((value (eql nil)) (database oracle))
   (format-string "'F'"))
 
-(defmethod format-sql-literal ((value (eql t)) (database oracle))
+(def method format-sql-literal ((value (eql t)) (database oracle))
   (format-string "'T'"))
 
-(defmethod format-sql-literal ((literal sql-literal) (database oracle))
+(def method format-sql-literal ((literal sql-literal) (database oracle))
   (if (unquote-aware-format-sql-literal literal)
       (progn
         (format-string ":")
         (format-string (princ-to-string (length *binding-types*))))
       (call-next-method)))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Bindings
-;;;
 
-(defmethod format-sql-syntax-node ((variable sql-binding-variable) (database oracle))
+(def method format-sql-syntax-node ((variable sql-binding-variable) (database oracle))
   (unquote-aware-format-sql-binding-variable variable)
   (format-string ":")
   (format-string (princ-to-string (length *binding-types*))))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Types
-;;;
 
-(defmethod format-sql-syntax-node ((self sql-boolean-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-boolean-type) (database oracle))
   (format-string "CHAR(1)"))
 
-(defmethod format-sql-syntax-node ((self sql-character-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-character-type) (database oracle))
   ;; signal an error when char(1) type is used
   ;; because it would be interpreted as boolean and 'T' and 'F' would be mapped to t/nil
   (with-slots (size) self
@@ -55,14 +52,14 @@
           (format-string "CHAR")
           (format-character-size size)))))
 
-(defmethod format-sql-syntax-node ((self sql-float-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-float-type) (database oracle))
   (with-slots (bit-size) self
     (assert (and bit-size (<= 32 bit-size 64)))
     (cond
       ((<= bit-size 32) (format-string "BINARY_FLOAT"))
       ((<= bit-size 64) (format-string "BINARY_DOUBLE")))))
 
-(defmethod format-sql-syntax-node ((self sql-integer-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-integer-type) (database oracle))
   (with-slots (bit-size) self
     (cond
       ((cl:null bit-size) (format-string "NUMBER"))
@@ -71,21 +68,21 @@
       ((<= bit-size 64) (format-string "NUMBER(19)"))
       (t (format-string "NUMBER")))))
 
-(defmethod format-sql-syntax-node ((self sql-character-varying-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-character-varying-type) (database oracle))
   (with-slots (size) self
     (format-string "VARCHAR2")
     (format-character-size size)))
 
-(defmethod format-sql-syntax-node ((self sql-character-large-object-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-character-large-object-type) (database oracle))
   (format-string "CLOB")) ; size ignored
 
-(defmethod format-sql-syntax-node ((self sql-time-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-time-type) (database oracle))
   (format-string "TIMESTAMP"))
 
-(defmethod format-sql-syntax-node ((self sql-interval-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-interval-type) (database oracle))
   (error "sql-interval-type not yet supported"))
 
-(defmethod format-sql-syntax-node ((self sql-binary-large-object-type) (database oracle))
+(def method format-sql-syntax-node ((self sql-binary-large-object-type) (database oracle))
   (aif (size-of self)
        (progn
          (format-string "RAW(")
@@ -93,23 +90,22 @@
          (format-string "RAW)"))
        (format-string "BLOB")))
 
-(defun format-character-size (size)
+(def function format-character-size (size)
   (when size
     (format-string "(")
     (format-number size)
     (format-string " CHAR)")))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Identifiers
-;;;
 
-(defmethod format-sql-identifier :around ((identifier string) (database oracle))
+(def method format-sql-identifier :around ((identifier string) (database oracle))
   (progn
     (write-char #\" *sql-stream*)
     (call-next-method)
     (write-char #\" *sql-stream*)))
 
-(defvar *oracle-sql-reserved-words* (make-hash-table :test 'equal))
+(def special-variable *oracle-sql-reserved-words* (make-hash-table :test 'equal))
 
 (eval-when (:load-toplevel)
   (mapc (lambda (word) (setf (gethash word *oracle-sql-reserved-words*) #t))
@@ -127,24 +123,22 @@
           "UNIQUE" "UPDATE" "USER" "VALIDATE" "VALUES" "VARCHAR" "VARCHAR2" "VIEW" "WHENEVER" 
           "WHERE" "WITH")))
 
-(defun reserved-word-p (word)
+(def function reserved-word-p (word)
   (gethash (string-upcase word) *oracle-sql-reserved-words*))
 
-
-
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Sequences
-;;;
-(defmethod format-sql-syntax-node ((self sql-sequence-nextval-column) (database oracle))
+
+(def method format-sql-syntax-node ((self sql-sequence-nextval-column) (database oracle))
   (with-slots (name) self
     (format-sql-identifier name database)
     (format-string ".nextval")))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Selects
-;;;
-; add FROM dual when no table, ignore OFFSET, LIMIT
-(defmethod format-sql-syntax-node ((self sql-select) (database oracle))
+;;; add FROM dual when no table, ignore OFFSET, LIMIT
+
+(def method format-sql-syntax-node ((self sql-select) (database oracle))
   (with-slots (distinct columns tables where order-by offset limit for wait) self
     (format-string "SELECT ")
     (when distinct
@@ -165,15 +159,15 @@
       (unless wait
         (format-string " NOWAIT")))))
 
-(defun format-sql-column-reference (column database)
+(def function format-sql-column-reference (column database)
   (typecase column
     ((or symbol string sql-column sql-column-alias) (format-sql-identifier column database))
     (t (format-sql-syntax-node column database))))
 
-;;;----------------------------------------------------------------------------
+;;;;;;
 ;;; Expressions
-;;;
-(defmethod format-sql-syntax-node ((regexp-like sql-regexp-like) (database oracle))
+
+(def method format-sql-syntax-node ((regexp-like sql-regexp-like) (database oracle))
   (format-string "REGEXP_LIKE(")
   (format-sql-syntax-node (string-of regexp-like) database)
   (format-string ", ")
@@ -183,7 +177,7 @@
   (format-char ")"))
 
 #+nil
-(defmethod format-sql-syntax-node ((self sql-case) (database oracle))
+(def method format-sql-syntax-node ((self sql-case) (database oracle))
   (with-slots (clauses) self
     (if (or (/= (length clauses) 2)
             (not (eq (first (second clauses)) t)))
@@ -199,8 +193,3 @@
             (format-char ",")
             (format-sql-syntax-node else database)
             (format-string ")"))))))
-
-
-
-
-

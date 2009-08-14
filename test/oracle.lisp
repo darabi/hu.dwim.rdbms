@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(def special-variable *oracle-database* (make-instance 'hu.dwim.rdbms:oracle
+(def special-variable *oracle-database* (make-instance 'hu.dwim.rdbms.oracle:oracle
                                                        :connection-specification '(:datasource \"(ADDRESS =
                                                                                                   (PROTOCOL = TCP)
                                                                                                   (HOST = localhost)
@@ -15,6 +15,6 @@
                                                                                    :password \"test123\")))
 
 
-(def teste (test/oracle :in test) ()
+(def test (test/oracle :in test) ()
   (with-database *oracle-database*
     (test/type)))

@@ -26,3 +26,9 @@
                                            (:file "syntax" :depends-on ("database"))
                                            (:file "ddl" :depends-on ("database"))
                                            (:file "type" :depends-on ("database"))))))))
+
+(defmethod perform :after ((op develop-op) (system (eql (find-system :hu.dwim.rdbms.sqlite))))
+  (let ((database-variable (read-from-string "hu.dwim.rdbms::*database*")))
+    (unless (boundp database-variable)
+      (setf (symbol-value database-variable)
+            (symbol-value (read-from-string "hu.dwim.rdbms.test::*sqlite-database*"))))))

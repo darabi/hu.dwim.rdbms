@@ -6,23 +6,23 @@
 
 (in-package :hu.dwim.rdbms)
 
-(defparameter *sql-syntax-node-names* nil)
+(def special-variable *sql-syntax-node-names* nil)
 
-(defparameter *sql-constructor-names* nil)
+(def special-variable *sql-constructor-names* nil)
 
-(defun import-sql-syntax-node-names (&optional (package *package*))
+(def function import-sql-syntax-node-names (&optional (package *package*))
   (import *sql-syntax-node-names* package))
 
-(defun import-sql-constructor-names (&optional (package *package*))
+(def function import-sql-constructor-names (&optional (package *package*))
   (import *sql-constructor-names* package))
 
-(defvar *sql-stream*)
-(defvar *command-elements*)
-(defvar *binding-variables*)
-(defvar *binding-types*)
-(defvar *binding-values*)
+(def special-variable *sql-stream*)
+(def special-variable *command-elements*)
+(def special-variable *binding-variables*)
+(def special-variable *binding-types*)
+(def special-variable *binding-values*)
 
-(defgeneric format-sql-syntax-node (node database)
+(def generic format-sql-syntax-node (node database)
   (:documentation "Formats an SQL syntax node into *sql-stream*.")
 
   (:method :around (node (database null))
@@ -31,7 +31,7 @@
   (:method (node database)
            (format-sql-literal node database)))
 
-(defun reduce-subsequences (sequence predicate reducer)
+(def function reduce-subsequences (sequence predicate reducer)
   (iter (with completely-reduced? = #t)
         (for index :from 0 :below (length sequence))
         (for reducibles = (iter (while (< index (length sequence)))
@@ -50,7 +50,7 @@
           :result-type vector)
         (finally (return (values result completely-reduced?)))))
 
-(defun vector-extend (extension vector)
+(def function vector-extend (extension vector)
   (bind ((original-length (length vector))
          (extension-length (length extension))
          (new-length (+ original-length extension-length))
@@ -64,7 +64,7 @@
 ;; TODO: if sql-quote is added this should return a lambda returning
 ;; the syntax-node unaltered unless it is an sql-quote in which case
 ;; it can be process
-(defun expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
+(def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
   (bind ((*print-pretty* #f)
          (*print-circle* #f)
          (*sql-stream* (make-string-output-stream))
@@ -170,14 +170,14 @@
                  `(,@body
                    ,result)))))))
 
-(defmethod execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
+(def method execute-command :around (database transaction (command function) &rest args &key bindings &allow-other-keys)
   (bind (((:values command binding-variables binding-types binding-values) (funcall command)))
     (update-binding-values binding-variables binding-types binding-values bindings)
     (remove-from-plistf args :bindings)
     (apply #'execute-command database transaction command
            :binding-types binding-types :binding-values binding-values args)))
 
-(defun format-sql (syntax-node &key (stream t) (database *database*))
+(def function format-sql (syntax-node &key (stream t) (database *database*))
   "Formats the given SQL syntax node into the stream."
   (let* ((*print-pretty* #f)
          (*sql-stream* stream)
@@ -188,7 +188,7 @@
     (format-sql-syntax-node syntax-node database)
     (values stream *binding-variables* *binding-types* *binding-values*)))
 
-(defun format-sql-to-string (syntax-node &rest args &key &allow-other-keys)
+(def function format-sql-to-string (syntax-node &rest args &key &allow-other-keys)
   "Formats the given SQL syntax node into a string."
   (let* ((*print-pretty* #f)
          scratch
@@ -200,20 +200,20 @@
                          (apply #'format-sql syntax-node :stream stream args)))))
     (values string binding-variables binding-types binding-values)))
 
-(defun sql-constructor-name (name)
+(def function sql-constructor-name (name)
   (concatenate-symbol (find-package :hu.dwim.rdbms) "SQL-" name))
 
-(defun sql-operator-name (name)
+(def function sql-operator-name (name)
  (if (every (lambda (char) (char= char #\-)) (symbol-name name))
      (string-upcase name)
      (substitute #\Space #\- (string-upcase name))))
 
-(defmacro define-syntax-node (name supers slots &rest options)
+(def definer syntax-node (name supers slots &rest options)
   (let ((effective-slots (delete-duplicates
                           (append (mapcan (lambda (super) (copy-list (get super :slot-names))) supers)
                                   (mapcar #'first slots)))))
     (flet ((define-format-method (method-name body)
-             `(defmethod ,method-name ((-self- ,name) database)
+             `(def method ,method-name ((-self- ,name) database)
                 (macrolet ((format-sql-syntax-node (node)
                              `(funcall 'format-sql-syntax-node ,node database))
                            (format-sql-literal (node)
@@ -237,7 +237,7 @@
       `(progn
          (eval-always
            (setf (get ',name :slot-names) ',effective-slots))
-         (defclass* ,name ,supers ,slots
+         (def class* ,name ,supers ,slots
            ,@(remove-if (lambda (option)
                           (starts-with-subseq "format" (string-downcase (first option))))
                         options))
@@ -247,7 +247,7 @@
          ,(awhen (find :format-sql-identifier options :key #'first)
                  (define-format-method 'format-sql-identifier (rest it)))
          (pushnew ',name *sql-constructor-names*)
-         (defmacro ,name (&body args)
+         (def macro ,name (&body args)
            `(make-instance ',',name ,@args))
          (find-class ',name)))))
 
@@ -278,7 +278,7 @@
                     (expand-sql-unquote node database format-fn))
                 (funcall format-fn node database)))))
 
-(defmacro format-char (character)
+(def macro format-char (character)
   `(write-char
     ,(if (typep character 'string)
          (progn
@@ -286,7 +286,7 @@
            (elt character 0))
          character) *sql-stream*))
 
-(defmacro format-string (string)
+(def macro format-string (string)
   `(write-string ,string *sql-stream*))
 
 (def function print-number-to-sql-string (number)
@@ -295,7 +295,7 @@
     (ratio (format nil "~F" (coerce number 'double-float)))
     (float (format nil "~F" number))))
 
-(defmacro format-number (number)
+(def macro format-number (number)
   `(write-string (print-number-to-sql-string ,number) *sql-stream*))
 
 (def function format-sql-where (where database)

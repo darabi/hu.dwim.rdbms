@@ -9,20 +9,20 @@
 ;;;;;;
 ;;; Cursor implementation API
 
-(defclass* cursor ()
+(def class* cursor ()
   ((transaction
     :type transaction)
    (default-result-type
     :type (member vector list cursor))))
 
-(defclass* sequential-access-cursor (cursor)
+(def class* sequential-access-cursor (cursor)
   ()
   (:documentation "Positioning supports only :first and :next"))
 
-(defclass* random-access-cursor (cursor)
+(def class* random-access-cursor (cursor)
   ())
 
-(defgeneric make-cursor (transaction &key result-type initial-position &allow-other-keys)
+(def generic make-cursor (transaction &key result-type initial-position &allow-other-keys)
   (:documentation "Creates and associates a new cursor with the given ongoing transaction.")
 
   (:method :around ((transaction transaction) &key (result-type 'list) (initial-position :first initial-position-p) &allow-other-keys)
@@ -34,13 +34,13 @@
              (when initial-position-p
                (setf (cursor-position cursor) initial-position)))))
 
-(defgeneric close-cursor (cursor)
+(def generic close-cursor (cursor)
   (:documentation "Release any underlying resource."))
 
-(defgeneric cursor-position (cursor)
+(def generic cursor-position (cursor)
   (:documentation "Returns values of type (or null (integer 0 (1- row-count))) where nil means the position is invalid."))
 
-(defgeneric (setf cursor-position) (where cursor)
+(def generic (setf cursor-position) (where cursor)
   (:documentation "Modifies the cursor position, an implementation may not support all kinds of positioning. The integer is a signed value and means relative positioning.")
 
   (:method :before (where (cursor sequential-access-cursor))
@@ -49,9 +49,9 @@
   (:method :before (where (cursor random-access-cursor))
            (check-type where (or integer (member :first :last :previous :next)))))
 
-(defgeneric absolute-cursor-position (cursor))
+(def generic absolute-cursor-position (cursor))
 
-(defgeneric (setf absolute-cursor-position) (where cursor)
+(def generic (setf absolute-cursor-position) (where cursor)
   (:method :before (where (cursor cursor))
            (check-type where (integer 0)))
 
@@ -59,28 +59,28 @@
            (setf (cursor-position cursor) :first)
            (setf (cursor-position cursor) where)))
 
-(defgeneric column-count (cursor))
+(def generic column-count (cursor))
 
-(defgeneric row-count (cursor)
+(def generic row-count (cursor)
   (:method ((cursor cursor))
            (setf (cursor-position cursor) :first)
            (loop for i :from 0
                  while (setf (cursor-position cursor) :next)
                  return i)))
 
-(defgeneric column-name (cursor index)
+(def generic column-name (cursor index)
   (:documentation "Returns the column name as a string."))
 
-(defgeneric column-type (cursor index)
+(def generic column-type (cursor index)
   (:documentation "Returns the corresponding SQL type object slots filled in."))
 
-(defgeneric column-value (cursor index)
+(def generic column-value (cursor index)
   (:documentation "Returns values of type (or (member :null nil t) number string local-time (vector (unsigned-byte 8)))."))
 
 ;;;;;;
 ;;; Cursor user API
 
-(defun current-row (cursor &key (result-type (default-result-type-of cursor)))
+(def function current-row (cursor &key (result-type (default-result-type-of cursor)))
   (if (cursor-position cursor)
       (let ((result (ecase result-type
                       (list nil)
@@ -95,7 +95,7 @@
           (setf result (nreverse result)))
         result)))
 
-(defun for-each-row (function cursor &key row-count start-position (result-type (default-result-type-of cursor)))
+(def function for-each-row (function cursor &key row-count start-position (result-type (default-result-type-of cursor)))
   (if (and start-position (> start-position 0))
       (setf (cursor-position cursor) start-position)
       (setf (cursor-position cursor) :first))
@@ -107,7 +107,7 @@
              (funcall function row)
              (setf (cursor-position cursor) :next))))
 
-(defun collect-rows (cursor &key row-count start-position (result-type (default-result-type-of cursor)))
+(def function collect-rows (cursor &key row-count start-position (result-type (default-result-type-of cursor)))
   (let ((result (ecase result-type
                   (list nil)
                   (vector (make-array 8 :adjustable #t :fill-pointer 0)))))
@@ -126,14 +126,14 @@
 ;;;;;;
 ;;; Sequence cursor
 
-(defclass* sequence-cursor (cursor)
+(def class* sequence-cursor (cursor)
   ((rows :type (or vector list))
    (current-row-index :type integer)))
 
-(defmethod cursor-position ((cursor sequence-cursor))
+(def method cursor-position ((cursor sequence-cursor))
   (current-row-index-of cursor))
 
-(defmethod (setf cursor-position) (where (cursor sequence-cursor))
+(def method (setf cursor-position) (where (cursor sequence-cursor))
   (let ((current-row-index
          (cond ((integerp where)
                 where)
@@ -149,17 +149,17 @@
           (when (< current-row-index (length (rows-of cursor)))
             current-row-index))))
 
-(defmethod column-count ((cursor sequence-cursor))
+(def method column-count ((cursor sequence-cursor))
   (length (first-elt (rows-of cursor))))
 
-(defmethod row-count ((cursor sequence-cursor))
+(def method row-count ((cursor sequence-cursor))
   (length (rows-of cursor)))
 
-(defmethod column-name ((cursor sequence-cursor) index)
+(def method column-name ((cursor sequence-cursor) index)
   (format t "column-~A" index))
 
-(defmethod column-type ((cursor sequence-cursor) index)
+(def method column-type ((cursor sequence-cursor) index)
   (error "Type is not available"))
 
-(defmethod column-value ((cursor sequence-cursor) index)
+(def method column-value ((cursor sequence-cursor) index)
   (elt (elt (rows-of cursor) (current-row-index-of cursor)) index))

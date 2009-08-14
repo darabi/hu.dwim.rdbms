@@ -15,16 +15,16 @@
 ;;;;;;
 ;;; Expressions
 
-(define-syntax-node sql-expression (sql-syntax-node)
+(def syntax-node sql-expression (sql-syntax-node)
   ())
 
-(define-syntax-node sql-query-expression (sql-expression sql-dml-statement)
+(def syntax-node sql-query-expression (sql-expression sql-dml-statement)
   ())
 
 ;;;;;;
 ;;; Set operations
 
-(define-syntax-node sql-set-operation-expression (sql-query-expression)
+(def syntax-node sql-set-operation-expression (sql-query-expression)
   ((set-operation
     :type (member :union :except :intersect))
    (all
@@ -39,29 +39,29 @@
                           (concatenate-string (symbol-name set-operation) (if all " ALL" "")))
    (format-char ")")))
 
-(defmacro define-set-operation (name)
+(def definer set-operation (name)
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
       (pushnew ',name *sql-operator-names*)
-      (defun ,constructor-name (&rest subqueries)
+      (def function ,constructor-name (&rest subqueries)
         (make-instance 'sql-set-operation-expression
                        :set-operation ,(intern (symbol-name name) (find-package :keyword))
                        :subqueries subqueries)))))
 
-(define-set-operation union)
+(def set-operation union)
 
-(define-set-operation except)
+(def set-operation except)
 
-(define-set-operation intersect)
+(def set-operation intersect)
 
 ;;;;;;
 ;;; Operators
 
-(define-syntax-node sql-operator (sql-expression named-sql-syntax-node)
+(def syntax-node sql-operator (sql-expression named-sql-syntax-node)
   ())
 
-(define-syntax-node sql-unary-operator (sql-operator)
+(def syntax-node sql-unary-operator (sql-operator)
   ((fix
     :prefix
     :type (member :prefix :postfix))
@@ -80,7 +80,7 @@
       (format-sql-operator-name name database)))
    (format-char ")")))
 
-(define-syntax-node sql-binary-operator (sql-operator)
+(def syntax-node sql-binary-operator (sql-operator)
   ((left
     :type sql-expression)
    (right
@@ -94,7 +94,7 @@
    (format-sql-syntax-node right)
    (format-char ")")))
 
-(define-syntax-node sql-n-ary-operator (sql-operator)
+(def syntax-node sql-n-ary-operator (sql-operator)
   ((expressions
     :type list))
   (:format-sql-syntax-node
@@ -102,44 +102,44 @@
    (format-separated-list expressions name)
    (format-char ")")))
 
-(defmacro define-unary-operator (name &optional (fix :prefix))
+(def definer unary-operator (name &optional (fix :prefix))
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
       (pushnew ',name *sql-operator-names*)
-      (defun ,constructor-name (expression)
+      (def function ,constructor-name (expression)
         (make-instance 'sql-unary-operator
                        :name ,(sql-operator-name name)
                        :fix ,fix
                        :expression expression)))))
 
-(defmacro define-binary-operator (name)
+(def definer binary-operator (name)
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
       (pushnew ',name *sql-operator-names*)
-      (defun ,constructor-name (left right)
+      (def function ,constructor-name (left right)
         (make-instance 'sql-binary-operator
                        :name ,(string-upcase name)
                        :left left
                        :right right)))))
 
-(defmacro define-n-ary-operator (name)
+(def definer n-ary-operator (name)
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
       (pushnew ',name *sql-operator-names*)
-      (defun ,constructor-name (&rest expressions)
+      (def function ,constructor-name (&rest expressions)
         (make-instance 'sql-n-ary-operator
                        :name ,(string-upcase name)
                        :expressions expressions)))))
 
-(defmacro define-varary-operator (name)
+(def definer varary-operator (name)
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
       (pushnew ',name *sql-operator-names*)
-      (defun ,constructor-name (&rest expressions)
+      (def function ,constructor-name (&rest expressions)
         (if (length= 1 expressions)
             (make-instance 'sql-unary-operator
                            :name ,(string-upcase name)
@@ -151,76 +151,76 @@
 ;;;;;;
 ;;; Logical operators
 
-(define-unary-operator not)
+(def unary-operator not)
 
-(define-n-ary-operator and)
+(def n-ary-operator and)
 
-(define-n-ary-operator or)
+(def n-ary-operator or)
 
 ;;;;;;
 ;;; Set operators
 
-(define-binary-operator in)
+(def binary-operator in)
 
 ;;;;;;
 ;;; Comparison operators
 
-(define-binary-operator =)
+(def binary-operator =)
 
-(define-binary-operator <)
+(def binary-operator <)
 
-(define-binary-operator >)
+(def binary-operator >)
 
-(define-binary-operator <=)
+(def binary-operator <=)
 
-(define-binary-operator >=)
+(def binary-operator >=)
 
-(define-binary-operator <>)
+(def binary-operator <>)
 
-(define-unary-operator is-null :postfix)
+(def unary-operator is-null :postfix)
 
-(define-unary-operator is-not-null :postfix)
+(def unary-operator is-not-null :postfix)
 
 ;;;;;;
 ;;; Arithmetic operators
 
-(define-varary-operator +)
+(def varary-operator +)
 
-(define-varary-operator -)
+(def varary-operator -)
 
-(define-n-ary-operator *)
+(def n-ary-operator *)
 
-(define-binary-operator /)
+(def binary-operator /)
 
-(define-binary-operator %)
+(def binary-operator %)
 
-(define-binary-operator ^)
+(def binary-operator ^)
 
-(define-n-ary-operator \|\|)
+(def n-ary-operator \|\|)
 
-(define-unary-operator \|/)
+(def unary-operator \|/)
 
-(define-unary-operator @)
+(def unary-operator @)
 
 ;;;;;;
 ;;; Bitwise operators
 
-(define-binary-operator &)
+(def binary-operator &)
 
-(define-binary-operator \|)
+(def binary-operator \|)
 
-(define-binary-operator \#)
+(def binary-operator \#)
 
-(define-unary-operator ~)
+(def unary-operator ~)
 
-(define-binary-operator |<<|)
+(def binary-operator |<<|)
 
-(define-binary-operator |>>|)
+(def binary-operator |>>|)
 
 ;;;;;;
 ;;; Pattern matching
 
-(define-syntax-node sql-like (sql-expression)
+(def syntax-node sql-like (sql-expression)
   ((string :type  sql-expression :accessor string-of)
    (pattern :type sql-expression)
    (case-sensitive-p #t :type boolean))
@@ -239,7 +239,7 @@
          (format-sql-syntax-node pattern)
          (format-string "))")))))
 
-(define-syntax-node sql-regexp-like (sql-expression)
+(def syntax-node sql-regexp-like (sql-expression)
   ((string :type sql-expression :accessor string-of)
    (pattern :type sql-expression)
    (case-sensitive-p #t :type boolean)))
@@ -247,7 +247,7 @@
 ;;;;;;
 ;;; Case expressions
 
-(define-syntax-node sql-case (sql-expression)
+(def syntax-node sql-case (sql-expression)
   ((clauses :type list))
   (:format-sql-syntax-node
    (format-char "(")
@@ -270,17 +270,16 @@
    (format-string "END")
    (format-char ")")))
 
-(defun sql-cond (clauses)
+(def function sql-cond (clauses)
   (sql-case :clauses clauses))
 
-(defun sql-if (cond then else)
+(def function sql-if (cond then else)
   (sql-case :clauses `((,cond ,then) (t ,else))))
-
 
 ;;;;;;
 ;;; Subquery expressions
 
-(define-syntax-node sql-subquery (sql-query-expression)
+(def syntax-node sql-subquery (sql-query-expression)
   ((query
     :type sql-select)) ;; TODO: extract query-expression from the ddl statement
   (:format-sql-syntax-node
@@ -288,12 +287,12 @@
    (format-sql-syntax-node query)
    (format-char ")")))
 
-(define-unary-operator exists)
+(def unary-operator exists)
 
 ;;;;;;
 ;;; Functions
 
-(define-syntax-node sql-function-call (sql-expression)
+(def syntax-node sql-function-call (sql-expression)
   ((name
     :type (or string symbol))
    (arguments
@@ -304,12 +303,12 @@
    (format-comma-separated-list arguments)
    (format-char ")")))
 
-(defmacro define-aggregate-function (name)
+(def definer aggregate-function (name)
   (let ((constructor-name (sql-constructor-name name)))
     `(progn
       (pushnew ',constructor-name *sql-constructor-names*)
       (pushnew ',name *sql-function-names*)
-      (defun ,constructor-name (&rest arguments)
+      (def function ,constructor-name (&rest arguments)
         (make-instance 'sql-function-call
                        :name ,(string-upcase name)
                        :arguments arguments)))))
@@ -317,19 +316,19 @@
 ;;;;;;
 ;;; Aggregate functions
 
-(define-aggregate-function count)
+(def aggregate-function count)
 
-(define-aggregate-function min)
+(def aggregate-function min)
 
-(define-aggregate-function max)
+(def aggregate-function max)
 
-(define-aggregate-function avg)
+(def aggregate-function avg)
 
-(define-aggregate-function sum)
+(def aggregate-function sum)
 
 ;;;;;;
 ;;; Count(*)
 
-(defun sql-count-* ()
+(def function sql-count-* ()
   ;; TODO the sql-all-columns ctor macro is not yet defined here (select.lisp)
   (sql-count (make-instance 'sql-all-columns)))

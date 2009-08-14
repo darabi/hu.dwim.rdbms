@@ -8,32 +8,38 @@
 ;;;; TODO: implement proper error handling
 (in-package :hu.dwim.rdbms.sqlite)
 
-(defclass* sqlite-transaction (transaction)
+(def (class* e) sqlite (database)
+  ())
+
+(def method initialize-instance :before ((self sqlite) &key &allow-other-keys)
+  (cffi:load-foreign-library 'hu.dwim.rdbms.sqlite::sqlite3))
+
+(def class* sqlite-transaction (transaction)
   ((connection-pointer nil)))
 
-(defmethod transaction-mixin-class list ((db sqlite))
+(def method transaction-mixin-class list ((db sqlite))
   'sqlite-transaction)
 
-(defclass* sqlite-prepared-statement (prepared-statement)
+(def class* sqlite-prepared-statement (prepared-statement)
   ((statement-pointer nil)))
 
-(defconstant +maximum-rdbms-name-length+ 30)
+(def constant +maximum-rdbms-name-length+ 30)
 
 ;; this name mapping is not injective, different lisp names _may_ be mapped to the same rdbms name
-(defmethod calculate-rdbms-name ((db sqlite) thing name)
+(def method calculate-rdbms-name ((db sqlite) thing name)
   (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+ :prefix "_"))
 
-(defun process-error (tr message &rest args)
+(def function process-error (tr message &rest args)
   (apply 'process-error-code (sqlite3-cffi-bindings:sqlite-3-errcode (connection-pointer-of tr))
          (sqlite3-cffi-bindings:sqlite-3-errmsg (connection-pointer-of tr))
          message args))
 
-(defun process-error-code (error-code error-message message &rest args)
+(def function process-error-code (error-code error-message message &rest args)
   (unless (= sqlite3-cffi-bindings:+sqlite-ok+ error-code)
     (apply 'error (concatenate-string message "~%Error Code: ~A, Error Message: ~A")
            (append args (list error-code error-message)))))
 
-(defun ensure-connected (tr)
+(def function ensure-connected (tr)
   (unless (connection-pointer-of tr)
     (bind ((connection-pointer (cffi:foreign-alloc :pointer)))
       (sqlite3-cffi-bindings:sqlite-3-open (getf (connection-specification-of (database-of tr)) :file-name) connection-pointer)
@@ -42,14 +48,14 @@
       (process-error tr "Error during opening database"))))
 
 ;; TODO: when will this prepared statement freed?
-(defmethod prepare-command ((db sqlite) (tr sqlite-transaction) (command string) &key &allow-other-keys)
+(def method prepare-command ((db sqlite) (tr sqlite-transaction) (command string) &key &allow-other-keys)
   (ensure-connected tr)
   (bind ((foreign-statement-pointer (cffi:foreign-alloc :pointer)))
     (cffi:with-foreign-string (foreign-command command)
       (sqlite3-cffi-bindings:sqlite-3-prepare-v-2 (connection-pointer-of tr) foreign-command -1 foreign-statement-pointer (cffi:null-pointer)))
     (make-instance 'sqlite-prepared-statement :statement-pointer (cffi:mem-ref foreign-statement-pointer :pointer))))
 
-(defmethod execute-command ((db sqlite) (tr sqlite-transaction) (command string) &key binding-types binding-values result-type &allow-other-keys)
+(def method execute-command ((db sqlite) (tr sqlite-transaction) (command string) &key binding-types binding-values result-type &allow-other-keys)
   (ensure-connected tr)
   (cffi:with-foreign-string (foreign-command command)
     (cffi:with-foreign-object (foreign-statement-pointer :pointer)
@@ -59,17 +65,17 @@
              (execute-prepared-statment foreign-statement binding-types binding-values result-type)
           (sqlite3-cffi-bindings:sqlite-3-finalize foreign-statement))))))
 
-(defmethod execute-command ((db sqlite) (tr sqlite-transaction) (prepared-statement sqlite-prepared-statement) &key binding-types binding-values result-type &allow-other-keys)
+(def method execute-command ((db sqlite) (tr sqlite-transaction) (prepared-statement sqlite-prepared-statement) &key binding-types binding-values result-type &allow-other-keys)
   (bind ((foreign-statement (statement-pointer-of prepared-statement)))
     (sqlite3-cffi-bindings:sqlite-3-reset foreign-statement)
     (sqlite3-cffi-bindings:sqlite-3-clear-bindings foreign-statement) 
     (execute-prepared-statment foreign-statement binding-types binding-values result-type)))
 
-(defmethod cleanup-transaction :after ((tr sqlite-transaction))
+(def method cleanup-transaction :after ((tr sqlite-transaction))
   (awhen (connection-pointer-of tr)
     (process-error-code (sqlite3-cffi-bindings:sqlite-3-close it) nil "Error during closing database")))
 
-(defun execute-prepared-statment (foreign-statement binding-types binding-values result-type)
+(def function execute-prepared-statment (foreign-statement binding-types binding-values result-type)
   (prog1-bind result
       (ecase result-type
         (vector (make-array 8 :adjustable t :fill-pointer 0))

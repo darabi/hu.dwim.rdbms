@@ -36,5 +36,3 @@
   (:unix "libocixe.so")
   (:windows "libocixe.dll")
   (t (:default "libocixe")))
-
-

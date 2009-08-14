@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(define-syntax-node sql-index (named-sql-syntax-node)
+(def syntax-node sql-index (named-sql-syntax-node)
   ((unique
     #f
     :type boolean)
@@ -17,7 +17,7 @@
     :type list))
   (:documentation "An SQL index specification."))
 
-(define-syntax-node sql-create-index (sql-ddl-statement sql-index)
+(def syntax-node sql-create-index (sql-ddl-statement sql-index)
   ()
   (:documentation "An SQL CREATE INDEX statement.")
   (:format-sql-syntax-node
@@ -32,7 +32,7 @@
    (format-comma-separated-identifiers columns)
    (format-char ")")))
 
-(define-syntax-node sql-drop-index (sql-ddl-statement)
+(def syntax-node sql-drop-index (sql-ddl-statement)
   ((name
     :type string))
   (:documentation "An SQL DROP INDEX statement.")

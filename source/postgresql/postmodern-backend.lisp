@@ -6,16 +6,16 @@
 
 (in-package :hu.dwim.rdbms.postgresql)
 
-(defclass* postgresql-postmodern-transaction (transaction)
+(def class* postgresql-postmodern-transaction (transaction)
   ((connection
     nil
     :documentation "The Postmodern connection")
    (muffle-warnings (muffle-warnings? *database*) :type boolean :accessor muffle-warnings?)))
 
-(defmethod transaction-mixin-class list ((db postgresql-postmodern))
+(def method transaction-mixin-class list ((db postgresql-postmodern))
   'postgresql-postmodern-transaction)
 
-(defmethod prepare-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
+(def method prepare-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
                             &key (name (generate-unique-postgresql-name "prepared_")))
   (cl-postgres:prepare-query (connection-of tr) name command)
   (make-instance 'prepared-statement :name name :query command))
@@ -24,7 +24,7 @@
 
 (local-time:set-local-time-cl-postgres-readers *cl-postgres-sql-readtable*)
 
-(defun execute-postmodern-prepared-statement (connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
+(def function execute-postmodern-prepared-statement (connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
   (bind ((cl-postgres:*sql-readtable* *cl-postgres-sql-readtable*))
     (cl-postgres:exec-prepared
      connection statement-name
@@ -95,13 +95,13 @@
            (list #'cl-postgres:list-row-reader)
            (vector #'cl-postgres:vector-row-reader))))))
 
-(defmethod execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
+(def method execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
   (if (muffle-warnings? tr)
       (handler-bind ((cl-postgres:postgresql-warning #'muffle-warning))
         (call-next-method))
       (call-next-method)))
 
-(defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
+(def method execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
                             &rest args)
   (let ((connection (connection-of tr))
         (statement-name "")) ; unnamed prepared statement
@@ -111,11 +111,11 @@
       (cl-postgres-error:lock-not-available (error)
         (unable-to-obtain-lock-error error)))))
 
-(defmethod execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
+(def method execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
                             &rest args)
   (apply #'execute-postmodern-prepared-statement (connection-of tr) (name-of prepared-statement) args))
 
-(defmethod connection-of :around ((tr postgresql-postmodern-transaction))
+(def method connection-of :around ((tr postgresql-postmodern-transaction))
   (aif (call-next-method)
        it
        (let ((db (database-of tr)))
@@ -132,7 +132,7 @@
            (log.debug "Succesfully opened Postmodern connection ~A for transaction ~A in database ~A"
                       it tr db)))))
 
-(defmethod cleanup-transaction :after ((tr postgresql-postmodern-transaction))
+(def method cleanup-transaction :after ((tr postgresql-postmodern-transaction))
   (awhen (slot-value tr 'connection)
     (log.debug "Closing Postmodern connection ~A of transaction ~A in database ~A" it tr (database-of tr))
     (cl-postgres:close-database it)

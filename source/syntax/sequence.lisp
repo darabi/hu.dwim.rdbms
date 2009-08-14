@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(define-syntax-node sql-create-sequence (sql-ddl-statement)
+(def syntax-node sql-create-sequence (sql-ddl-statement)
   ((name
     :type string)
    (temporary
@@ -20,7 +20,7 @@
    (format-string " SEQUENCE ")
    (format-sql-identifier name)))
 
-(define-syntax-node sql-drop-sequence (sql-ddl-statement)
+(def syntax-node sql-drop-sequence (sql-ddl-statement)
   ((name
     :type string))
   (:documentation "An SQL DROP SEQUENCE statement.")
@@ -29,7 +29,7 @@
    (format-string " SEQUENCE ")
    (format-sql-identifier name)))
 
-(define-syntax-node sql-sequence-nextval-column (sql-syntax-node)
+(def syntax-node sql-sequence-nextval-column (sql-syntax-node)
   ((name
     :type string))
   (:documentation "An SQL SEQUENCE next value column.")

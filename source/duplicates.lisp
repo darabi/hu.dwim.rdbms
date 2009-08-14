@@ -8,12 +8,12 @@
 
 ;;; THE CONTENT OF THIS FILE IS COPIED OVER FROM SOME OTHER LIBRARIES TO DECREASE DEPENDENCIES
 
-(defmacro prog1-bind (var ret &body body)
+(def macro prog1-bind (var ret &body body)
   `(let ((,var ,ret))
     ,@body
     ,var))
 
-(defun concatenate-symbol (&rest args)
+(def function concatenate-symbol (&rest args)
   "Args are processed as parts of the result symbol with an exception: when a package is encountered then it is stored as the target package at intern."
   (let* ((package nil)
          (symbol-name (string-upcase
@@ -36,7 +36,7 @@
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      ,@body))
 
-(defmacro rebind (bindings &body body)
+(def macro rebind (bindings &body body)
   `(let ,(loop
             :for symbol-name :in bindings
             :collect (list symbol-name symbol-name))

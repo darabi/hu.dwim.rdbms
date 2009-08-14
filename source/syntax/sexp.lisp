@@ -10,7 +10,7 @@
 
 ;; TODO support [select (count *) !(some lisp generating the from part)] syntax
 
-(defmacro sql (body)
+(def macro sql (body)
   "Parse BODY as an sexp-sql sexp."
   (expand-sql-ast-into-lambda-form
    (compile-sexp-sql body)
@@ -18,7 +18,7 @@
                   (member (first body) '(select insert update delete create drop)
                           :test #'sql-symbol-equal))))
 
-(defcondition* sql-compile-error (error)
+(def condition* sql-compile-error (error)
   ((whole-form)
    (error-at-form))
   (:report (lambda (c stream)
@@ -28,15 +28,15 @@
                        (error-at-form-of c)
                        (error-at-form-of c))))))
 
-(defun sql-compile-error (whole-form &optional error-at-form)
+(def function sql-compile-error (whole-form &optional error-at-form)
   (error 'sql-compile-error :whole-form whole-form :error-at-form error-at-form))
 
-(defun sql-symbol-equal (a b)
+(def function sql-symbol-equal (a b)
   (and (or (symbolp a) (stringp a))
        (or (symbolp b) (stringp b))
        (equalp (string a) (string b))))
 
-(defun compile-sexp-sql (form)
+(def function compile-sexp-sql (form)
   (assert (consp form))
   (let ((first (first form)))
     (switch (first :test #'sql-symbol-equal)
@@ -51,7 +51,7 @@
            (compile-sexp-sql-expression form)
            (sql-compile-error form))))))
 
-(defun process-sexp-sql-syntax-list (body visitor &key function-call-allowed-p)
+(def function process-sexp-sql-syntax-list (body visitor &key function-call-allowed-p)
   (if (and function-call-allowed-p
            (sql-function-call-form-p body))
       (list (compile-sexp-sql-function-call body))
@@ -69,32 +69,32 @@
                          (t (process-sexp-sql-syntax-node node visitor)))))
         (t (list (process-sexp-sql-syntax-node body visitor))))))
 
-(defun process-sexp-sql-syntax-node (node &optional (visitor #'identity))
+(def function process-sexp-sql-syntax-node (node &optional (visitor #'identity))
   (cond ((typep node 'sql-syntax-node)
          node)
         ((sexp-sql-unquote-p node)
          (compile-sexp-sql-unquote node))
         (t (funcall visitor node))))
 
-(defun sql-function-name-p (thing)
+(def function sql-function-name-p (thing)
   (member thing *sql-function-names* :test #'sql-symbol-equal))
 
-(defun stringify (name)
+(def function stringify (name)
   (typecase name
     (string name)
     (symbol (string-downcase name))
     (t (error "Don't know how to stringify ~S" name))))
 
-(defun sql-function-call-form-p (thing)
+(def function sql-function-call-form-p (thing)
   (and (consp thing)
        (sql-function-name-p (first thing))))
 
-(defun sexp-sql-unquote-p (thing)
+(def function sexp-sql-unquote-p (thing)
   (or (typep thing 'sql-unquote)
       (and (consp thing)
            (sql-symbol-equal (first thing) 'sql-unquote))))
 
-(defun compile-sexp-sql-unquote (body)
+(def function compile-sexp-sql-unquote (body)
   (if (typep body 'sql-unquote)
       body
       (progn
@@ -102,7 +102,7 @@
           (sql-compile-error body))
         (make-instance 'sql-unquote :form (second body) :spliced (third body)))))
 
-(defun compile-sexp-sql-select (body)
+(def function compile-sexp-sql-select (body)
   (pop body)
   (destructuring-bind (columns tables &optional where) body
     (make-instance 'sql-select
@@ -114,7 +114,7 @@
   (when body
     (compile-sexp-sql-expression body)))
 
-(defun compile-sexp-sql-create (body)
+(def function compile-sexp-sql-create (body)
   (let ((whole-body body)
         (what (progn
                 (pop body)
@@ -128,7 +128,7 @@
                             :columns (process-sexp-sql-syntax-list (pop body) #'compile-sexp-sql-column))))
           (t (sql-compile-error whole-body body)))))
 
-(defun compile-sexp-sql-drop (body)
+(def function compile-sexp-sql-drop (body)
   (let ((whole-body body)
         (what (progn
                 (pop body)
@@ -138,7 +138,7 @@
                           :name (pop body)))
           (t (sql-compile-error whole-body body)))))
 
-(defun compile-sexp-sql-insert (body)
+(def function compile-sexp-sql-insert (body)
   (let ((whole-body body))
     (pop body)
     (prog1
@@ -149,28 +149,28 @@
       (when body
         (sql-compile-error whole-body body)))))
 
-(defun compile-sexp-sql-delete (body)
+(def function compile-sexp-sql-delete (body)
   (pop body)
   (bind (((table &optional where) body))
     (make-instance 'sql-delete
                    :table (process-sexp-sql-syntax-node table #'compile-sexp-sql-table-alias)
                    :where (compile-sexp-sql-where where))))
 
-(defun compile-sexp-sql-update (body)
+(def function compile-sexp-sql-update (body)
   (declare (ignore body))
   (error "Not yet implemented"))
 
-(defun compile-sexp-sql-function-call (body)
+(def function compile-sexp-sql-function-call (body)
   (make-instance 'sql-function-call
                  :name (string-downcase (first body))
                  :arguments (mapcar #'compile-sexp-sql-function-call-argument (rest body))))
 
-(defun compile-sexp-sql-function-call-argument (body)
+(def function compile-sexp-sql-function-call-argument (body)
   (if (sql-symbol-equal body "*")
       (make-instance 'sql-all-columns)
       (make-instance 'sql-identifier :name (string body))))
 
-(defun compile-sexp-sql-column-alias (body)
+(def function compile-sexp-sql-column-alias (body)
   (cond
     ((sexp-sql-unquote-p body)
      (compile-sexp-sql-unquote body))
@@ -198,7 +198,7 @@
               (setf column name))
          (make-instance 'sql-column-alias :table table :column column :alias alias)))))
 
-(defun compile-sexp-sql-literal (body)
+(def function compile-sexp-sql-literal (body)
   (let ((whole-body body)
         (value)
         (type))
@@ -215,10 +215,10 @@
         (setf value body))
     (make-instance 'sql-literal :value (process-sexp-sql-syntax-node value) :type type)))
 
-(defun compile-sexp-sql-binding-variable (body)
+(def function compile-sexp-sql-binding-variable (body)
   (make-instance 'sql-binding-variable :name (pop body) :type (compile-sexp-sql-type (pop body))))
 
-(defun compile-sexp-sql-type (body)
+(def function compile-sexp-sql-type (body)
   (cond
     ((typep body 'sql-syntax-node)
      body)
@@ -262,7 +262,7 @@
                                                                    (first type-args))))
              (t (sql-compile-error body)))))))
 
-(defun compile-sexp-sql-column (body)
+(def function compile-sexp-sql-column (body)
   (let ((name)
         (type))
     (if (consp body)
@@ -274,10 +274,10 @@
           (setf name body)))
     (make-instance 'sql-column :name name :type type)))
 
-(defun compile-sexp-sql-columns (body)
+(def function compile-sexp-sql-columns (body)
   (process-sexp-sql-syntax-list body #'compile-sexp-sql-column))
 
-(defun compile-sexp-sql-table-alias (body)
+(def function compile-sexp-sql-table-alias (body)
   (cond
     ((sexp-sql-unquote-p body)
      (compile-sexp-sql-unquote body))
@@ -291,7 +291,7 @@
     (t
      (make-instance 'sql-table-alias :name body))))
 
-(defun compile-sexp-sql-expression (body)
+(def function compile-sexp-sql-expression (body)
   (cond
     ((sexp-sql-unquote-p body)
      (compile-sexp-sql-unquote body))

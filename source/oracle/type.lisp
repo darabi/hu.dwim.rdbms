@@ -14,90 +14,89 @@
   free-instance)
 
 ;; TODO add a naming convention, maybe *foo*?
-(defmacro deftypemap (name &rest args)
-  `(defparameter ,name (make-typemap ,@args)))
+(def definer typemap (name &rest args)
+  `(def special-variable ,name (make-typemap ,@args)))
 
-(deftypemap boolean/char
+(def typemap boolean/char
     :external-type oci:+sqlt-afc+
     :lisp-to-oci #'boolean-to-char
     :oci-to-lisp #'boolean-from-char)
 
-(deftypemap integer/int8
+(def typemap integer/int8
     :external-type oci:+sqlt-int+
     :lisp-to-oci #'integer-to-int8
     :oci-to-lisp #'integer-from-int8)
 
-(deftypemap integer/int16
+(def typemap integer/int16
     :external-type oci:+sqlt-int+
     :lisp-to-oci #'integer-to-int16
     :oci-to-lisp #'integer-from-int16)
 
-(deftypemap integer/int32
+(def typemap integer/int32
     :external-type oci:+sqlt-int+
     :lisp-to-oci #'integer-to-int32
     :oci-to-lisp #'integer-from-int32)
 
-(deftypemap integer/varnum
+(def typemap integer/varnum
     :external-type oci:+sqlt-vnu+
     :lisp-to-oci #'integer-to-varnum     ;; TODO: pass precision/scale
     :oci-to-lisp #'integer-from-varnum)
 
-(deftypemap float/bfloat
+(def typemap float/bfloat
     :external-type oci:+sqlt-bfloat+
     :lisp-to-oci #'float-to-bfloat
     :oci-to-lisp #'float-from-bfloat)
 
-(deftypemap double/bdouble
+(def typemap double/bdouble
     :external-type oci:+sqlt-bdouble+
     :lisp-to-oci #'double-to-bdouble
     :oci-to-lisp #'double-from-bdouble)
 
-(deftypemap rational/varnum
+(def typemap rational/varnum
     :external-type oci:+sqlt-vnu+
     :lisp-to-oci #'rational-to-varnum      ;; TODO: pass precision/scale
     :oci-to-lisp #'rational-from-varnum)
 
-(deftypemap string/string
+(def typemap string/string
     :external-type oci:+sqlt-str+
     :lisp-to-oci #'string-to-string
     :oci-to-lisp #'string-from-string)
 
-(deftypemap string/long-varchar
+(def typemap string/long-varchar
     :external-type oci:+sqlt-lvc+
     :lisp-to-oci #'string-to-long-varchar
     :oci-to-lisp #'string-from-long-varchar)
 
-(deftypemap local-time/date
+(def typemap local-time/date
     :external-type oci:+sqlt-dat+
     :lisp-to-oci #'local-time-to-date
     :oci-to-lisp #'local-time-from-date)
 
-(deftypemap local-time/oci-date
+(def typemap local-time/oci-date
     :external-type oci:+sqlt-odt+
     :lisp-to-oci #'local-time-to-oci-date
     :oci-to-lisp #'local-time-from-oci-date)
 
-(deftypemap local-time/timestamp
+(def typemap local-time/timestamp
     :external-type oci:+sqlt-timestamp+
     :lisp-to-oci #'local-time-to-timestamp
     :oci-to-lisp #'local-time-from-timestamp
     :allocate-instance #'allocate-oci-date-time
     :free-instance #'free-oci-date-time)
 
-(deftypemap local-time/timestamp-tz
+(def typemap local-time/timestamp-tz
     :external-type oci:+sqlt-timestamp-tz+
     :lisp-to-oci #'local-time-to-timestamp-tz
     :oci-to-lisp #'local-time-from-timestamp-tz
     :allocate-instance #'allocate-oci-date-time-tz
     :free-instance #'free-oci-date-time-tz)
 
-(deftypemap byte-array/long-varraw
+(def typemap byte-array/long-varraw
     :external-type oci:+sqlt-lvb+
     :lisp-to-oci #'byte-array-to-long-varraw
     :oci-to-lisp #'byte-array-from-long-varraw)
 
-
-(defgeneric typemap-for-sql-type (type)
+(def generic typemap-for-sql-type (type)
   
   (:method ((type sql-boolean-type))
            ;; booleans are stored as CHAR(1) internally
@@ -166,7 +165,7 @@
            ;; their external format is LONG VARRAW allowing max 2^31-5 bytes
            byte-array/long-varraw))
 
-(defun internal-type-for-sql-type (type)
+(def function internal-type-for-sql-type (type)
   (assert (typep *database* 'oracle))
   (let ((str (format-sql-to-string type *database*)))
     (string-downcase
@@ -174,7 +173,7 @@
           (subseq str 0 it)             ; TODO ???
           str))))
 
-(defun sql-type-for-internal-type (data-type char-length precision scale)
+(def function sql-type-for-internal-type (data-type char-length precision scale)
   (macrolet ((estringcase (keyform &body clauses)
                `(cond
                  ,@(mapcar (lambda (clause)
@@ -204,10 +203,10 @@
      ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-type :with-timezone #t)))))
 
 
-(defun external-type-for-sql-type (type)
+(def function external-type-for-sql-type (type)
   (typemap-external-type (typemap-for-sql-type type)))
 
-(defun typemap-for-internal-type (internal-type size &key precision scale)
+(def function typemap-for-internal-type (internal-type size &key precision scale)
   (declare (fixnum internal-type))
   (ecase internal-type
     (#.oci:+sqlt-chr+ string/string)    ; varchar
@@ -227,7 +226,7 @@
     (#.oci:+sqlt-clob+ string/long-varchar)
     (#.oci:+sqlt-blob+ byte-array/long-varraw)))
 
-(defun data-size-for (external-type column-size)
+(def function data-size-for (external-type column-size)
   (declare (fixnum external-type))
   (ecase external-type
     (#.oci:+sqlt-afc+ (* (oci-char-width) column-size))

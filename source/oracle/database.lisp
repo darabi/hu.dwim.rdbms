@@ -6,10 +6,21 @@
 
 (in-package :hu.dwim.rdbms.oracle)
 
-(defmethod transaction-mixin-class list ((db oracle))
+(def (class* e) oracle (database)
+  ((connection-encoding
+    :utf-16
+    :type (member :ascii :utf-16))))
+
+(def method initialize-instance :before ((self oracle) &key &allow-other-keys)
+  ;; TODO let the user control version, path and stuff through initargs
+  (let ((cffi:*foreign-library-directories*
+         (list #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")))
+    (cffi:load-foreign-library 'hu.dwim.rdbms.oracle::oracle-oci)))
+
+(def method transaction-mixin-class list ((db oracle))
   'oracle-transaction)
 
-(defclass* oracle-transaction (transaction)
+(def class* oracle-transaction (transaction)
   ((environment-handle-pointer nil :accessor environment-handle-pointer)
    (error-handle nil :accessor error-handle-pointer)
    (server-handle nil :accessor server-handle-pointer)
@@ -29,20 +40,20 @@
     session-handle
     service-context-handle))
 
-(defclass* oracle-prepared-statement (prepared-statement)
+(def class* oracle-prepared-statement (prepared-statement)
   ((statement-handle-pointer nil :accessor statement-handle-pointer)
    (bindings nil :type list)
    (select #f :type boolean)))
 
-(defun statement-handle-of (statement)
+(def function statement-handle-of (statement)
   (cffi:mem-ref (statement-handle-pointer statement) '(:pointer :void)))
 
 
-(defun oci-call (code)
+(def function oci-call (code)
   (declare (cl:type fixnum code))
   (handle-oci-result code))
 
-(defun handle-oci-result (result)
+(def function handle-oci-result (result)
   (case result
     (#.oci:+success+
      result)
@@ -65,7 +76,7 @@
     (t
      (simple-rdbms-error "Unknown OCI error, code is ~A" result))))
 
-(defun handle-oci-error ()
+(def function handle-oci-error ()
   (unless (error-handle-pointer *transaction*)
     (simple-rdbms-error "OCI error in initialization stage, too early to query the actual error"))
   (cffi:with-foreign-objects ((error-code 'oci:sb-4))
@@ -82,8 +93,7 @@
         (simple-rdbms-error "RDBMS error: ~A" error-message)))))
 
 
-(defconstant +maximum-rdbms-name-length+ 30)
+(def constant +maximum-rdbms-name-length+ 30)
 
-(defmethod calculate-rdbms-name ((db oracle) thing name)
+(def method calculate-rdbms-name ((db oracle) thing name)
   (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+))
-

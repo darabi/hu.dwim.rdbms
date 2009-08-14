@@ -6,16 +6,16 @@
 
 (in-package :hu.dwim.rdbms)
 
-(defvar *transaction*)
+(def special-variable *transaction*)
 
-(defcondition* transaction-error (simple-rdbms-error)
+(def condition* transaction-error (simple-rdbms-error)
   ())
 
-(defclass* prepared-statement ()
+(def class* prepared-statement ()
   ((name)
    (query :documentation "The query passed in when this statement was prepared.")))
 
-(defclass* transaction ()
+(def (class* e) transaction ()
   ((database
     :type database)
    (default-result-type
@@ -46,7 +46,7 @@
   (princ (if (begin-was-executed-p -self-)
              "#t" "#f")))
 
-(defclass* command-counter ()
+(def (class* a) command-counter ()
   ((insert-counter 0 :type integer)
    (select-counter 0 :type integer)
    (update-counter 0 :type integer)
@@ -62,16 +62,16 @@
   (write-string ", delete: ")
   (write (delete-counter-of -self-)))
 
-(defun current-insert-counter ()
+(def (function e) current-insert-counter ()
   (insert-counter-of (command-counter-of *transaction*)))
 
-(defun current-select-counter ()
+(def (function e) current-select-counter ()
   (select-counter-of (command-counter-of *transaction*)))
 
-(defun current-update-counter ()
+(def (function e) current-update-counter ()
   (update-counter-of (command-counter-of *transaction*)))
 
-(defun current-delete-counter ()
+(def (function e) current-delete-counter ()
   (delete-counter-of (command-counter-of *transaction*)))
 
 (def (function e) report-transaction-state ()
@@ -98,7 +98,7 @@
   `(with-transaction* ()
     ,@forms))
 
-(defgeneric call-in-transaction (database transaction function)
+(def (generic e) call-in-transaction (database transaction function)
   (:documentation "Extension point for with-transaction macro.")
 
   (:method (database transaction function)
@@ -152,21 +152,21 @@
                         (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
                (cleanup-transaction *transaction*))))))))
 
-(defmethod (setf terminal-action-of) :before (new-value (transaction transaction))
+(def method (setf terminal-action-of) :before (new-value (transaction transaction))
   (when (and (member (terminal-action-of *transaction*) '(:marked-for-rollback-only :marked-for-commit-only))
              (not (eq new-value (terminal-action-of *transaction*))))
     (error "You can not set the terminal action of the transaction ~A from ~A to ~A"
            *transaction* (terminal-action-of *transaction*) new-value)))
 
-(defun mark-transaction-for-commit-only ()
+(def function mark-transaction-for-commit-only ()
   (assert-transaction-in-progress)
   (setf (terminal-action-of *transaction*) :marked-for-commit-only))
 
-(defun mark-transaction-for-rollback-only ()
+(def function mark-transaction-for-rollback-only ()
   (assert-transaction-in-progress)
   (setf (terminal-action-of *transaction*) :marked-for-rollback-only))
 
-(defun transaction-timestamp ()
+(def function transaction-timestamp ()
   (or (timestamp-of *transaction*)
       (setf (timestamp-of *transaction*) (first-elt (first-elt (execute "select now()"))))))
 
@@ -175,10 +175,10 @@
        *transaction*
        (transaction-in-progress-p *transaction*)))
 
-(defun transaction-in-progress-p (&optional (transaction *transaction*))
+(def function transaction-in-progress-p (&optional (transaction *transaction*))
   (eq (state-of transaction) :in-progress))
 
-(defun transaction-valid-p (&optional (transaction *transaction*))
+(def function transaction-valid-p (&optional (transaction *transaction*))
   "Returns true if we have a running transaction and its terminal action will be a commit."
   (and (transaction-in-progress-p transaction)
        (not (eq (terminal-action-of transaction) :marked-for-rollback-only))))
@@ -187,12 +187,12 @@
   (unless (in-transaction-p)
     (error 'transaction-error :format-control "No transaction in progress")))
 
-(def (function io) begin (&rest args)
+(def (function ioe) begin (&rest args)
   "Starts a new transaction. This transaction must be closed by an explicit call to either rollback or commit. See with-transaction for convenience and safety. This is for debug purposes."
   (assert (not (boundp '*transaction*)))
   (setf *transaction* (apply #'make-transaction *database* args)))
 
-(def (function io) commit ()
+(def (function ioe) commit ()
   "Commits the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
   (unwind-protect
@@ -201,7 +201,7 @@
     (makunbound '*transaction*))
   (values))
 
-(def (function io) rollback ()
+(def (function ioe) rollback ()
   "Rolls back the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
   (assert-transaction-in-progress)
   (unwind-protect
@@ -210,7 +210,7 @@
     (makunbound '*transaction*))
   (values))
 
-(def (function io) execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
+(def (function ioe) execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
   "Executes an SQL command. If VISITOR is not present the result is returned in a sequence. The type of the sequence is determined by RESULT-TYPE which is either LIST or VECTOR. When VISITOR is present it will be called for each row in the result."
   (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
   (flet ((%execute-command ()
@@ -224,14 +224,14 @@
           (assert-transaction-in-progress)
           (%execute-command)))))
 
-(defun execute-ddl (command &rest args &key &allow-other-keys)
+(def (function e) execute-ddl (command &rest args &key &allow-other-keys)
   "A DDL statement is executed in a separate transaction."
   (apply #'execute command :with-transaction :ensure args))
 
-(defmethod transaction-mixin-class list (database)
+(def method transaction-mixin-class list (database)
   'transaction)
 
-(defgeneric make-transaction (database &key &allow-other-keys)
+(def (generic e) make-transaction (database &key &allow-other-keys)
   (:documentation "Extension point for with-transaction.")
 
   (:method :before (database &key &allow-other-keys)
@@ -244,13 +244,13 @@
                   :default-result-type (or default-result-type (default-result-type-of database))
                   args)))
 
-(defgeneric begin-transaction (database transaction)
+(def (generic e) begin-transaction (database transaction)
   (:documentation "Extension point for with-transaction and begin.")
 
   (:method (database transaction)
            (execute-command database transaction "BEGIN")))
 
-(defgeneric commit-transaction (database transaction)
+(def (generic e) commit-transaction (database transaction)
   (:documentation "Extension point for with-transaction and commit.")
 
   (:method :around (database transaction)
@@ -263,7 +263,7 @@
   (:method (database transaction)
            (execute-command database transaction "COMMIT")))
 
-(defgeneric rollback-transaction (database transaction)
+(def (generic e) rollback-transaction (database transaction)
   (:documentation "Extension point for with-transaction and rollback.")
 
   (:method :around (database transaction)
@@ -276,16 +276,16 @@
   (:method (database transaction)
            (execute-command database transaction "ROLLBACK")))
 
-(defgeneric cleanup-transaction (transaction)
+(def (generic e) cleanup-transaction (transaction)
   (:documentation "Extension point with-transaction and commit/rollback.")
   (:method ((transaction t))
     ;; nop
     ))
 
-(defgeneric prepare-command (database transaction command &key name)
+(def generic prepare-command (database transaction command &key name)
   (:documentation "Sends a query to the database for parsing and returns a handler (a prepared-statement CLOS object) that can be used as a command for EXECUTE-COMMAND."))
 
-(defun update-binding-values (binding-variables binding-types binding-values name-value-bindings)
+(def function update-binding-values (binding-variables binding-types binding-values name-value-bindings)
   (iter (for variable :in-vector binding-variables)
         (for type :in-vector binding-types)
         (for index :from 0)
@@ -298,11 +298,11 @@
               (error 'unbound-binding-variable-error :variable-name name))
             (setf (aref binding-values index) value)))))
 
-(defgeneric notify-transaction-event (transaction event)
+(def generic notify-transaction-event (transaction event)
   (:method (transaction event)
     (values)))
 
-(defgeneric execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
+(def generic execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
   (:method (database transaction command &key &allow-other-keys)
            (error "Default method should not be reached"))
 
@@ -347,7 +347,7 @@
                     (incf (delete-counter-of command-counter))
                     (notify-transaction-event transaction :delete))))))
 
-(defclass* transaction-with-hooks-mixin ()
+(def class* transaction-with-hooks-mixin ()
   ((hooks nil :type list)))
 
 (def cl:type transaction-hook-invocation-time ()
@@ -356,7 +356,7 @@
 (def cl:type transaction-hook-action ()
   `(member :commit :rollback :always))
 
-(defclass* transaction-hook ()
+(def class* transaction-hook ()
   ((function :type (or symbol function) :accessor function-of)
    (when :type transaction-hook-invocation-time :accessor when-of)
    (action :type transaction-hook-action)))
@@ -365,7 +365,7 @@
   (check-type when transaction-hook-invocation-time)
   (check-type action transaction-hook-action))
 
-(defun call-transaction-hooks (transaction when action)
+(def function call-transaction-hooks (transaction when action)
   (loop for hook :in (hooks-of transaction) do
         (let ((hook-action (action-of hook)))
           (when (and (eq when (when-of hook))
@@ -373,7 +373,7 @@
                          (eq action hook-action)))
             (funcall (function-of hook))))))
 
-(defmethod commit-transaction :around (database (transaction transaction-with-hooks-mixin))
+(def method commit-transaction :around (database (transaction transaction-with-hooks-mixin))
   ;; this must be an around method because the default around does not
   ;; do call-next-method when begin-transaction was not executed
   (progn
@@ -382,7 +382,7 @@
         (call-next-method)
       (call-transaction-hooks transaction :after :commit))))
 
-(defmethod rollback-transaction :around (database (transaction transaction-with-hooks-mixin))
+(def method rollback-transaction :around (database (transaction transaction-with-hooks-mixin))
   ;; this must be an around method because the default around does not
   ;; do call-next-method when begin-transaction was not executed
   (progn
@@ -395,7 +395,7 @@
   `(register-hook-in-transaction *transaction* ,when ,action
                                  (lambda () ,@forms)))
 
-(defgeneric register-hook-in-transaction (transaction when action function)
+(def generic register-hook-in-transaction (transaction when action function)
   (:method ((transaction transaction-with-hooks-mixin) when action (function function))
     (check-type when transaction-hook-invocation-time)
     (check-type action transaction-hook-action)

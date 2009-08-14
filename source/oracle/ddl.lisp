@@ -6,13 +6,13 @@
 
 (in-package :hu.dwim.rdbms.oracle)
 
-(defmethod database-list-sequences ((database oracle))
+(def method database-list-sequences ((database oracle))
   (mapcar #'first (execute "select sequence_name from user_sequences" :result-type 'list)))
 
-(defmethod database-list-tables ((database oracle))
+(def method database-list-tables ((database oracle))
   (mapcar #'first (execute "select table_name from user_tables" :result-type 'list)))
 
-(defmethod database-list-table-columns (name (database oracle))
+(def method database-list-table-columns (name (database oracle))
   (map 'list
    (lambda (column)
      (make-instance 'sql-column
@@ -28,7 +28,7 @@
                                     ;; does not use case consistently
     :result-type 'vector)))
 
-(defmethod database-list-table-indices (name (database oracle))
+(def method database-list-table-indices (name (database oracle))
   (mapcar
    (lambda (column)
      (make-instance 'sql-index
@@ -38,4 +38,3 @@
     (format nil "select index_name from user_indexes where lower(table_name) = '~A'"
             (string-downcase name)) ;; FIXME see prev
     :result-type 'list)))
-

@@ -17,14 +17,13 @@
 ;;;; where the external type names and their format is defined by
 ;;;;   <http://download-uk.oracle.com/docs/cd/B14117_01/appdev.101/b10779/oci03typ.htm#443569>
 
-;;;
+;;;;;;
 ;;; Boolean conversions
-;;;
 
-(defun boolean-to-char (value)
+(def function boolean-to-char (value)
   (foreign-oci-string-alloc (if value "T" "F") :null-terminated-p #f))
 
-(defun boolean-from-char (ptr len)
+(def function boolean-from-char (ptr len)
   (assert (= len (oci-char-width)))
   (let ((str (oci-string-to-lisp ptr len)))
     (assert (= (length str) 1))
@@ -34,80 +33,77 @@
         (#\F #f)
         (t ch)))))                ; KLUDGE real char(1), not a boolean
 
-;;;
+;;;;;;
 ;;; Integer conversions
-;;;
 
-(defun integer-to-int8 (value)
+(def function integer-to-int8 (value)
   (assert (typep value '(signed-byte 8)))
   (values
    (cffi:foreign-alloc 'oci:sb-1 :initial-element value)
    1))
 
-(defun integer-from-int8 (ptr len)
+(def function integer-from-int8 (ptr len)
   (assert (= len 1))
   (cffi:mem-ref ptr 'oci:sb-1))
 
-(defun integer-to-int16 (value)
+(def function integer-to-int16 (value)
   (assert (typep value '(signed-byte 16)))
   (values
    (cffi:foreign-alloc 'oci:sb-2 :initial-element value)
    2))
 
-(defun integer-from-int16 (ptr len)
+(def function integer-from-int16 (ptr len)
   (assert (= len 2))
   (cffi:mem-ref ptr 'oci:sb-2))
 
-(defun integer-to-int32 (value)
+(def function integer-to-int32 (value)
   (assert (typep value '(signed-byte 32)))
   (values
    (cffi:foreign-alloc 'oci:sb-4 :initial-element value)
    4))
 
-(defun integer-from-int32 (ptr len)
+(def function integer-from-int32 (ptr len)
   (assert (= len 4))
   (cffi:mem-ref ptr 'oci:sb-4))
 
-(defun integer-to-varnum (value)
+(def function integer-to-varnum (value)
   (assert (typep value 'integer))
   (rational-to-varnum value))
 
-(defun integer-from-varnum (ptr len)
+(def function integer-from-varnum (ptr len)
   (let ((r (rational-from-varnum ptr len)))
     (assert (typep r 'integer))
     r))
 
-;;;
+;;;;;;
 ;;; Float conversions
-;;;
 
-(defun float-to-bfloat (value)
+(def function float-to-bfloat (value)
   (values
    (cffi:foreign-alloc :float :initial-element (coerce value 'single-float))
    4))
 
-(defun float-from-bfloat (ptr len)
+(def function float-from-bfloat (ptr len)
   (assert (= len 4))
   (cffi:mem-ref ptr :float))
 
-(defun double-to-bdouble (value)
+(def function double-to-bdouble (value)
   (values
    (cffi:foreign-alloc :double :initial-element (coerce value 'double-float))
    8))
 
-(defun double-from-bdouble (ptr len)
+(def function double-from-bdouble (ptr len)
   (assert (= len 8))
   (cffi:mem-ref ptr :double))
 
-;;;
+;;;;;;
 ;;; Numeric conversions
-;;;
 
-(defun rational-to-number (rational &key (precision 38) (scale 0))
+(def function rational-to-number (rational &key (precision 38) (scale 0))
   (let ((bytes (rational-to-byte-array rational precision scale)))
     (cffi:foreign-alloc 'oci:ub-1 :count (length bytes) :initial-contents bytes)))
 
-(defun rational-from-number (ptr len)
+(def function rational-from-number (ptr len)
   (assert (<= 1 len 21))
   (let* ((sign-and-exponent (cffi:mem-aref ptr :uint8 0))
          (positivep (>= sign-and-exponent 128))
@@ -131,7 +127,7 @@
                  (* mantissa (expt 100 base-100-exponent))
                  (- (* mantissa (expt 100 base-100-exponent))))))))
 
-(defun rational-to-varnum (rational &key (precision 38) (scale 0))
+(def function rational-to-varnum (rational &key (precision 38) (scale 0))
   (let* ((bytes (rational-to-byte-array rational precision scale))
          (len (length bytes))
          (varnum (cffi:foreign-alloc 'oci:ub-1 :count (1+ len))))
@@ -140,24 +136,23 @@
           do (setf (cffi:mem-aref varnum 'oci:ub-1 (1+ i)) (aref bytes i)))
     (values varnum (1+ len))))
 
-(defun rational-from-varnum (ptr len)
+(def function rational-from-varnum (ptr len)
   (assert (= len 22))
   (rational-from-number
    (cffi:inc-pointer ptr 1)
    (cffi:mem-aref ptr :uint8 0)))
 
-;;;
+;;;;;;
 ;;; Character data conversions
-;;;
 
-(defun string-to-string (value)
+(def function string-to-string (value)
   (foreign-oci-string-alloc value))
 
-(defun string-from-string (ptr length)
+(def function string-from-string (ptr length)
   (declare (ignore length)) ; null terminated
   (oci-string-to-lisp ptr))
 
-(defun string-to-long-varchar (str)
+(def function string-to-long-varchar (str)
   (let* ((encoding (connection-encoding-of (database-of *transaction*)))
          (character-width (cffi::null-terminator-len encoding))
          (str-len (* character-width (length str)))
@@ -173,16 +168,16 @@
                                  :encoding encoding)
     (values ptr (+ str-len 4))))
 
-(defun string-from-long-varchar (ptr len)
+(def function string-from-long-varchar (ptr len)
   (assert (>= len 4))
   (oci-string-to-lisp
    (cffi:inc-pointer ptr (cffi:foreign-type-size 'oci:sb-4))
    (cffi:mem-ref ptr 'oci:sb-4)))
 
-;;;
+;;;;;;
 ;;; Binary data conversions
-;;;
-(defun byte-array-to-long-varraw (ba)
+
+(def function byte-array-to-long-varraw (ba)
   (assert (typep ba 'vector)) ; '(vector (unsigned-byte 8))
   (let* ((len (length ba))
          (ptr (cffi::foreign-alloc 'oci:ub-1 :count (+ len 4))))
@@ -192,7 +187,7 @@
           do (setf (cffi:mem-aref ptr 'oci:ub-1 i) byte))
     (values ptr (+ len 4))))
 
-(defun byte-array-from-long-varraw (ptr len)
+(def function byte-array-from-long-varraw (ptr len)
   (assert (>= len 4))
   (let* ((size (cffi:mem-ref ptr 'oci:sb-4))
          (result (make-array size)))
@@ -202,11 +197,10 @@
     result))
 
 
-;;;
+;;;;;;
 ;;; Datetime conversions
-;;;
 
-(defun local-time-to-date (local-time)
+(def function local-time-to-date (local-time)
   (let ((date (cffi:foreign-alloc 'oci:ub-1 :count 7)))
     (multiple-value-bind (ms ss mm hh day month year dow dls tz) (decode-local-time local-time)
       (declare (ignore ms dow dls tz))
@@ -220,7 +214,7 @@
               (cffi:mem-aref date 'oci:ub-1 6) (1+ ss))))
     (values date 7)))
 
-(defun local-time-from-date (ptr len)
+(def function local-time-from-date (ptr len)
   (assert (= len 7))
   (let ((century (- (cffi:mem-aref ptr 'oci:ub-1 0) 100)) ; TODO BC dates
         (year (- (cffi:mem-aref ptr 'oci:ub-1 1) 100))
@@ -238,7 +232,7 @@
                        (+ (* 100 century) year)
                        :timezone +utc-zone+)))
 
-(defun local-time-to-oci-date (local-time)
+(def function local-time-to-oci-date (local-time)
   ;; FIXME using fields of the opaque OCIDate structure, because the OCIDateSetDate and
   ;;       OCIDateSetTime macros are not available
   (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
@@ -255,7 +249,7 @@
        oci-date
        (cffi:foreign-type-size 'oci:date)))))
 
-(defun local-time-from-oci-date (ptr len)
+(def function local-time-from-oci-date (ptr len)
   ;; FIXME using fields of the opaque OCIDate structure, because the OCIDateGetDate and
   ;;       OCIDateGetTime macros are not available
   (assert (= len (cffi:foreign-type-size 'oci:date)))
@@ -275,7 +269,7 @@
                        year
                        :timezone +utc-zone+)))
 
-(defun local-time-to-timestamp (local-time)
+(def function local-time-to-timestamp (local-time)
   (let ((oci-date-time-pointer (cffi::foreign-alloc :pointer)))
     (oci-call (oci:descriptor-alloc (environment-handle-of *transaction*)
                                     oci-date-time-pointer
@@ -299,7 +293,7 @@
      oci-date-time-pointer
      (cffi:foreign-type-size :pointer))))
 
-(defun local-time-from-timestamp (ptr len)
+(def function local-time-from-timestamp (ptr len)
   (assert (= len (cffi:foreign-type-size :pointer)))
   (let ((environment-handle (environment-handle-of *transaction*))
         (error-handle (error-handle-of *transaction*)))
@@ -334,7 +328,7 @@
                           (cffi:mem-ref year 'oci:sb-2)
                           :timezone +utc-zone+)))))
 
-(defun local-time-to-timestamp-tz (local-time)
+(def function local-time-to-timestamp-tz (local-time)
   (let ((environment-handle (environment-handle-of *transaction*))
         (error-handle (error-handle-of *transaction*))
         (oci-date-time-pointer (cffi::foreign-alloc :pointer))
@@ -362,7 +356,7 @@
      oci-date-time-pointer
      (cffi:foreign-type-size :pointer))))
 
-(defun local-time-from-timestamp-tz (ptr len)
+(def function local-time-from-timestamp-tz (ptr len)
   (declare (ignore len))
   (let ((environment-handle (environment-handle-of *transaction*))
         (error-handle (error-handle-of *transaction*)))
@@ -411,7 +405,7 @@
 ;;; Helpers
 ;;;
 
-(defun rational-to-byte-array (rational &optional (precision 38) (scale 0))
+(def function rational-to-byte-array (rational &optional (precision 38) (scale 0))
   "Returns the bytes of RATIONAL encoded as an Oracle NUMBER."
   (assert (<= 1 precision 38))
   (assert (<= -84 scale 127))
@@ -455,7 +449,7 @@
 
              result))))
 
-(defun base-100-digits (number)
+(def function base-100-digits (number)
   "Returns the base-100 digits of NUMBER (a positive integer) as a list, the most significant
 digit is the first or NIL for 0."
   (declare (integer number))
@@ -468,7 +462,7 @@ digit is the first or NIL for 0."
                (push d digits))
           finally (return (values digits count)))))
 
-(defun timezone-as-HHMM-string (local-time)
+(def function timezone-as-HHMM-string (local-time)
   "Returns the time-zone of LOCAL-TIME in [+-]HH:MM format."
   (let ((offset (timezone local-time))) 
     (multiple-value-bind (hour sec) (floor (abs offset) 3600)
@@ -477,7 +471,7 @@ digit is the first or NIL for 0."
               hour
               (floor sec 60)))))
 
-(defun timezone-from-HHMM-string (timezone-string)
+(def function timezone-from-HHMM-string (timezone-string)
   "Parses the timezone from [+-]HH:MM format."
   (assert (= (length timezone-string) 6))
   (let ((sign (ecase (char timezone-string 0) (#\- -1) (#\+ 1)))
@@ -486,7 +480,7 @@ digit is the first or NIL for 0."
     (make-timezone (* sign hours) (* sign minutes))))
 
 ;; FIXME: this should be in local-time
-(defun make-timezone (hours minutes)
+(def function make-timezone (hours minutes)
   (let ((offset-in-sec (* (+ (* 60 hours) minutes) 60)))
       (if (and (= minutes 0)
                (= hours 0))
@@ -494,4 +488,3 @@ digit is the first or NIL for 0."
           (local-time::make-timezone :subzones `((,offset-in-sec nil "anonymous" nil nil))
                          :name "anonymous"
                          :loaded t))))
-

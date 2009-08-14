@@ -6,19 +6,19 @@
 
 (in-package :hu.dwim.rdbms.postgresql)
 
-(defun list-objects (type)
+(def function list-objects (type)
   (map 'list [elt !1 0] (execute (format nil "SELECT relname FROM pg_class WHERE relkind = '~A'" type))))
 
-(defmethod database-list-sequences ((database postgresql))
+(def method database-list-sequences ((database postgresql))
   (list-objects "S"))
 
-(defmethod database-list-tables ((database postgresql))
+(def method database-list-tables ((database postgresql))
   (list-objects "r"))
 
-(defmethod database-list-views ((database postgresql))
+(def method database-list-views ((database postgresql))
   (list-objects "v"))
 
-(defmethod database-list-table-columns (name (database postgresql))
+(def method database-list-table-columns (name (database postgresql))
   (map 'list
        (lambda (column)
          (make-instance 'sql-column
@@ -35,7 +35,7 @@
                                   pg_attribute.atttypid = pg_type.oid"
                 (string-downcase name)))))
 
-(defmethod database-list-table-indices (name (database postgresql))
+(def method database-list-table-indices (name (database postgresql))
   (map 'list
        (lambda (column)
          (make-instance 'sql-index
@@ -45,7 +45,7 @@
         (format nil "select indexname from pg_indexes where tablename = '~A'"
                 (string-downcase name)))))
 
-(defmethod database-list-dependent-views (table column (database postgresql))
+(def method database-list-dependent-views (table column (database postgresql))
   (execute
    (format nil "select distinct c3.relname
                   from pg_attribute a

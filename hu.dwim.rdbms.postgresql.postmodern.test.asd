@@ -24,5 +24,5 @@
 (defmethod call-in-system-environment ((operation load-op) (system (eql (find-system :hu.dwim.rdbms.postgresql.postmodern.test))) function)
   (progv
       (list (read-from-string "hu.dwim.rdbms:*database*"))
-      (list (eval (read-from-string "(make-instance 'hu.dwim.rdbms:postgresql-postmodern)")))
+      (list (eval (read-from-string "(make-instance 'hu.dwim.rdbms.postgresql:postgresql-postmodern)")))
     (call-next-method)))

@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(define-syntax-node sql-create-table (sql-ddl-statement)
+(def syntax-node sql-create-table (sql-ddl-statement)
   ((name
     :type sql-identifier*)
    (temporary
@@ -39,7 +39,7 @@
      (format-string " AS ")
      (format-sql-syntax-node as))))
 
-(define-syntax-node sql-create-view (sql-create-table)
+(def syntax-node sql-create-view (sql-create-table)
   ((replace
     #f
     :type boolean
@@ -60,7 +60,7 @@
    (format-string " AS ")
    (format-sql-syntax-node as)))
 
-(define-syntax-node sql-column (named-sql-syntax-node)
+(def syntax-node sql-column (named-sql-syntax-node)
   ((type
     :type sql-type)
    (constraints

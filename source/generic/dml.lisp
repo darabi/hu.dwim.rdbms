@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(defun sql-literal-values-for (columns values)
+(def function sql-literal-values-for (columns values)
   (map 'list (lambda (column value)
                (if (or (typep value 'sql-literal)
                        (not (typep column 'sql-column)))
@@ -16,25 +16,25 @@
                                   :type (type-of column))))
        columns values))
 
-(defun insert-record (table columns values)
+(def function insert-record (table columns values)
   (nth-value 1 (execute (make-instance 'sql-insert
                                        :table table
                                        :columns columns
                                        :values (sql-literal-values-for columns values)))))
 
-(defun update-records (table columns values &optional where)
+(def function update-records (table columns values &optional where)
   (nth-value 1 (execute (make-instance 'sql-update
                                        :table table
                                        :columns columns
                                        :values (sql-literal-values-for columns values)
                                        :where where))))
 
-(defun delete-records (table &optional where)
+(def function delete-records (table &optional where)
   (nth-value 1 (execute (make-instance 'sql-delete
                                        :table table
                                        :where where))))
 
-(defun select-records (columns tables &key where group-by having order-by offset limit)
+(def function select-records (columns tables &key where group-by having order-by offset limit)
   (execute (make-instance 'sql-select
                           :columns columns
                           :tables tables
@@ -45,7 +45,7 @@
                           :offset offset
                           :limit limit)))
 
-(defun select-count-* (tables &optional where)
+(def function select-count-* (tables &optional where)
   (first-elt (first-elt (execute (make-instance 'sql-select
                                                 :columns (list (sql-count-*))
                                                 :tables tables
