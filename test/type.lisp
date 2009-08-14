@@ -6,14 +6,10 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(enable-sql-syntax)
-
-(def suite (test/types :in test))
-
-(in-suite test/types)
+(def suite* (test/type :in nil))
 
 (def definer type-test (name type &body values)
-  `(def test* ,name ()
+  `(def test ,name ()
      (unwind-protect
           (with-transaction
             ;; the first , is unquote relative to the sql syntax, the second is relative to `
@@ -34,7 +30,7 @@
 #+nil
 (def definer type-test (name type &body values)
   (bind ((sql-type (compile-sexp-sql-type type)))
-    `(def test* ,name ()
+    `(def test ,name ()
        (unwind-protect
             (with-transaction
               ;; the first , is unquote relative to the sql syntax, the second is relative to `
@@ -61,27 +57,27 @@
                                             (first value))))
           values)))
 
-(def simple-type-test test/types/boolean boolean
+(def simple-type-test test/type/boolean boolean
   :null
   t
   nil)
 
-(def simple-type-test test/types/char (char 10)
+(def simple-type-test test/type/char (char 10)
   (nil :null)
   "1234567890"
   "áéíóöőúüű ")
 
-(def simple-type-test test/types/varchar (varchar 10)
+(def simple-type-test test/type/varchar (varchar 10)
   (nil :null)
   "1234567890"
   "áéíóöőúüű")
 
-(def simple-type-test test/types/clob clob
+(def simple-type-test test/type/clob clob
   (nil :null)
   "1234567890"
   "áéíóöőúüű")
 
-(def simple-type-test test/types/int8 (integer 8)
+(def simple-type-test test/type/int8 (integer 8)
   (nil :null)
   0
   1
@@ -89,7 +85,7 @@
   127
   -128)
 
-(def simple-type-test test/types/int16 (integer 16)
+(def simple-type-test test/type/int16 (integer 16)
   (nil :null)
   0
   1
@@ -97,7 +93,7 @@
   32767
   -32768)
 
-(def simple-type-test test/types/int32 (integer 32)
+(def simple-type-test test/type/int32 (integer 32)
   (nil :null)
   0
   1
@@ -105,7 +101,7 @@
   2147483647
   -2147483648)
 
-(def simple-type-test test/types/integer integer
+(def simple-type-test test/type/integer integer
   (nil :null)
   0
   1
@@ -113,7 +109,7 @@
   12345678901234567890123456789012345678
   -12345678901234567890123456789012345678)
 
-(def simple-type-test test/types/float float
+(def simple-type-test test/type/float float
   (nil :null)
   0.0
   1.0
@@ -123,7 +119,7 @@
   1.23e+9
   -1.23e+9)
 
-(def simple-type-test test/types/double-float (float 64)
+(def simple-type-test test/type/double-float (float 64)
   (nil :null)
   0.0
   1.0
@@ -135,11 +131,11 @@
   ;; we test here that ratio's precision is lost only up to double-float
   (1/3 #.(coerce 1/3 'double-float)))
 
-(def simple-type-test test/types/blob blob
+(def simple-type-test test/type/blob blob
   (nil :null)
   #.(coerce #(1 2 3 4 5 6 7 8 9 0) '(vector (unsigned-byte 8))))
 
-(def type-test test/types/date date
+(def type-test test/type/date date
   (eq nil :null)
   ;; TODO (signals 'error (local-time:now))
   (local-time:timestamp= (local-time:parse-datestring "1000-01-01"))
@@ -147,7 +143,7 @@
   (local-time:timestamp= (local-time:parse-datestring "2000-01-01"))
   (local-time:timestamp= (local-time:parse-datestring "3000-01-01")))
 
-(def type-test test/types/time time
+(def type-test test/type/time time
   (eq nil :null)
   ;; TODO (signals 'error (local-time:parse-timestring "06:06:06+02:00"))
   (local-time:timestamp= (local-time:parse-timestring "06:06:06Z"))
@@ -155,12 +151,12 @@
   (local-time:timestamp= (local-time:parse-timestring "23:59:59Z")))
 
 ;; TODO take tz into account when comparing
-(def type-test test/types/timestamp (timestamp #f)
+(def type-test test/type/timestamp (timestamp #f)
   (eq nil :null)
   ;; TODO (signals 'error (local-time:parse-timestring "2006-06-06T06:06:06+02:00"))
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06Z")))
 
-(def type-test test/types/timestamp-tz (timestamp #t)
+(def type-test test/type/timestamp-tz (timestamp #t)
   (eq nil :null)
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06Z"))
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06-01:00"))

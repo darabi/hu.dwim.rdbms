@@ -6,19 +6,17 @@
 
 (in-package :asdf)
 
-(find-system :hu.dwim.rdbms)
+(load-system :hu.dwim.asdf)
 
 (defsystem :hu.dwim.rdbms.postgresql
   :class hu.dwim.system
-  :setup-readtable-function-name "hu.dwim.rdbms::setup-readtable"
+  :package-name :hu.dwim.rdbms
   :author ("Attila Lendvai <attila.lendvai@gmail.com>"
            "Tamás Borbély <tomi.borbely@gmail.com>"
            "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD / Public domain"
   :description "Common stuff for Postgresql backends for hu.dwim.rdbms"
-  :depends-on (:hu.dwim.common-lisp
-               :hu.dwim.defclass-star
-               :hu.dwim.rdbms)
+  :depends-on (:hu.dwim.rdbms)
   :components ((:module "source"
                 :components ((:module "postgresql"
                               :components ((:file "package")

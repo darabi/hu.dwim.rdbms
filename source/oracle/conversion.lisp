@@ -1,6 +1,10 @@
-(in-package :hu.dwim.rdbms.oracle)
+;;; -*- mode: Lisp; Syntax: Common-Lisp; -*-
+;;;
+;;; Copyright (c) 2006 by the authors.
+;;;
+;;; See LICENCE for details.
 
-(enable-sharp-boolean-syntax)
+(in-package :hu.dwim.rdbms.oracle)
 
 ;;;;
 ;;;; Routines for converting the external representation of data types

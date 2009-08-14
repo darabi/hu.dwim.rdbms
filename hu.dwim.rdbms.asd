@@ -14,13 +14,13 @@
            "Tamás Borbély <tomi.borbely@gmail.com>"
            "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD / Public domain"
-  :description "rdbms lib with sql syntax and sql backend abstractions"
+  :description "Relational database independent SQL abstractions"
   :depends-on (:babel
-               :hu.dwim.common-lisp
                :hu.dwim.def
                :hu.dwim.defclass-star+hu.dwim.def
                :hu.dwim.logger
                :hu.dwim.syntax-sugar+hu.dwim.walker
+               :hu.dwim.syntax-sugar+swank
                :hu.dwim.walker
                :ironclad
                :local-time)
@@ -57,42 +57,6 @@
                                            (:file "lock" :depends-on ("syntax"))))))))
 
 (defmethod perform ((op test-op) (system (eql (find-system :hu.dwim.rdbms))))
-  ;; we will test the postmodern backend by default
-  (test-system :hu.dwim.rdbms.postmodern)
-  (values))
-
-(defclass hu.dwim.rdbms-backend-system (system-with-readtable)
-  ((runtime-database-factory-form
-    :initarg :runtime-database-factory-form
-    :accessor runtime-database-factory-form-of)
-   (compile-time-database-factory-form
-    :initform nil
-    :initarg :compile-time-database-factory-form
-    :accessor compile-time-database-factory-form-of)))
-
-(defmethod compile-time-database-factory-form-of :around ((self hu.dwim.rdbms-backend-system))
-  (or (call-next-method)
-      (runtime-database-factory-form-of self)))
-
-(defmethod perform ((op test-op) (system hu.dwim.rdbms-backend-system))
-  (load-system system)
-  (in-package :hu.dwim.rdbms)
-  ;; set it before compiling, so the SEXP SQL compiler will use the specified database type to format sql
-  (progv
-      (list (read-from-string "*database*"))
-      (list (eval
-             (read-from-string
-              (compile-time-database-factory-form-of system))))
-    (load-system :hu.dwim.rdbms.test))
-  (in-package :hu.dwim.rdbms.test)
-  (setf (symbol-value (read-from-string "*database*"))
-        (eval
-         (read-from-string
-          (runtime-database-factory-form-of system))))
-  (eval (read-from-string
-         "(setf *test-database* *database*)"))
-  (declaim (optimize (debug 3)))
-  (warn "(declaim (optimize (debug 3))) was issued to help later C-c C-c'ing")
-  (eval (read-from-string "(hu.dwim.stefil:funcall-test-with-feedback-message 'test)"))
-  (warn "*database* was set to ~A to help REPL'ing" (eval (read-from-string "*database*")))
-  (values))
+  (test-system :hu.dwim.rdbms.oracle)
+  (test-system :hu.dwim.rdbms.postgresql)
+  (test-system :hu.dwim.rdbms.sqlite))

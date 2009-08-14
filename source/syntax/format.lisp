@@ -71,9 +71,7 @@
          (*database* (or database
                          (and (boundp '*database*)
                               *database*)
-                         (progn
-                           (simple-style-warning "Using generic database type to format constant SQL AST parts at compile time.")
-                           (make-instance 'database))))
+                         (make-instance 'database)))
          (*command-elements* (make-array 8 :adjustable #t :fill-pointer 0))
          (*binding-variables* (make-array 16 :adjustable #t :fill-pointer 0))
          (*binding-types* (make-array 16 :adjustable #t :fill-pointer 0))

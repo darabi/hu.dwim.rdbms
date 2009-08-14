@@ -18,8 +18,8 @@
   :depends-on (:hu.dwim.def+hu.dwim.stefil
                :hu.dwim.rdbms)
   :components ((:module "test"
-                :components ((:file "package")
-                             (:file "test-environment" :depends-on ("package"))
-                             (:file "basic" :depends-on ("test-environment"))
-                             (:file "syntax" :depends-on ("test-environment"))
-                             (:file "type" :depends-on ("test-environment"))))))
+                :components (#+nil(:file "basic" :depends-on ("suite"))
+                             (:file "package")
+                             (:file "suite" :depends-on ("package"))
+                             #+nil(:file "syntax" :depends-on ("suite"))
+                             (:file "type" :depends-on ("suite"))))))

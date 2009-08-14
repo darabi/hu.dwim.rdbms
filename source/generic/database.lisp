@@ -136,7 +136,8 @@
 (let ((loaded-p #f))
   (defmethod initialize-instance :before ((self postgresql-postmodern) &key &allow-other-keys)
     (unless loaded-p
-      (asdf:load-system :hu.dwim.rdbms.postmodern)
+      #+nil
+      (asdf:load-system :hu.dwim.rdbms.postgresql.postmodern)
       (setf loaded-p #t))))
 
 ;;;;;;

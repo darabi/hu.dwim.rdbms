@@ -12,6 +12,7 @@
         :hu.dwim.defclass-star
         :hu.dwim.logger
         :hu.dwim.rdbms
+        :hu.dwim.syntax-sugar
         :local-time)
 
   (:shadowing-import-from #:hu.dwim.rdbms
@@ -20,6 +21,10 @@
   (:shadow #:null))
 
 (in-package :hu.dwim.rdbms.oracle)
+
+#+#.(cl:when (cl:find-package "SWANK") '(:and))
+(register-readtable-for-swank
+ '(:hu.dwim.rdbms.sqlite) 'hu.dwim.rdbms::setup-readtable)
 
 ;; import all the internal symbol of :hu.dwim.rdbms into :hu.dwim.rdbms.oracle
 (do-symbols (symbol :hu.dwim.rdbms)

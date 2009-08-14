@@ -6,8 +6,6 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(enable-sql-syntax)
-
 (def definer syntax-test (name database args &body body)
   `(def test ,name ,args
      (with-database (closer-mop:class-prototype
@@ -43,9 +41,7 @@
 (def definer reader-dialect-test (name &body body)
   `(def dialect-test ,name :reader ,@body))
 
-
-(def suite (test/syntax :in test))
-(in-suite test/syntax)
+(def suite* (test/syntax :in test))
 
 (def sexp-sql-dialect-test test/syntax/sexp-dialect
   '(select "bar" table)
@@ -199,17 +195,16 @@
       (is (eql (first-elt binding-values) 43))
       (is (every #'null (subseq binding-values 1))))))
 
-(def suite (test/formatting :in test/syntax))
-(in-suite test/formatting)
+(def suite* (test/format :in test/syntax))
 
-(def ast-dialect-test test/syntax/formatting/identifier
+(def ast-dialect-test test/syntax/format/identifier
   (sql-identifier :name "alma")
   "alma"
 
   (sql-identifier :name 'alma)
   "alma")
 
-(def ast-dialect-test test/syntax/formatting/create-table
+(def ast-dialect-test test/syntax/format/create-table
   (sql-create-table :name "a"
                     :columns (list (sql-column :name "a"
                                                :type (sql-integer-type))))
@@ -223,7 +218,7 @@
   ((oracle "CREATE GLOBAL TEMPORARY TABLE a (a NUMBER) ON COMMIT DROP")
    (t "CREATE GLOBAL TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")))
 
-(def ast-dialect-test test/syntax/formatting/alter-table
+(def ast-dialect-test test/syntax/format/alter-table
   (sql-alter-table :name "a"
                    :actions (list (sql-add-column-action :name "a"
                                                          :type (sql-integer-type))))
@@ -240,21 +235,21 @@
                    :actions (list (sql-drop-column-action :name "a")))
   "ALTER TABLE a DROP COLUMN a")
 
-(def ast-dialect-test test/syntax/formatting/drop-table
+(def ast-dialect-test test/syntax/format/drop-table
   (sql-drop-table :name "a")
   "DROP TABLE a")
 
-(def ast-dialect-test test/syntax/formatting/create-index
+(def ast-dialect-test test/syntax/format/create-index
   (sql-create-index :name "a"
                     :table-name "a"
                     :columns (list "a" "a"))
   "CREATE INDEX a ON a (a, a)")
 
-(def ast-dialect-test test/syntax/formatting/drop-index
+(def ast-dialect-test test/syntax/format/drop-index
   (sql-drop-index :name "a")
   "DROP INDEX a")
 
-(def ast-dialect-test test/syntax/formatting/insert
+(def ast-dialect-test test/syntax/format/insert
   (sql-insert :table "a"
               :columns (list "a")
               :values (list "a"))
@@ -265,7 +260,7 @@
               :values (list "a"))
   "INSERT INTO a (a) VALUES ('a')")
 
-(def ast-dialect-test test/syntax/formatting/select
+(def ast-dialect-test test/syntax/format/select
   (sql-select :columns (list "a")
               :tables (list "a"))
   "SELECT a FROM a"
@@ -289,7 +284,7 @@
               :tables (list (sql-table-alias :name "a" :alias "b")))
   "SELECT b.a AS c FROM a b")
 
-(def ast-dialect-test test/syntax/formatting/update
+(def ast-dialect-test test/syntax/format/update
   (sql-update :table "a"
               :columns (list "a")
               :values (list "a"))
@@ -300,14 +295,14 @@
               :values (list "a"))
   "UPDATE a SET a = 'a'")
 
-(def ast-dialect-test test/syntax/formatting/delete
+(def ast-dialect-test test/syntax/format/delete
   (sql-delete :table "a")
   "DELETE from a"
 
   (sql-delete :table (make-instance 'sql-identifier :name "a"))
   "DELETE from a")
 
-(def ast-dialect-test test/syntax/formatting/sequence
+(def ast-dialect-test test/syntax/format/sequence
   (sql-create-sequence :name "a")
   "CREATE SEQUENCE a"
 
@@ -318,7 +313,7 @@
   ((oracle "SELECT a.nextval FROM dual ")
    (t "SELECT NEXTVAL('a')")))
 
-(def ast-dialect-test test/syntax/formatting/lock
+(def ast-dialect-test test/syntax/format/lock
   (sql-lock-table :table "a"
                   :mode :share
                   :wait #f)

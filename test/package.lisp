@@ -15,18 +15,34 @@
         :hu.dwim.syntax-sugar)
 
   (:shadowing-import-from :hu.dwim.rdbms
-                          #:log))
+                          #:log)
+
+  ;; we intentionally not import all internal hu.dwim.rdbms symbols here to test the proper exporting of the symbols, too
+  (:import-from :hu.dwim.rdbms
+                #:*database*
+                #:*sql-stream*
+                #:*transaction*
+                #:compile-sexp-sql
+                #:compile-sexp-sql-binding-variable
+                #:compile-sexp-sql-column
+                #:compile-sexp-sql-columns
+                #:compile-sexp-sql-literal
+                #:compile-sexp-sql-type
+                #:concatenate-string
+                #:concatenate-symbol
+                #:connection-specification-of
+                #:eval-always
+                #:expand-sql-ast-into-lambda-form
+                #:log.debug
+                #:log.dribble
+                #:log.error
+                #:log.info
+                #:log.warn
+                #:rebind
+                #:value-of
+                #:with-transaction*))
 
 (in-package :hu.dwim.rdbms.test)
-
-(import (let ((*package* (find-package :hu.dwim.rdbms)))
-          ;; we intentionally not import all internal hu.dwim.rdbms symbols here to test the proper exporting of the symbols, too
-          (read-from-string "(concatenate-symbol concatenate-string *sql-stream* eval-always rebind
-                              connection-specification-of *database* *transaction*
-                              with-transaction* process-sql-syntax-list compile-sexp-sql-column compile-sexp-sql-columns
-                              compile-sexp-sql compile-sexp-sql-type expand-sql-ast-into-lambda-form
-                              value-of compile-sexp-sql-binding-variable compile-sexp-sql-literal
-                              log log.dribble log.debug log.info log.warn log.error)")))
 
 (import-sql-syntax-node-names)
 

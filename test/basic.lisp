@@ -6,9 +6,7 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(def suite (test/basic :in test))
-
-(in-suite test/basic)
+(def suite* (test/basic :in test))
 
 (def test* test/basic/connect ()
   (finishes
