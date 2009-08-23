@@ -13,6 +13,7 @@
         :hu.dwim.defclass-star
         :hu.dwim.logger
         :hu.dwim.syntax-sugar
+        :hu.dwim.util
         :babel)
 
   (:shadow #:log

@@ -201,7 +201,7 @@
     (values string binding-variables binding-types binding-values)))
 
 (def function sql-constructor-name (name)
-  (concatenate-symbol (find-package :hu.dwim.rdbms) "SQL-" name))
+  (format-symbol (find-package :hu.dwim.rdbms) "SQL-~A" name))
 
 (def function sql-operator-name (name)
  (if (every (lambda (char) (char= char #\-)) (symbol-name name))

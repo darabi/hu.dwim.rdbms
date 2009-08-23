@@ -71,7 +71,7 @@
     (macrolet ((alloc (&rest whats)
                  `(progn
                    ,@(loop for what :in whats
-                           for accessor = (concatenate-symbol what "-pointer")
+                           for accessor = (format-symbol (find-package :hu.dwim.rdbms.oracle) "~A-POINTER" what)
                            collect `(setf (,accessor transaction)
                                      (make-void-pointer))))))
       (alloc
@@ -150,7 +150,7 @@
   (macrolet ((dealloc (&rest whats)
                `(progn
                  ,@(loop for what in whats
-                         for accessor = (concatenate-symbol what "-pointer")
+                         for accessor = (format-symbol (find-package :hu.dwim.rdbms.oracle) "~A-POINTER" what)
                          collect `(awhen (,accessor transaction)
                                    (cffi:foreign-free it)
                                    (setf (,accessor transaction) nil))))))

@@ -177,8 +177,7 @@
                                              (+ b
                                                 ,(sql-binding-variable
                                                   :type (sql-integer-type)
-                                                  :name (concatenate-symbol (find-package :hu.dwim.rdbms.test)
-                                                                            "var-" i))
+                                                  :name (format-symbol (find-package :hu.dwim.rdbms.test) "VAR-~A" i))
                                                 ,i)])))])
          (extra-columns '(c d)))
     (bind (((:values command binding-variables binding-types binding-values)

@@ -30,8 +30,8 @@
 (macrolet ((def (&rest names)
                `(progn
                  ,@(loop for name in names
-                         collect `(defmacro ,(concatenate-symbol name "-of") (transaction)
-                                   `(cffi:mem-ref (,',(concatenate-symbol name "-pointer") ,transaction)
+                         collect `(defmacro ,(format-symbol (find-package :hu.dwim.rdbms.oracle) "~A-OF" name) (transaction)
+                                   `(cffi:mem-ref (,',(format-symbol (find-package :hu.dwim.rdbms.oracle) "~A-POINTER" name) ,transaction)
                                     '(:pointer :void)))))))
   (def
     environment-handle

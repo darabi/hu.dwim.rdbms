@@ -29,7 +29,6 @@
                 #:compile-sexp-sql-literal
                 #:compile-sexp-sql-type
                 #:concatenate-string
-                #:concatenate-symbol
                 #:connection-specification-of
                 #:eval-always
                 #:expand-sql-ast-into-lambda-form
