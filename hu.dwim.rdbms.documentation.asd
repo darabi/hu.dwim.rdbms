@@ -15,7 +15,9 @@
            "Tamás Borbély <tomi.borbely@gmail.com>")
   :licence "BSD / Public domain"
   :description "Documentation for hu.dwim.rdbms"
-  :depends-on (:hu.dwim.rdbms.postgresql.postmodern.test
+  :depends-on (:hu.dwim.rdbms.oracle.test
+               :hu.dwim.rdbms.postgresql.test
+               :hu.dwim.rdbms.sqlite.test
                :hu.dwim.wui)
   :components ((:module "documentation"
                 :components ((:file "package")))))

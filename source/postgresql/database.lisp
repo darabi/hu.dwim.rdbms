@@ -7,13 +7,7 @@
 (in-package :hu.dwim.rdbms.postgresql)
 
 (def (class* e) postgresql (database)
-  ())
-
-(def (class* e) postgresql-postmodern (postgresql)
   ((muffle-warnings #f :type boolean :accessor muffle-warnings?)))
-
-(def (class* e) postgresql-transaction ()
-  ())
 
 (def special-variable *unique-counter* 0)
 

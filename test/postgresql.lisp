@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(def special-variable *postgresql-database* (make-instance 'hu.dwim.rdbms.postgresql:postgresql-postmodern
+(def special-variable *postgresql-database* (make-instance 'hu.dwim.rdbms.postgresql:postgresql
                                                            :connection-specification '(:database "rdbms-test"
                                                                                        :user-name "rdbms-test"
                                                                                        :password "test123")))

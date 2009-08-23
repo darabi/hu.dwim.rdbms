@@ -13,6 +13,7 @@
         :hu.dwim.logger
         :hu.dwim.rdbms
         :hu.dwim.syntax-sugar
+        :hu.dwim.util
         :local-time)
 
   (:shadowing-import-from #:hu.dwim.rdbms

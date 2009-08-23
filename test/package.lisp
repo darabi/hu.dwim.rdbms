@@ -12,7 +12,8 @@
         :hu.dwim.logger
         :hu.dwim.rdbms
         :hu.dwim.stefil
-        :hu.dwim.syntax-sugar)
+        :hu.dwim.syntax-sugar
+        :hu.dwim.util)
 
   (:shadowing-import-from :hu.dwim.rdbms
                           #:log)
@@ -28,7 +29,6 @@
                 #:compile-sexp-sql-columns
                 #:compile-sexp-sql-literal
                 #:compile-sexp-sql-type
-                #:concatenate-string
                 #:connection-specification-of
                 #:eval-always
                 #:expand-sql-ast-into-lambda-form

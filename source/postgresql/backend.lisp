@@ -6,16 +6,16 @@
 
 (in-package :hu.dwim.rdbms.postgresql)
 
-(def class* postgresql-postmodern-transaction (transaction)
+(def class* postgresql-transaction (transaction)
   ((connection
     nil
-    :documentation "The Postmodern connection")
+    :documentation "The Postgresql connection")
    (muffle-warnings (muffle-warnings? *database*) :type boolean :accessor muffle-warnings?)))
 
-(def method transaction-mixin-class list ((db postgresql-postmodern))
-  'postgresql-postmodern-transaction)
+(def method transaction-mixin-class list ((db postgresql))
+  'postgresql-transaction)
 
-(def method prepare-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
+(def method prepare-command ((db postgresql) (tr postgresql-transaction) (command string)
                             &key (name (generate-unique-postgresql-name "prepared_")))
   (cl-postgres:prepare-query (connection-of tr) name command)
   (make-instance 'prepared-statement :name name :query command))
@@ -24,7 +24,7 @@
 
 (local-time:set-local-time-cl-postgres-readers *cl-postgres-sql-readtable*)
 
-(def function execute-postmodern-prepared-statement (connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
+(def function execute-prepared-statement (connection statement-name &key binding-types binding-values visitor result-type &allow-other-keys)
   (bind ((cl-postgres:*sql-readtable* *cl-postgres-sql-readtable*))
     (cl-postgres:exec-prepared
      connection statement-name
@@ -95,31 +95,30 @@
            (list #'cl-postgres:list-row-reader)
            (vector #'cl-postgres:vector-row-reader))))))
 
-(def method execute-command :around ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) command &key &allow-other-keys)
+(def method execute-command :around ((db postgresql) (tr postgresql-transaction) command &key &allow-other-keys)
   (if (muffle-warnings? tr)
       (handler-bind ((cl-postgres:postgresql-warning #'muffle-warning))
         (call-next-method))
       (call-next-method)))
 
-(def method execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (command string)
+(def method execute-command ((db postgresql) (tr postgresql-transaction) (command string)
                             &rest args)
   (let ((connection (connection-of tr))
         (statement-name "")) ; unnamed prepared statement
     (cl-postgres:prepare-query connection statement-name command)
     (handler-case
-        (apply #'execute-postmodern-prepared-statement connection statement-name args)
+        (apply #'execute-prepared-statement connection statement-name args)
       (cl-postgres-error:lock-not-available (error)
         (unable-to-obtain-lock-error error)))))
 
-(def method execute-command ((db postgresql-postmodern) (tr postgresql-postmodern-transaction) (prepared-statement prepared-statement)
-                            &rest args)
-  (apply #'execute-postmodern-prepared-statement (connection-of tr) (name-of prepared-statement) args))
+(def method execute-command ((db postgresql) (tr postgresql-transaction) (prepared-statement prepared-statement) &rest args)
+  (apply #'execute-prepared-statement (connection-of tr) (name-of prepared-statement) args))
 
-(def method connection-of :around ((tr postgresql-postmodern-transaction))
+(def method connection-of :around ((tr postgresql-transaction))
   (aif (call-next-method)
        it
        (let ((db (database-of tr)))
-         (log.debug "Opening Postmodern connection the first time it was needed, using ~S" (remove-from-plist (connection-specification-of db) :password))
+         (log.debug "Opening Postgresql connection the first time it was needed, using ~S" (remove-from-plist (connection-specification-of db) :password))
          (aprog1
              (loop
                (with-simple-restart (retry "Retry connecting")
@@ -129,11 +128,11 @@
                                 (bind (((&key (host "localhost") (port 5432) database user-name (password ""))
                                         (connection-specification-of db)))
                                   (list database user-name password host port)))))))
-           (log.debug "Succesfully opened Postmodern connection ~A for transaction ~A in database ~A"
+           (log.debug "Succesfully opened Postgresql connection ~A for transaction ~A in database ~A"
                       it tr db)))))
 
-(def method cleanup-transaction :after ((tr postgresql-postmodern-transaction))
+(def method cleanup-transaction :after ((tr postgresql-transaction))
   (awhen (slot-value tr 'connection)
-    (log.debug "Closing Postmodern connection ~A of transaction ~A in database ~A" it tr (database-of tr))
+    (log.debug "Closing Postgresql connection ~A of transaction ~A in database ~A" it tr (database-of tr))
     (cl-postgres:close-database it)
     (setf (connection-of tr) nil)))

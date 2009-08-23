@@ -12,7 +12,8 @@
         :hu.dwim.defclass-star
         :hu.dwim.logger
         :hu.dwim.rdbms
-        :hu.dwim.syntax-sugar)
+        :hu.dwim.syntax-sugar
+        :hu.dwim.util)
 
   (:shadowing-import-from #:hu.dwim.rdbms
                           #:type #:type-of #:log)
