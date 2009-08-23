@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms)
 
-(def special-variable *transaction*)
+(def (special-variable e) *transaction*)
 
 (def condition* transaction-error (simple-rdbms-error)
   ())
