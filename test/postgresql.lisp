@@ -7,9 +7,9 @@
 (in-package :hu.dwim.rdbms.test)
 
 (def special-variable *postgresql-database* (make-instance 'hu.dwim.rdbms.postgresql:postgresql
-                                                           :connection-specification '(:database "rdbms-test"
-                                                                                       :user-name "rdbms-test"
-                                                                                       :password "test123")))
+                                                           :connection-specification '(:database "hu.dwim.rdbms.test"
+                                                                                       :user-name "hu.dwim.rdbms.test"
+                                                                                       :password "engedjbe")))
 
 (def test (test/postgresql :in test) ()
   (with-database *postgresql-database*
