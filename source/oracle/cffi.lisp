@@ -1,8 +1,8 @@
 ;;; WARNING: This is a generated file, editing it is not advised!
 (in-package :common-lisp-user)
 (asdf:operate 'asdf:load-op :verrazano-runtime)
-(DEFPACKAGE :ORACLE-CFFI-BINDINGS (:USE :CFFI) (:NICKNAMES "OCI")
-            (:EXPORT "+DIRPATH-EXPR-REF-TBLNAME+" "+DIRPATH-EXPR-SQL+" "+DIRPATH-EXPR-OBJ-CONSTR+"
+(defpackage :hu.dwim.rdbms.oracle.cffi (:use :cffi) (:nicknames :oci)
+            (:export "+DIRPATH-EXPR-REF-TBLNAME+" "+DIRPATH-EXPR-SQL+" "+DIRPATH-EXPR-OBJ-CONSTR+"
              "+DIRPATH-DATASAVE-PARTIAL+" "+DIRPATH-DATASAVE-FINISH+" "+DIRPATH-DATASAVE-SAVEONLY+"
              "+DIRPATH-COL-ERROR+" "+DIRPATH-COL-PARTIAL+" "+DIRPATH-COL-NULL+"
              "+DIRPATH-COL-COMPLETE+" "+DIRPATH-NOT-PREPARED+" "+DIRPATH-PARTIAL+"
@@ -534,7 +534,7 @@
              "NZPKCS-11-I-NFO" "NZSS-ENTRY" "NZTT-IDENTITY" "NZTT-PERSONA-PRIVATE"
              "NZTT-IDENTITY-PRIVATE" "ORATEXT" "TEXT" "TIME" "SWORD" "SB-2" "UB-1" "UB-2" "UB-4"))
 
-(in-package :ORACLE-CFFI-BINDINGS)
+(in-package :hu.dwim.rdbms.oracle.cffi)
 (cffi::defctype* ub-4 :unsigned-int)
 (cffi::defctype* ub-2 :short)
 (cffi::defctype* ub-1 :unsigned-char)

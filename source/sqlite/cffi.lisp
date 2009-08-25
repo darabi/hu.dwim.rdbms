@@ -1,8 +1,8 @@
 ;;; WARNING: This is a generated file, editing it is not advised!
 (in-package :common-lisp-user)
 (asdf:operate 'asdf:load-op :verrazano-runtime)
-(DEFPACKAGE :SQLITE3-CFFI-BINDINGS (:USE :CFFI) (:NICKNAMES)
-            (:EXPORT "+SQLITE-INDEX-CONSTRAINT-MATCH+" "+SQLITE-INDEX-CONSTRAINT-GE+"
+(defpackage :hu.dwim.rdbms.sqlite.cffi (:use :cffi)
+            (:export "+SQLITE-INDEX-CONSTRAINT-MATCH+" "+SQLITE-INDEX-CONSTRAINT-GE+"
              "+SQLITE-INDEX-CONSTRAINT-LT+" "+SQLITE-INDEX-CONSTRAINT-LE+"
              "+SQLITE-INDEX-CONSTRAINT-GT+" "+SQLITE-INDEX-CONSTRAINT-EQ+"
              "+SQLITE-UTF-16-ALIGNED+" "+SQLITE-ANY+" "+SQLITE-UTF-16+" "+SQLITE-UTF-16-BE+"
@@ -81,7 +81,7 @@
              "SQLITE-INT-64" "SQLITE-3-CONTEXT" "SQLITE-3-VALUE" "SQLITE-3-VTAB-CURSOR"
              "SQLITE-3-INDEX-INFO" "SQLITE-3-VTAB" "SQLITE-3" "SQLITE-3-MODULE"))
 
-(in-package :SQLITE3-CFFI-BINDINGS)
+(in-package :hu.dwim.rdbms.sqlite.cffi)
 (cffi::defctype* sqlite-3-module sqlite-3-module)
 (cffi::defctype* sqlite-3 sqlite-3)
 (cffi:defcstruct sqlite-3)
