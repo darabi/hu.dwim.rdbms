@@ -8,6 +8,10 @@
 
 (def (special-variable e) *transaction*)
 
+(def (special-variable e) *implicit-transaction* #f "Specificies what to do when there is no transaction in progress during executing an SQL command. The value #f means an error will be signalled. The value :new unconditionally wraps each execution with a new transaction, while :ensure uses the current transaction if there's one.")
+
+(def (special-variable e) *implicit-transaction-default-terminal-action* :rollback "Specifies the terminal action for implicit transactions.")
+
 (def condition* transaction-error (simple-rdbms-error)
   ())
 
@@ -107,7 +111,7 @@
 
 (def (with-macro* e) with-transaction* (&rest args &key (default-terminal-action :commit) database &allow-other-keys)
   (unless (or database (boundp '*database*))
-    (error "Cannot start transaction because database was not provided, either use with-database or provide a database to with-transaction*"))
+    (error "Cannot start transaction because database was not provided, either use WITH-DATABASE or provide a database to WITH-TRANSACTION*"))
   (bind ((*database* (or database *database*))
          (*transaction* nil)
          (body-finished? #f))
@@ -185,15 +189,15 @@
 
 (def (function io) assert-transaction-in-progress ()
   (unless (in-transaction-p)
-    (error 'transaction-error :format-control "No transaction in progress")))
+    (error 'transaction-error :format-control "No transaction in progress and implicit transactions are turned off.~%Please either use WITH-TRANSACTION, or BEGIN/COMMIT/ROLLBACK, or set *IMPLICIT-TRANSACTION* and *IMPLICIT-TRANSACTION-DEFAULT-TERMINAL-ACTION* accodring to your needs.")))
 
 (def (function ioe) begin (&rest args)
-  "Starts a new transaction. This transaction must be closed by an explicit call to either rollback or commit. See with-transaction for convenience and safety. This is for debug purposes."
+  "Starts a new transaction. This transaction must be closed by an explicit call to either ROLLBACK or COMMIT. See with-transaction for convenience and safety. This is for debug purposes."
   (assert (not (boundp '*transaction*)))
   (setf *transaction* (apply #'make-transaction *database* args)))
 
 (def (function ioe) commit ()
-  "Commits the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
+  "Commits the current transaction. The transaction must be started by an explicit call to BEGIN. This is for debug purposes."
   (assert-transaction-in-progress)
   (unwind-protect
        (commit-transaction *database* *transaction*)
@@ -202,7 +206,7 @@
   (values))
 
 (def (function ioe) rollback ()
-  "Rolls back the current transaction. The transaction must be started by an explicit call to begin. This is for debug purposes."
+  "Rolls back the current transaction. The transaction must be started by an explicit call to BEGIN. This is for debug purposes."
   (assert-transaction-in-progress)
   (unwind-protect
        (rollback-transaction *database* *transaction*)
@@ -210,7 +214,7 @@
     (makunbound '*transaction*))
   (values))
 
-(def (function ioe) execute (command &rest args &key visitor bindings result-type (with-transaction #f) &allow-other-keys)
+(def (function ioe) execute (command &rest args &key visitor bindings result-type (with-transaction *implicit-transaction*) &allow-other-keys)
   "Executes an SQL command. If VISITOR is not present the result is returned in a sequence. The type of the sequence is determined by RESULT-TYPE which is either LIST or VECTOR. When VISITOR is present it will be called for each row in the result."
   (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
   (flet ((%execute-command ()
@@ -218,7 +222,7 @@
     (if (or (eq :new with-transaction)
             (and (not (in-transaction-p))
                  (eq :ensure with-transaction)))
-        (with-transaction
+        (with-transaction* (:default-terminal-action *implicit-transaction-default-terminal-action*)
           (%execute-command))
         (progn
           (assert-transaction-in-progress)
