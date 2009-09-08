@@ -66,7 +66,7 @@
 ;;;;;;
 ;;; Update table
 
-(def special-variable *signal-non-destructive-alter-table-commands* #f)
+(def special-variable *signal-non-destructive-alter-table-commands* *load-as-production?*)
 
 (def (condition* e) unconfirmed-alter-table-error (serious-condition)
   ((table-name
