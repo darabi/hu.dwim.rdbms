@@ -36,7 +36,7 @@
 
 (def function process-error-code (error-code error-message message &rest args)
   (unless (= hu.dwim.rdbms.sqlite.cffi:+sqlite-ok+ error-code)
-    (apply 'error (concatenate-string message "~%Error Code: ~A, Error Message: ~A")
+    (apply 'error (string+ message "~%Error Code: ~A, Error Message: ~A")
            (append args (list error-code error-message)))))
 
 (def function ensure-connected (tr)

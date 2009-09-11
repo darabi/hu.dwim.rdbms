@@ -12,7 +12,7 @@
 (def special-variable *unique-counter* 0)
 
 (def (function i) generate-unique-postgresql-name (base)
-  (concatenate-string (string base) (princ-to-string (incf *unique-counter*))))
+  (string+ (string base) (princ-to-string (incf *unique-counter*))))
 
 (def constant +maximum-rdbms-name-length+ 63)
 

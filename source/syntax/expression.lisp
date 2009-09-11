@@ -36,7 +36,7 @@
   (:format-sql-syntax-node
    (format-char "(")
    (format-separated-list subqueries
-                          (concatenate-string (symbol-name set-operation) (if all " ALL" "")))
+                          (string+ (symbol-name set-operation) (if all " ALL" "")))
    (format-char ")")))
 
 (def definer set-operation (name)

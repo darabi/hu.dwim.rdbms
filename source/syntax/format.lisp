@@ -104,7 +104,7 @@
                  vector)))
       (bind (((:values command-elements constant-command-elements?) (reduce-subsequences *command-elements*
                                                                                          #'constant-command-element-p
-                                                                                         #'concatenate-string))
+                                                                                         #'string+))
              ((:values variables constant-variables?)               (reduce-subsequences *binding-variables*
                                                                                          #'constant-variable-p
                                                                                          #'vector))

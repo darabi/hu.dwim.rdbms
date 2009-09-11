@@ -96,7 +96,7 @@
 (def syntax-test test/syntax/expand-sql-ast/unquote/1 postgresql (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
-                           (apply 'concatenate-string
+                           (apply 'string+
                                   (iter (for i :from 1 :to n)
                                         (unless (first-iteration-p)
                                           (collect " OR "))
@@ -128,7 +128,7 @@
 (def syntax-test test/syntax/expand-sql-ast/unquote/2 postgresql (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE ((a = (b + $1::NUMERIC + 1)) OR (a = (b + $2::NUMERIC + 2)) OR (a = (b + $3::NUMERIC + 3)))"
   (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
-                           (apply 'concatenate-string
+                           (apply 'string+
                                   (iter (for i :from 1 :to n)
                                         (unless (first-iteration-p)
                                           (collect " OR "))
