@@ -24,6 +24,25 @@
     :utf-8
     :type (member :utf-8 :us-ascii))))
 
+(def (special-variable e) *database-command-line-argument-specifications*
+  '(("database-host"
+     :type string
+     :initial-value "localhost"
+     :documentation "The server host name where the database is listening.")
+    ("database-port"
+     :type integer
+     :initial-value 5432
+     :documentation "The server port where the database is listening.")
+    ("database-name"
+     :type string
+     :documentation "The database name that will be connected.")
+    ("database-user-name"
+     :type string
+     :documentation "The user name that is used to connect to the database.")
+    ("database-password"
+     :type string
+     :documentation "The password that is used to connect to the database.")))
+
 (def (condition* e) rdbms-error ()
   ())
 
