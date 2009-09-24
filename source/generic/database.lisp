@@ -24,7 +24,7 @@
     :utf-8
     :type (member :utf-8 :us-ascii))))
 
-(def (special-variable e) *database-command-line-options*
+(def (constant e) +database-command-line-options+
   '(("database-host"
      :type string
      :initial-value "localhost"
