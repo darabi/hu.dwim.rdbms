@@ -33,7 +33,3 @@
              (not (find-symbol (symbol-name symbol) #.(find-package :hu.dwim.rdbms.oracle))))
     (import symbol)))
 
-(cffi:define-foreign-library oracle-oci
-  (:unix "libocixe.so")
-  (:windows "libocixe.dll")
-  (t (:default "libocixe")))

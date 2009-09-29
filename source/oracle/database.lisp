@@ -11,12 +11,6 @@
     :utf-16
     :type (member :ascii :utf-16))))
 
-(def method initialize-instance :before ((self oracle) &key &allow-other-keys)
-  ;; TODO let the user control version, path and stuff through initargs
-  (let ((cffi:*foreign-library-directories*
-         (list #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")))
-    (cffi:load-foreign-library 'hu.dwim.rdbms.oracle::oracle-oci)))
-
 (def method transaction-mixin-class list ((db oracle))
   'oracle-transaction)
 
