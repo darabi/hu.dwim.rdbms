@@ -41,7 +41,7 @@
                             (command string)
                             &key &allow-other-keys)
   (ensure-connected transaction)
-  (log.debug "Preparing command: ~S" command)
+  (rdbms.debug "Preparing command: ~S" command)
   (make-prepared-statement command))
 
 (def method execute-command ((database oracle)
@@ -49,7 +49,7 @@
                             (command string)
                             &key visitor binding-types binding-values result-type start-row row-limit
                             &allow-other-keys)
-  (log.debug "Executing ~S" command)
+  (rdbms.debug "Executing ~S" command)
   (let ((statement (prepare-command database transaction command)))
     (unwind-protect
          (execute-prepared-statement transaction statement binding-types binding-values visitor result-type
@@ -66,7 +66,7 @@
 
 (def method cleanup-transaction :after ((transaction oracle-transaction))
   (when (environment-handle-pointer transaction)
-    (log.debug "Cleaning up Oracle transaction ~A to database ~A" transaction (database-of transaction))
+    (rdbms.debug "Cleaning up Oracle transaction ~A to database ~A" transaction (database-of transaction))
     (disconnect transaction)))
 
 ;;;;;;
@@ -93,7 +93,7 @@
        service-context-handle
        session-handle))
 
-    (log.debug "Connecting in transaction ~A" transaction)
+    (rdbms.debug "Connecting in transaction ~A" transaction)
     (oci-call (oci:env-create (environment-handle-pointer transaction)
                               (logior
                                (ecase (connection-encoding-of (database-of *transaction*))
@@ -108,7 +108,7 @@
 
     (iter connecting
           (with-simple-restart (retry "Retry connecting to Oracle")
-            (log.debug "Logging on in transaction ~A" transaction)
+            (rdbms.debug "Logging on in transaction ~A" transaction)
             (server-attach datasource)
 
             (oci-call (oci:attr-set (service-context-handle-of transaction)
@@ -144,7 +144,7 @@
   `(block nil
     (handler-bind ((serious-condition
                     (lambda (error)
-                      (log.warn "Ignoring error: ~A" error)
+                      (rdbms.warn "Ignoring error: ~A" error)
                       (return))))
       ,@body)))
 
@@ -152,11 +152,11 @@
   (assert (environment-handle-pointer transaction))
   
   (ignore-errors*
-    (log.debug "Calling logoff in transaction ~A" transaction)
+    (rdbms.debug "Calling logoff in transaction ~A" transaction)
     (oci-call (oci:logoff (service-context-handle-of transaction)
                           (error-handle-of transaction))))
   (ignore-errors*
-    (log.debug "Freeing environment handle of transaction ~A" transaction)
+    (rdbms.debug "Freeing environment handle of transaction ~A" transaction)
     (oci-call (oci:handle-free (environment-handle-of transaction) oci:+htype-env+)))
   
   (macrolet ((dealloc (&rest whats)
@@ -183,7 +183,7 @@
                                   :query command)))
     (handle-alloc (statement-handle-pointer statement) oci:+htype-stmt+)
     (stmt-prepare statement command)
-    (log.dribble "Statement is allocated")
+    (rdbms.dribble "Statement is allocated")
     (setf (select-p statement) (= (get-statement-attribute
                                    statement
                                    oci:+attr-stmt-type+
@@ -258,7 +258,7 @@
             (values null 0)
             (funcall converter value))
 
-      (log.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
+      (rdbms.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
       
       (oci-call (oci:bind-by-pos statement-handle
                                  bind-handle-pointer
@@ -358,7 +358,7 @@
                              :column-descriptors (make-column-descriptors statement transaction))
         (row-count it)  ; TODO This positions to the last row so the response
                             ;      time can be high. Try to delay this computation
-        (log.dribble "Count of rows: ~D" (row-count-of it)))
+        (rdbms.dribble "Count of rows: ~D" (row-count-of it)))
       (make-instance 'oracle-sequential-access-cursor
                      :statement statement
                      :column-descriptors (make-column-descriptors statement transaction))))
@@ -487,8 +487,8 @@
           (setf (cffi:mem-ref attribute-value :unsigned-short) 0)
           (setf column-size (oci-attr-get oci:+attr-data-size+ 'oci:ub-2)))
 
-        (log.dribble "Retrieving column: name=~W, type=~D, size=~D"
-                     column-name column-type column-size)
+        (rdbms.dribble "Retrieving column: name=~W, type=~D, size=~D"
+                       column-name column-type column-size)
         
         (when (= column-type oci:+sqlt-num+)
           ;; the type of the precision attribute is 'oci:sb-2, because we
@@ -565,7 +565,7 @@
                 #t)))))
 
 (def function fetch-column-value (column-descriptor row-index)
-  (log.debug "Fetching ~S from buffer at index ~D" (name-of column-descriptor) row-index)
+  (rdbms.debug "Fetching ~S from buffer at index ~D" (name-of column-descriptor) row-index)
   (aprog1 (let* ((indicator (cffi:mem-aref (indicators-of column-descriptor) :short row-index)))
             (if (= indicator -1)
                 :null
@@ -573,14 +573,14 @@
                        (size (size-of column-descriptor))
                        (converter (typemap-oci-to-lisp (typemap-of column-descriptor))))
                   #+nil
-                  (log.dribble "Buffer:~%~A"
-                               (dump-c-byte-array buffer (* size +number-of-buffered-rows+)))
-                  (log.dribble "Convert from ~D, size is ~D, content:~%~A"
-                               (typemap-external-type (typemap-of column-descriptor)) size
-                               (dump-c-byte-array (cffi:inc-pointer buffer (* row-index size))
-                                                  size))
+                  (rdbms.dribble "Buffer:~%~A"
+                                 (dump-c-byte-array buffer (* size +number-of-buffered-rows+)))
+                  (rdbms.dribble "Convert from ~D, size is ~D, content:~%~A"
+                                 (typemap-external-type (typemap-of column-descriptor)) size
+                                 (dump-c-byte-array (cffi:inc-pointer buffer (* row-index size))
+                                                    size))
 
                   (funcall converter
                            (cffi:inc-pointer buffer (* row-index size))
                            size))))
-    (log.debug "Fetched: ~S" it)))
+    (rdbms.debug "Fetched: ~S" it)))

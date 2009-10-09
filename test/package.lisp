@@ -15,9 +15,6 @@
         :hu.dwim.syntax-sugar
         :hu.dwim.util)
 
-  (:shadowing-import-from :hu.dwim.rdbms
-                          #:log)
-
   ;; we intentionally not import all internal hu.dwim.rdbms symbols here to test the proper exporting of the symbols, too
   (:import-from :hu.dwim.rdbms
                 #:*database*
@@ -32,11 +29,11 @@
                 #:connection-specification-of
                 #:eval-always
                 #:expand-sql-ast-into-lambda-form
-                #:log.debug
-                #:log.dribble
-                #:log.error
-                #:log.info
-                #:log.warn
+                #:rdbms.debug
+                #:rdbms.dribble
+                #:rdbms.error
+                #:rdbms.info
+                #:rdbms.warn
                 #:rebind
                 #:value-of
                 #:with-transaction*))

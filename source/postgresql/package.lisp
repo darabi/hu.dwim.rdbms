@@ -16,7 +16,8 @@
         :hu.dwim.util)
 
   (:shadowing-import-from #:hu.dwim.rdbms
-                          #:type #:type-of #:log)
+                          #:type
+                          #:type-of)
 
   (:shadowing-import-from :hu.dwim.rdbms
                           #:unable-to-obtain-lock-error))

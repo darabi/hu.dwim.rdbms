@@ -120,7 +120,7 @@
   (aif (call-next-method)
        it
        (let ((db (database-of tr)))
-         (log.debug "Opening Postgresql connection the first time it was needed, using ~S" (remove-from-plist (connection-specification-of db) :password))
+         (rdbms.debug "Opening Postgresql connection the first time it was needed, using ~S" (remove-from-plist (connection-specification-of db) :password))
          (aprog1
              (loop
                (with-simple-restart (retry "Retry connecting")
@@ -130,11 +130,11 @@
                                 (bind (((&key (host "localhost") (port 5432) database user-name (password ""))
                                         (connection-specification-of db)))
                                   (list database user-name password host port)))))))
-           (log.debug "Succesfully opened Postgresql connection ~A for transaction ~A in database ~A"
-                      it tr db)))))
+           (rdbms.debug "Succesfully opened Postgresql connection ~A for transaction ~A in database ~A"
+                        it tr db)))))
 
 (def method cleanup-transaction :after ((tr postgresql-transaction))
   (awhen (slot-value tr 'connection)
-    (log.debug "Closing Postgresql connection ~A of transaction ~A in database ~A" it tr (database-of tr))
+    (rdbms.debug "Closing Postgresql connection ~A of transaction ~A in database ~A" it tr (database-of tr))
     (cl-postgres:close-database it)
     (setf (connection-of tr) nil)))

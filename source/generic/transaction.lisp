@@ -154,7 +154,7 @@
                     (handler-case
                         (rollback-transaction *database* *transaction*)
                       (serious-condition (condition)
-                        (log.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
+                        (rdbms.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
                (cleanup-transaction *transaction*))))))))
 
 (def method (setf terminal-action-of) :before (new-value (transaction transaction))
@@ -240,7 +240,7 @@
   (:documentation "Extension point for with-transaction.")
 
   (:method :before (database &key &allow-other-keys)
-           (log.debug "About to BEGIN transaction in database ~A" database))
+           (rdbms.debug "About to BEGIN transaction in database ~A" database))
 
   (:method (database &rest args &key default-result-type &allow-other-keys)
            (apply #'make-instance (transaction-class-of database)
@@ -259,7 +259,7 @@
   (:documentation "Extension point for with-transaction and commit.")
 
   (:method :around (database transaction)
-           (log.debug "About to COMMIT transaction ~A" transaction)
+           (rdbms.debug "About to COMMIT transaction ~A" transaction)
            (when (begin-was-executed-p transaction)
              (call-next-method))
            (setf (state-of transaction) :committed)
@@ -272,7 +272,7 @@
   (:documentation "Extension point for with-transaction and rollback.")
 
   (:method :around (database transaction)
-           (log.dribble "About to ROLLBACK transaction ~A" transaction)
+           (rdbms.dribble "About to ROLLBACK transaction ~A" transaction)
            (when (begin-was-executed-p transaction)
              (call-next-method))
            (setf (state-of transaction) :rolled-back)
@@ -315,21 +315,21 @@
            (unless (begin-was-executed-p transaction)
              (setf (begin-was-executed-p transaction) #t)
              (begin-transaction database transaction))
-           (log.dribble "*** ~S in transaction ~A of database ~A"
-                        command transaction database)
+           (rdbms.dribble "*** ~S in transaction ~A of database ~A"
+                          command transaction database)
            (when (stringp command)
              (unless (zerop (length binding-types))
                (bind ((*print-length* 128)
                       (*print-level* 3)
                       (*print-pretty* #f)
                       (*print-circle* #f))
-                 (sql-log.info "; ~A" (format nil "~{~A~^, ~}"
-                                              (iter (for i upfrom 1)
-                                                    (for type :in-vector binding-types)
-                                                    (for value :in-vector binding-values)
-                                                    (collect (format nil "$~A = ~A as ~A" i value
-                                                                     (format-sql-to-string type))))))))
-             (sql-log.info "; ~A" command)))
+                 (sql.debug "; ~A" (format nil "~{~A~^, ~}"
+                                           (iter (for i upfrom 1)
+                                                 (for type :in-vector binding-types)
+                                                 (for value :in-vector binding-values)
+                                                 (collect (format nil "$~A = ~A as ~A" i value
+                                                                  (format-sql-to-string type))))))))
+             (sql.debug "; ~A" command)))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
            (when (break-on-next-command-p *transaction*)

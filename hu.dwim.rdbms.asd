@@ -16,8 +16,8 @@
   :licence "BSD / Public domain"
   :description "Relational database independent SQL abstractions"
   :depends-on (:babel
-               :hu.dwim.def+hu.dwim.logger
                :hu.dwim.defclass-star+hu.dwim.def
+               :hu.dwim.logger
                :hu.dwim.syntax-sugar+hu.dwim.walker
                :hu.dwim.syntax-sugar+swank
                :hu.dwim.util

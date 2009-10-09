@@ -16,8 +16,7 @@
         :hu.dwim.util
         :babel)
 
-  (:shadow #:log
-           #:type-of
+  (:shadow #:type-of
            #:as)
 
   (:export #:notify-transaction-event

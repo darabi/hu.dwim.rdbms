@@ -17,7 +17,8 @@
         :local-time)
 
   (:shadowing-import-from #:hu.dwim.rdbms
-                          #:type #:type-of #:log)
+                          #:type
+                          #:type-of)
 
   (:shadow #:null))
 

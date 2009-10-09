@@ -83,7 +83,7 @@
                      oci:+error-maxmsg-size+ oci:+htype-error+)
 
       (let ((error-message (oci-string-to-lisp error-buffer)))
-        (log.error "Signalling error: ~A" error-message)
+        (rdbms.error "Signalling error: ~A" error-message)
         (simple-rdbms-error "RDBMS error: ~A" error-message)))))
 
 
