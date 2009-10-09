@@ -6,12 +6,12 @@
 
 (in-package :hu.dwim.rdbms)
 
-(def logger rdbms () :appenders ((debug-only* (make-instance 'brief-stream-appender :stream *debug-io*))))
+(def logger rdbms () :runtime-level +info+ :appenders ((debug-only* (make-instance 'brief-stream-appender :stream *debug-io*))))
 
 (def class sql-appender (stream-appender)
   ())
 
-(def logger sql (rdbms) :appenders ((make-instance 'sql-appender :stream *debug-io*)))
+(def logger sql () :appenders ((make-instance 'sql-appender :stream *debug-io*)))
 
 (def (function e) start-sql-recording ()
   (setf (log-level (find-logger 'sql)) +info+)
@@ -28,4 +28,4 @@
   (stop-sql-recording))
 
 (def method append-message ((category logger) (appender sql-appender) message level)
-  (format (hu.dwim.logger::log-stream appender) "~&~A~%" message))
+  (format (hu.dwim.logger::stream-of appender) "~&~A~%" message))
