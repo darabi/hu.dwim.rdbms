@@ -16,7 +16,7 @@
            "Levente Mészáros <levente.meszaros@gmail.com>")
   :licence "BSD / Public domain"
   :description "Common stuff for Postgresql backends for hu.dwim.rdbms"
-  :depends-on (:cl-postgres
+  :depends-on (:cl-postgres+local-time
                :hu.dwim.rdbms)
   :components ((:module "source"
                 :components ((:module "postgresql"
