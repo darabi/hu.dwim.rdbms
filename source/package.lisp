@@ -7,14 +7,14 @@
 (in-package :common-lisp-user)
 
 (defpackage :hu.dwim.rdbms
-  (:use :hu.dwim.asdf
-        :hu.dwim.common-lisp
+  (:use :babel
+        :hu.dwim.asdf
+        :hu.dwim.common
         :hu.dwim.def
         :hu.dwim.defclass-star
         :hu.dwim.logger
         :hu.dwim.syntax-sugar
-        :hu.dwim.util
-        :babel)
+        :hu.dwim.util)
 
   (:shadow #:type-of
            #:as)

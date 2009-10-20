@@ -7,7 +7,7 @@
 (in-package :common-lisp-user)
 
 (defpackage :hu.dwim.rdbms.sqlite
-  (:use :hu.dwim.common-lisp
+  (:use :hu.dwim.common
         :hu.dwim.def
         :hu.dwim.defclass-star
         :hu.dwim.logger
