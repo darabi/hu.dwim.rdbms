@@ -20,4 +20,5 @@
                :hu.dwim.rdbms.sqlite.test
                :hu.dwim.wui)
   :components ((:module "documentation"
-                :components ((:file "package")))))
+                :components ((:file "package")
+                             (:file "rdbms" :depends-on ("package"))))))
