@@ -7,9 +7,9 @@
 (in-package :hu.dwim.rdbms)
 
 ;;;;;;
-;;; Databases
+;;; Database
 
-(def (special-variable e) *database*)
+(def (special-variable e) *database* "The current database, unbound by default. Can be rebound to access multiple databases within the nested dynamic scope.")
 
 (def (class* e) database ()
   ((connection-specification

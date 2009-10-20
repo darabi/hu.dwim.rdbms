@@ -67,6 +67,8 @@ contain the type information necessary for this). this needs changes in hu.dwim.
 
 (def dictionary transaction ()
   *transaction*
+  *implicit-transaction*
+  *implicit-transaction-default-terminal-action*
   transaction
   begin
   begin-transaction
