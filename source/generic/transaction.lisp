@@ -400,7 +400,7 @@
   `(register-hook-in-transaction *transaction* ,when ,action
                                  (lambda () ,@forms)))
 
-(def generic register-hook-in-transaction (transaction when action function)
+(def (generic e) register-hook-in-transaction (transaction when action function)
   (:method ((transaction transaction-with-hooks-mixin) when action (function function))
     (check-type when transaction-hook-invocation-time)
     (check-type action transaction-hook-action)
