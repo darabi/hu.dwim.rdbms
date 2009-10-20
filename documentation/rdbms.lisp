@@ -8,6 +8,14 @@
 
 (def project :hu.dwim.rdbms :path (system-pathname :hu.dwim.rdbms))
 
+(def method make-project-tab-pages ((component project/detail/inspector) (project (eql (find-project :hu.dwim.rdbms))))
+  (append (call-next-method)
+          (list (tab-page/widget (:selector "Documentation")
+                  (make-value-inspector (find-book 'user-guide) :initial-alternative-type 'book/text/inspector))
+                (tab-page/widget (:selector "Dictionaries")
+                  (make-value-inspector (mapcar 'find-dictionary '(database transaction transaction-hook execute command cursor table column view sequence index))
+                                        :initial-alternative-type 'sequence/list/inspector)))))
+
 (def book user-guide (:title "User guide")
   (chapter (:title "Introduction")
     (chapter (:title "What is hu.dwim.rdbms")
@@ -59,6 +67,7 @@ contain the type information necessary for this). this needs changes in hu.dwim.
 
 (def dictionary transaction ()
   *transaction*
+  transaction
   begin
   begin-transaction
   call-in-transaction
@@ -71,7 +80,6 @@ contain the type information necessary for this). this needs changes in hu.dwim.
   mark-transaction-for-rollback-only
   rollback
   rollback-transaction
-  transaction
   transaction-error
   transaction-in-progress-p
   transaction-valid-p
