@@ -6,9 +6,9 @@
 
 (in-package :hu.dwim.rdbms.documentation)
 
-(def project :hu.dwim.rdbms :path (hu.dwim.asdf:system-pathname :hu.dwim.rdbms))
+(def project :hu.dwim.rdbms :path (system-pathname :hu.dwim.rdbms))
 
-(def book user-guide (:title "hu.dwim.rdbms")
+(def book user-guide (:title "User guide")
   (chapter (:title "Introduction")
     (chapter (:title "What is hu.dwim.rdbms")
       )
