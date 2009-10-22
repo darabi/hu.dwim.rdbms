@@ -9,7 +9,7 @@
 ;;;;;;
 ;;; Database
 
-(def (special-variable e) *database* "The current database, unbound by default. Can be rebound to access multiple databases within nested dynamic scope.")
+(def (special-variable e :documentation "The current database, unbound by default. Can be rebound to access multiple databases within nested dynamic scope.") *database*)
 
 (def (class* e) database ()
   ((connection-specification
