@@ -93,12 +93,14 @@
              ,@forms)
          (assert (= (1+ ,counter) (select-counter-of ,command-counter)))))))
 
-(def (macro e) with-readonly-transaction (&body body)
+(def (macro e) with-readonly-transaction (&body forms)
+  "Evaluates FORMS within the dynamic scope of a new TRANSACTION that will unconditionally ROLLBACK."
   `(with-transaction* (:default-terminal-action :rollback)
      (mark-transaction-for-rollback-only)
-     ,@body))
+     ,@forms))
 
 (def (macro e) with-transaction (&body forms)
+  "Evaluates FORMS within the dynamic scope of a new TRANSACTION."
   `(with-transaction* ()
     ,@forms))
 
@@ -110,6 +112,7 @@
            (funcall function)))
 
 (def (with-macro* e) with-transaction* (&rest args &key (default-terminal-action :commit) database &allow-other-keys)
+  "Evaluates FORMS within the dynamic scope of a new TRANSACTION."
   (unless (or database (boundp '*database*))
     (error "Cannot start transaction because database was not provided, either use WITH-DATABASE or provide a database to WITH-TRANSACTION*"))
   (bind ((*database* (or database *database*))

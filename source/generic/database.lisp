@@ -88,9 +88,10 @@
 
   (:method-combination list))
 
-(def (macro e) with-database (database &body body)
+(def (macro e) with-database (database &body forms)
+  "Evaluates FORMS within the dynamic scope of DATABASE."
   `(let ((*database* ,database))
-    ,@body))
+    ,@forms))
 
 ;;;;;;
 ;;; RDBMS names
