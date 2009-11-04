@@ -11,7 +11,7 @@
 (def class sql-appender (stream-appender)
   ())
 
-(def logger sql () :appenders ((make-instance 'sql-appender :stream *debug-io*)))
+(def logger sql () :appenders ((make-instance 'sql-appender :stream *debug-io*)) :runtime-level +info+)
 
 (def (function e) start-sql-recording ()
   (setf (log-level (find-logger 'sql)) +info+)
