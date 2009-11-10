@@ -29,9 +29,6 @@
            #:rdbms-name-for
 
            #:table-exists-p
-           #:unconfirmed-destructive-alter-table-error
-           #:unconfirmed-destructive-alter-column-type-error
-           #:unconfirmed-destructive-drop-column-error
            #:unbound-binding-variable-error
            #:with-confirmed-destructive-changes
 
