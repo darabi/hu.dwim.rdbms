@@ -68,46 +68,44 @@
 
 (def special-variable *signal-non-destructive-alter-table-commands* *load-as-production?*)
 
-(def (condition* e) unconfirmed-alter-table-error (serious-condition)
+(def (condition* e) unconfirmed-schema-change (serious-condition)
   ((table-name
     :type string)
    (column-name
     :type string)))
 
-(def (condition* e) unconfirmed-add-column-error (unconfirmed-alter-table-error)
+(def (condition* e) unconfirmed-schema-change/add-column (unconfirmed-schema-change)
   ((column-type))
   (:report (lambda (error stream)
              (format stream "Adding the column ~S with type ~A in table ~S is a safe operation"
                      (column-name-of error) (column-type-of error) (table-name-of error)))))
 
-(def (condition* e) unconfirmed-alter-column-type-error (unconfirmed-alter-table-error)
+(def (condition* e) unconfirmed-schema-change/alter-column-type (unconfirmed-schema-change)
   ((old-type)
    (new-type)
    (new-rdbms-type))
   (:report (lambda (error stream)
-             (format stream "Changing the type of column ~S from ~A to ~A, ~A in table ~S will be issued in a separate transaction and your database will try to convert existing data which may be an unsafe operation"
-                     (column-name-of error) (old-type-of error) (new-type-of error)
-                     (new-rdbms-type-of error) (table-name-of error)))))
+             (format stream "Changing the type of column ~S from the current rdbms type ~A to new rdbms type ~A (derived from ~A) in table ~S will be issued in a separate transaction and your database will try to convert existing data. This may result in data loss!"
+                     (column-name-of error) (old-type-of error) (new-rdbms-type-of error) (new-type-of error) (table-name-of error)))))
 
-(def (condition* e) unconfirmed-destructive-alter-table-error (unconfirmed-alter-table-error)
+(def (condition* e) unconfirmed-destructive-schema-change (unconfirmed-schema-change)
   ())
 
-(def (condition* e) unconfirmed-destructive-alter-column-type-error (unconfirmed-destructive-alter-table-error
-                                                                     unconfirmed-alter-column-type-error)
-  ()
+(def (condition* e) unconfirmed-destructive-schema-change/alter-column-type (unconfirmed-destructive-schema-change
+                                                                             unconfirmed-schema-change/alter-column-type)
+  ((original-error nil))
   (:report (lambda (error stream)
-             (format stream "DESTRUCTIVE: Changing the type of column ~S from ~A to ~A, ~A in table ~S is a destructive transformation"
-                     (column-name-of error) (old-type-of error) (new-type-of error)
-                     (new-rdbms-type-of error) (table-name-of error)))))
+             (format stream "DESTRUCTIVE: Changing the type of column ~S from the current rdbms type ~A to new rdbms type ~A (derived from ~A) in table ~S is a destructive operation"
+                     (column-name-of error) (old-type-of error) (new-rdbms-type-of error) (new-type-of error) (table-name-of error)))))
 
-(def (condition* e) unconfirmed-destructive-drop-column-error (unconfirmed-destructive-alter-table-error)
+(def (condition* e) unconfirmed-destructive-schema-change/drop-column (unconfirmed-destructive-schema-change)
   ()
   (:report (lambda (error stream)
-             (format stream "DESTRUCTIVE: Dropping the column ~S from table ~S is a destructive transformation"
+             (format stream "DESTRUCTIVE: Dropping the column ~S from table ~S is a destructive operation"
                      (column-name-of error) (table-name-of error)))))
 
 (def (macro e) with-confirmed-destructive-changes (&body body)
-  `(handler-bind ((unconfirmed-destructive-alter-table-error #'continue))
+  `(handler-bind ((unconfirmed-destructive-schema-change #'continue))
     ,@body))
 
 (def (function e) update-table (name columns)
@@ -133,26 +131,29 @@
              (table-column (find (string-downcase column-name) table-columns :key #'name-of :test #'equalp)))
         (if table-column
             ;; change column type where needed
-            (let ((new-type (rdbms-type-for (type-of column) *database*)))
-              (unless (equal-type-p (type-of table-column) new-type *database*)
+            (let ((new-rdbms-type (rdbms-type-for (type-of column) *database*)))
+              (unless (equal-type-p (type-of table-column) new-rdbms-type *database*)
                 (handler-case
                     (with-transaction
                       (when *signal-non-destructive-alter-table-commands*
                         (with-simple-restart
-                            (continue "Alter the table ~S by adding the new column ~S" name column-name)
-                          (error 'unconfirmed-alter-column-type-error :table-name name :column-name column-name
+                            (continue "Alter the table ~S by updating the column ~S from current rdbms type ~A to new rdbms type ~A (derived from ~A)"
+                                      name column-name (type-of table-column) new-rdbms-type (type-of column))
+                          (error 'unconfirmed-schema-change/alter-column-type
+                                 :table-name name
+                                 :column-name column-name
                                  :old-type (type-of table-column)
                                  :new-type (type-of column)
-                                 :new-rdbms-type new-type)))
+                                 :new-rdbms-type new-rdbms-type)))
                       (alter-column-type name column))
-                  (error (e)
-                    (declare (ignore e))
+                  (error (error)
                     (with-simple-restart
                         (continue "Drop column ~S in table ~S to workaround error coming from the previous ALTER TABLE SQL statement" name column-name)
-                      (error 'unconfirmed-destructive-alter-column-type-error :table-name name :column-name column-name
+                      (error 'unconfirmed-destructive-schema-change/alter-column-type :table-name name :column-name column-name
+                             :original-error error
                              :old-type (type-of table-column)
                              :new-type (type-of column)
-                             :new-rdbms-type new-type))
+                             :new-rdbms-type new-rdbms-type))
                     (drop-column name column-name #t)
                     (add-column name column)))))
             ;; add missing columns not present in the table
@@ -160,7 +161,7 @@
               (when *signal-non-destructive-alter-table-commands*
                 (with-simple-restart
                     (continue "Alter the table ~S by adding the new column ~S" name column-name)
-                  (error 'unconfirmed-add-column-error :table-name name :column-name column-name :column-type (type-of column))))
+                  (error 'unconfirmed-schema-change/add-column :table-name name :column-name column-name :column-type (type-of column))))
               (add-column name column)))))
     ;; drop extra columns that are present in the table
     (dolist (table-column table-columns)
@@ -168,7 +169,7 @@
         (unless (find column-name columns :key (compose #'string-downcase #'name-of) :test #'equalp)
           (with-simple-restart
               (continue "Alter the table and let the data go")
-            (error 'unconfirmed-destructive-drop-column-error :table-name name :column-name column-name))
+            (error 'unconfirmed-destructive-schema-change/drop-column :table-name name :column-name column-name))
           (drop-column name column-name #t))))))
 
 ;;;;;;
