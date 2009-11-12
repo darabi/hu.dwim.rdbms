@@ -14,11 +14,11 @@
 (def logger sql () :appenders ((make-instance 'sql-appender :stream *debug-io*)) :runtime-level +info+)
 
 (def (function e) start-sql-recording ()
-  (setf (log-level (find-logger 'sql)) +info+)
+  (setf (log-level (find-logger 'sql)) +debug+)
   (values))
 
 (def (function e) stop-sql-recording ()
-  (setf (log-level (find-logger 'sql)) +warn+)
+  (setf (log-level (find-logger 'sql)) +info+)
   (values))
 
 (def (function e) enable-sql-recording ()
