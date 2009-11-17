@@ -25,21 +25,21 @@
     :type (member :utf-8 :us-ascii))))
 
 (def (constant e) +database-command-line-options+
-  '(("database-host"
+  '((("database-host" #\Space)
      :type string
      :initial-value "localhost"
      :documentation "The server host name where the database is listening.")
-    ("database-port"
+    (("database-port" #\Space)
      :type integer
      :initial-value 5432
      :documentation "The server port where the database is listening.")
-    ("database-name"
+    (("database-name" #\Space)
      :type string
      :documentation "The database name that will be connected.")
-    ("database-user-name"
+    (("database-user-name" #\Space)
      :type string
      :documentation "The user name that is used to connect to the database.")
-    ("database-password"
+    (("database-password" #\Space)
      :type string
      :documentation "The password that is used to connect to the database.")))
 
