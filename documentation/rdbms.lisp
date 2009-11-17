@@ -10,11 +10,10 @@
 
 (def method make-project-tab-pages ((component project/detail/inspector) (project (eql (find-project :hu.dwim.rdbms))))
   (append (call-next-method)
-          (list (tab-page/widget (:selector "Documentation")
-                  (make-value-inspector (find-book 'user-guide) :initial-alternative-type 'book/text/inspector))
-                (tab-page/widget (:selector "Dictionary")
-                  (make-value-inspector (mapcar 'find-dictionary '(database transaction transaction-hook execute command cursor table column view sequence index))
-                                        :initial-alternative-type 't/detail/presentation)))))
+          (list (tab-page/widget (:selector (icon switch-to-tab-page :label "User guide"))
+                  (make-value-inspector (find-book 'user-guide)))
+                (tab-page/widget (:selector (icon switch-to-tab-page :label "Dictionary"))
+                  (make-value-inspector (mapcar 'find-dictionary '(database transaction transaction-hook execute command cursor table column view sequence index)))))))
 
 (def book user-guide (:title "User guide")
   (chapter (:title "Introduction")
