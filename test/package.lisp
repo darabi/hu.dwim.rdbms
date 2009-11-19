@@ -4,9 +4,9 @@
 ;;;
 ;;; See LICENCE for details.
 
-(in-package :common-lisp-user)
+(in-package :hu.dwim.util)
 
-(defpackage :hu.dwim.rdbms.test
+(def package :hu.dwim.rdbms.test
   (:use :hu.dwim.common
         :hu.dwim.def
         :hu.dwim.logger
@@ -36,7 +36,12 @@
                 #:rdbms.warn
                 #:rebind
                 #:value-of
-                #:with-transaction*))
+                #:with-transaction*)
+
+  (:readtable-setup
+   (setup-readtable/same-as-package :hu.dwim.rdbms)
+   (enable-string-quote-syntax)
+   (hu.dwim.rdbms:enable-sql-syntax)))
 
 (in-package :hu.dwim.rdbms.test)
 

@@ -4,9 +4,9 @@
 ;;;
 ;;; See LICENCE for details.
 
-(in-package :common-lisp-user)
+(in-package :hu.dwim.util)
 
-(defpackage :hu.dwim.rdbms
+(def package :hu.dwim.rdbms
   (:use :babel
         :hu.dwim.asdf
         :hu.dwim.common
@@ -70,7 +70,10 @@
            #:column-value
            #:for-each-row
            #:collect-rows
-           #:current-row))
+           #:current-row)
+  (:readtable-setup
+   (enable-standard-hu.dwim-syntaxes)
+   (hu.dwim.syntax-sugar:enable-lambda-with-bang-args-syntax)))
 
 (in-package :local-time)
 

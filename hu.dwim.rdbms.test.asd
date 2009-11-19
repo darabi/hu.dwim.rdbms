@@ -15,8 +15,8 @@
            "Tamás Borbély <tomi.borbely@gmail.com>")
   :licence "BSD / Public domain"
   :description "Test suite for hu.dwim.rdbms"
-  :depends-on (:hu.dwim.def+hu.dwim.stefil
-               :hu.dwim.rdbms)
+  :depends-on (:hu.dwim.rdbms
+               :hu.dwim.util.test)
   :components ((:module "test"
                 :components (#+nil(:file "basic" :depends-on ("suite")) ; split to database specific and generic
                              (:file "package")

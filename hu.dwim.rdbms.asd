@@ -19,15 +19,13 @@
                :hu.dwim.defclass-star+hu.dwim.def
                :hu.dwim.logger
                :hu.dwim.syntax-sugar+hu.dwim.walker
-               :hu.dwim.syntax-sugar+swank
                :hu.dwim.util
                :hu.dwim.walker
                :ironclad
                :local-time)
   :components ((:module "source"
                 :components ((:file "package")
-                             (:file "configuration" :depends-on ("package"))
-                             (:file "logger" :depends-on ("configuration"))
+                             (:file "logger" :depends-on ("package"))
                              (:module "generic"
                               :depends-on ("logger")
                               :components ((:file "cursor" :depends-on ("transaction"))
