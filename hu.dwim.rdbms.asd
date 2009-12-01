@@ -10,11 +10,7 @@
 
 (defsystem :hu.dwim.rdbms
   :class hu.dwim.system
-  :author ("Attila Lendvai <attila.lendvai@gmail.com>"
-           "Tamás Borbély <tomi.borbely@gmail.com>"
-           "Levente Mészáros <levente.meszaros@gmail.com>")
-  :licence "BSD / Public domain"
-  :description "Relational database independent SQL abstractions"
+  :description "Relational database independent RDBMS and SQL abstractions."
   :depends-on (:babel
                :hu.dwim.defclass-star+hu.dwim.def
                :hu.dwim.logger

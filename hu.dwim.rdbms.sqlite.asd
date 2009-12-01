@@ -11,11 +11,7 @@
 (defsystem :hu.dwim.rdbms.sqlite
   :class hu.dwim.system
   :package-name :hu.dwim.rdbms
-  :author ("Attila Lendvai <attila.lendvai@gmail.com>"
-           "Tamás Borbély <tomi.borbely@gmail.com>"
-           "Levente Mészáros <levente.meszaros@gmail.com>")
-  :licence "BSD / Public domain"
-  :description "Sqlite backend for hu.dwim.rdbms"
+  :description "Sqlite backend for hu.dwim.rdbms."
   :depends-on (:hu.dwim.rdbms
                :verrazano-runtime)
   :components ((:module "source"
