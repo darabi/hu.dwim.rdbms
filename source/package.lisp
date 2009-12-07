@@ -30,7 +30,6 @@
 
            #:table-exists-p
            #:unbound-binding-variable-error
-           #:with-confirmed-destructive-changes
 
            #:create-view
            #:drop-view
