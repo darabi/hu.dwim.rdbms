@@ -97,9 +97,11 @@
              (format stream "Dropping the column ~S from table ~S is a destructive operation, which needs confirmation"
                      (column-name-of error) (table-name-of error)))))
 
+(def (function e) continue-with-schema-change (&optional condition)
+  (invoke-restart (find-restart 'continue-with-schema-change condition)))
+
 (def (with-macro e) with-confirmed-destructive-schema-changes ()
-  (handler-bind ((unconfirmed-destructive-schema-change (lambda (condition)
-                                                          (invoke-restart (find-restart 'continue-with-schema-change condition)))))
+  (handler-bind ((unconfirmed-destructive-schema-change #'continue-with-schema-change))
     (-body-)))
 
 (def (function e) update-table (name columns)
