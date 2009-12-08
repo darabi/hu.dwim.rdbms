@@ -200,19 +200,22 @@
 ;;;;;;
 ;;; Datetime conversions
 
-(def function local-time-to-date (local-time)
-  (let ((date (cffi:foreign-alloc 'oci:ub-1 :count 7)))
-    (multiple-value-bind (ms ss mm hh day month year dow dls tz) (decode-local-time local-time)
-      (declare (ignore ms dow dls tz))
-      (multiple-value-bind (century year) (floor year 100)
-        (setf (cffi:mem-aref date 'oci:ub-1 0) (+ 100 century) ; TODO check BC dates
-              (cffi:mem-aref date 'oci:ub-1 1) (+ 100 year)
-              (cffi:mem-aref date 'oci:ub-1 2) month
-              (cffi:mem-aref date 'oci:ub-1 3) day
-              (cffi:mem-aref date 'oci:ub-1 4) (1+ hh)
-              (cffi:mem-aref date 'oci:ub-1 5) (1+ mm)
-              (cffi:mem-aref date 'oci:ub-1 6) (1+ ss))))
-    (values date 7)))
+;; TODO local-time-related, applies to several functions below:
+;; - when losing resolution, use nsec and round up to sec
+;; - what about the timezone? is this what we want?
+(def function local-time-to-date (timestamp)
+  (with-decoded-timestamp (:sec ss :minute mm :hour hh :day day :month month :year year :timezone +utc-zone+)
+      timestamp
+    (bind (((:values century year) (floor year 100))
+           (date (cffi:foreign-alloc 'oci:ub-1 :count 7)))
+      (setf (cffi:mem-aref date 'oci:ub-1 0) (+ 100 century) ; TODO check BC dates
+            (cffi:mem-aref date 'oci:ub-1 1) (+ 100 year)
+            (cffi:mem-aref date 'oci:ub-1 2) month
+            (cffi:mem-aref date 'oci:ub-1 3) day
+            (cffi:mem-aref date 'oci:ub-1 4) (1+ hh)
+            (cffi:mem-aref date 'oci:ub-1 5) (1+ mm)
+            (cffi:mem-aref date 'oci:ub-1 6) (1+ ss))
+      (values date 7))))
 
 (def function local-time-from-date (ptr len)
   (assert (= len 7))
@@ -232,12 +235,12 @@
                        (+ (* 100 century) year)
                        :timezone +utc-zone+)))
 
-(def function local-time-to-oci-date (local-time)
+(def function local-time-to-oci-date (timestamp)
   ;; FIXME using fields of the opaque OCIDate structure, because the OCIDateSetDate and
   ;;       OCIDateSetTime macros are not available
-  (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
-    (declare (ignore ms))
-    (let* ((oci-date (cffi:foreign-alloc 'oci:date))
+  (with-decoded-timestamp (:sec ss :minute mm :hour hh :day day :month month :year year :timezone +utc-zone+)
+      timestamp
+    (bind ((oci-date (cffi:foreign-alloc 'oci:date))
            (oci-time (cffi:foreign-slot-pointer oci-date 'oci:date 'oci::date-time)))
       (setf (cffi:foreign-slot-value oci-date 'oci:date 'oci::date-yyyy) year
             (cffi:foreign-slot-value oci-date 'oci:date 'oci::date-mm) month
@@ -269,14 +272,16 @@
                        year
                        :timezone +utc-zone+)))
 
-(def function local-time-to-timestamp (local-time)
-  (let ((oci-date-time-pointer (cffi::foreign-alloc :pointer)))
+;; TODO rename to something like to-oracle-timestamp
+(def function local-time-to-timestamp (timestamp)
+  (bind ((oci-date-time-pointer (cffi::foreign-alloc :pointer)))
     (oci-call (oci:descriptor-alloc (environment-handle-of *transaction*)
                                     oci-date-time-pointer
                                     oci:+dtype-timestamp+
                                     0
                                     null))
-    (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
+    (with-decoded-timestamp (:nsec nsec :sec ss :minute mm :hour hh :day day :month month :year year :timezone +utc-zone+)
+        timestamp
       (oci-call (oci:date-time-construct (environment-handle-of *transaction*)
                                          (error-handle-of *transaction*)
                                          (cffi:mem-ref oci-date-time-pointer :pointer)
@@ -286,12 +291,11 @@
                                          hh
                                          mm
                                          ss
-                                         (* 1000 ms) ; TODO check this
+                                         (round (/ nsec 1000)) ; TODO check this, and other usages of the same slot
                                          (cffi:null-pointer)
                                          0)))
-    (values
-     oci-date-time-pointer
-     (cffi:foreign-type-size :pointer))))
+    (values oci-date-time-pointer
+            (cffi:foreign-type-size :pointer))))
 
 (def function local-time-from-timestamp (ptr len)
   (assert (= len (cffi:foreign-type-size :pointer)))
@@ -328,38 +332,40 @@
                           (cffi:mem-ref year 'oci:sb-2)
                           :timezone +utc-zone+)))))
 
-(def function local-time-to-timestamp-tz (local-time)
+(def function local-time-to-timestamp-tz (timestamp)
   (let ((environment-handle (environment-handle-of *transaction*))
         (error-handle (error-handle-of *transaction*))
         (oci-date-time-pointer (cffi::foreign-alloc :pointer))
-        (timezone-str (timezone-as-HHMM-string local-time)))
+        ;; TODO this is broken here
+        (timezone-str (timezone-as-HHMM-string timestamp)))
     (oci-call (oci:descriptor-alloc environment-handle
                                     oci-date-time-pointer
                                     oci:+dtype-timestamp-tz+
                                     0
                                     null))
-    (multiple-value-bind (ms ss mm hh day month year) (decode-local-time local-time)
+    (with-decoded-timestamp (:nsec nsec :sec ss :minute mm :hour hh :day day :month month :year year :timezone +utc-zone+)
+        timestamp
       (with-foreign-oci-string (timezone-str c-timezone-ptr c-timezone-size)
-       (oci-call (oci:date-time-construct environment-handle
-                                          error-handle
-                                          (cffi:mem-ref oci-date-time-pointer :pointer)
-                                          year
-                                          month
-                                          day
-                                          hh
-                                          mm
-                                          ss
-                                          (* 1000 ms)
-                                          c-timezone-ptr
-                                          c-timezone-size))))
+        (oci-call (oci:date-time-construct environment-handle
+                                           error-handle
+                                           (cffi:mem-ref oci-date-time-pointer :pointer)
+                                           year
+                                           month
+                                           day
+                                           hh
+                                           mm
+                                           ss
+                                           (round (/ nsec 1000))
+                                           c-timezone-ptr
+                                           c-timezone-size))))
     (values
      oci-date-time-pointer
      (cffi:foreign-type-size :pointer))))
 
 (def function local-time-from-timestamp-tz (ptr len)
   (declare (ignore len))
-  (let ((environment-handle (environment-handle-of *transaction*))
-        (error-handle (error-handle-of *transaction*)))
+  (bind ((environment-handle (environment-handle-of *transaction*))
+         (error-handle (error-handle-of *transaction*)))
     (cffi:with-foreign-objects ((year 'oci:sb-2)
                                 (month 'oci:ub-1)
                                 (day 'oci:ub-1)
@@ -369,7 +375,7 @@
                                 (fsec 'oci:ub-4)
                                 (offset-hour 'oci:sb-1)
                                 (offset-minute 'oci:sb-1))
-      (let* ((oci-date-time-pointer (cffi:mem-ref ptr :pointer))
+      (bind ((oci-date-time-pointer (cffi:mem-ref ptr :pointer))
              (oci-date-time (cffi:mem-ref oci-date-time-pointer 'oci:date-time)))
         (oci-call (oci:date-time-get-date environment-handle
                                           error-handle
