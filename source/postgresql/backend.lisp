@@ -120,7 +120,7 @@
   (aif (call-next-method)
        it
        (let ((db (database-of tr)))
-         (rdbms.debug "Opening Postgresql connection the first time it was needed, using ~S" (remove-from-plist (connection-specification-of db) :password))
+         (rdbms.debug "Opening Postgresql connection the first time it is needed, using ~S" (remove-from-plist (connection-specification-of db) :password))
          (aprog1
              (loop
                (with-simple-restart (retry "Retry connecting using ~S" (connection-specification-of db))
