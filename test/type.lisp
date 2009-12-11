@@ -10,42 +10,20 @@
 
 (def definer type-test (name type &body values)
   `(def test ,name ()
-     (unwind-protect
-          (with-transaction
-            ;; the first , is unquote relative to the sql syntax, the second is relative to `
-            (execute-ddl [create table alma ((a ,(compile-sexp-sql-type ',type)))])
-            ,@(iter (for (comparator value expected) :in values)
-                    (unless expected
-                      (setf expected value))
-                    (collect `(progn
-                                (execute [insert alma (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
-                                (is (funcall ',comparator
-                                             (first-elt (first-elt (execute [select * alma] :result-type 'list)))
-                                             ,expected))
-                                (execute [delete alma])))))
-       (ignore-errors
-         (execute-ddl [drop table alma])))))
-
-;; TODO: this should work, see sql-quote in syntax.lisp (perec has to follow these changes)
-#+nil
-(def definer type-test (name type &body values)
-  (bind ((sql-type (compile-sexp-sql-type type)))
-    `(def test ,name ()
-       (unwind-protect
-            (with-transaction
-              ;; the first , is unquote relative to the sql syntax, the second is relative to `
-              (execute-ddl [create table alma ((a ,,sql-type))])
-              ,@(iter (for (comparator value expected) :in values)
-                      (unless expected
-                        (setf expected value))
-                      (collect `(progn
-                                  (execute [insert alma (a) (,(sql-literal :value ,value :type ,sql-type))])
-                                  (is (funcall ',comparator
-                                               (first-elt (first-elt (execute [select * alma] :result-type 'list)))
-                                               ,expected))
-                                  (execute [delete alma])))))
-         (ignore-errors
-           (execute-ddl [drop table alma]))))))
+     (with-transaction
+       (execute-ddl [drop table alma])
+       ;; the first , is unquote relative to the sql syntax, the second is relative to `
+       ;; TODO [create table alma ((a ,,sql-type))] should just work fine...
+       (execute-ddl [create table alma ((a ,(compile-sexp-sql-type ',type)))])
+       ,@(iter (for (comparator value expected) :in values)
+               (unless expected
+                 (setf expected value))
+               (collect `(progn
+                           (execute [insert alma (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
+                           (is (funcall ',comparator
+                                        (first-elt (first-elt (execute [select * alma] :result-type 'list)))
+                                        ,expected))
+                           (execute [delete alma])))))))
 
 (def definer simple-type-test (name type &body values)
   `(def type-test ,name ,type
@@ -150,16 +128,16 @@
   (local-time:timestamp= (local-time:parse-timestring "00:00:00Z"))
   (local-time:timestamp= (local-time:parse-timestring "23:59:59Z")))
 
-;; TODO take tz into account when comparing
 (def type-test test/type/timestamp (timestamp #f)
   (eq nil :null)
-  ;; TODO (signals 'error (local-time:parse-timestring "2006-06-06T06:06:06+02:00"))
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06Z")))
 
+;; TODO local-time:timestamp has no timezone information anymore... if we want to really test this here, then we need to introduce a type representing a tuple of (timestamp, timezone)
 (def type-test test/type/timestamp-tz (timestamp #t)
   (eq nil :null)
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06Z"))
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06-01:00"))
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06-01:30"))
   (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06+01:00"))
-  (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06+01:25")))
+  (local-time:timestamp= (local-time:parse-timestring "2006-06-06T06:06:06+01:25"))
+  (local-time:timestamp= (local-time:parse-timestring "2006-01-01T01:01:01+01:25")))
