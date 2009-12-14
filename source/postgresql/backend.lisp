@@ -130,7 +130,7 @@
                                 (bind (((&key (host "localhost") (port 5432) database user-name (password ""))
                                         (connection-specification-of db)))
                                   (list database user-name password host port)))))))
-           (rdbms.debug "Succesfully opened Postgresql connection ~A for transaction ~A in database ~A"
+           (rdbms.debug "Successfully opened Postgresql connection ~A for transaction ~A in database ~A"
                         it tr db)))))
 
 (def method cleanup-transaction :after ((tr postgresql-transaction))
