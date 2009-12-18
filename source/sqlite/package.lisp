@@ -31,6 +31,6 @@
     (import symbol)))
 
 (cffi:define-foreign-library sqlite3
-  (:unix "libsqlite3.so")
+  (:unix (:or "libsqlite3.so.0" "libsqlite3.so"))
   (:windows "sqlite3.dll")
   (t (:default "libsqlite3")))
