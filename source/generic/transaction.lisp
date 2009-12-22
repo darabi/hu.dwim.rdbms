@@ -146,6 +146,8 @@
                           (mark-transaction-for-rollback-only)
                           (values)))
                     (setf body-finished? #t)
+                    ;; TODO user code may run after this point, which may call MARK-TRANSACTION-FOR-ROLLBACK-ONLY and stuff like that, which should fail...
+                    ;; current example: perec::check-slot-value-type
                     (ecase (terminal-action-of *transaction*)
                       ((:commit :marked-for-commit-only)
                        (commit-transaction *database* *transaction*))
@@ -170,7 +172,7 @@
   (assert-transaction-in-progress)
   (setf (terminal-action-of *transaction*) :marked-for-commit-only))
 
-(def function mark-transaction-for-rollback-only ()
+(defun mark-transaction-for-rollback-only ()
   (assert-transaction-in-progress)
   (setf (terminal-action-of *transaction*) :marked-for-rollback-only))
 
@@ -178,6 +180,7 @@
   (or (timestamp-of *transaction*)
       (setf (timestamp-of *transaction*) (first-elt (first-elt (execute "select now()"))))))
 
+;; TODO rename to... err... something else
 (def (function io) in-transaction-p ()
   (and (boundp '*transaction*)
        *transaction*
