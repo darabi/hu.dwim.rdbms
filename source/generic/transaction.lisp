@@ -172,7 +172,8 @@
   (assert-transaction-in-progress)
   (setf (terminal-action-of *transaction*) :marked-for-commit-only))
 
-(defun mark-transaction-for-rollback-only ()
+(def function mark-transaction-for-rollback-only ()
+  ;; TODO add assert that this marking will have an effect (not yet in the commit phase...)
   (assert-transaction-in-progress)
   (setf (terminal-action-of *transaction*) :marked-for-rollback-only))
 
