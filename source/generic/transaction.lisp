@@ -328,11 +328,11 @@
                       (*print-level* 3)
                       (*print-pretty* #f)
                       (*print-circle* #f))
-                 (sql.dribble "~S; ~{~A~^, ~}"
-                              command (iter (for i :upfrom 1)
-                                            (for type :in-vector binding-types)
-                                            (for value :in-vector binding-values)
-                                            (collect (format nil "$~A = ~A as ~A" i value (format-sql-to-string type)))))))))
+                 (sql.dribble "~{~A~^, ~}" (iter (for i :upfrom 1)
+                                                 (for type :in-vector binding-types)
+                                                 (for value :in-vector binding-values)
+                                                 (collect (format nil "$~A = ~A as ~A" i value (format-sql-to-string type)))))
+                 (sql.dribble "~S" command)))))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
            (when (break-on-next-command-p *transaction*)
