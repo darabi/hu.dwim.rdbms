@@ -31,7 +31,6 @@
      :documentation "The server host name where the database is listening.")
     (("database-port" #\Space)
      :type integer
-     :initial-value 5432
      :documentation "The server port where the database is listening.")
     (("database-name" #\Space)
      :type string

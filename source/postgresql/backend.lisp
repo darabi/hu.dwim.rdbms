@@ -6,6 +6,8 @@
 
 (in-package :hu.dwim.rdbms.postgresql)
 
+(def (constant e) +default-postgresql-database-server-port+ 5432)
+
 (def class* postgresql-transaction (transaction)
   ((connection
     nil
@@ -127,7 +129,7 @@
                  (return
                    (setf (connection-of tr)
                          (apply #'cl-postgres:open-database
-                                (bind (((&key (host "localhost") (port 5432) database user-name (password ""))
+                                (bind (((&key (host "localhost") (port +default-postgresql-database-server-port+) database user-name (password ""))
                                         (connection-specification-of db)))
                                   (list database user-name password host port)))))))
            (rdbms.debug "Successfully opened Postgresql connection ~A for transaction ~A in database ~A"
