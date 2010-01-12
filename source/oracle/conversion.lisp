@@ -468,9 +468,10 @@ digit is the first or NIL for 0."
                (push d digits))
           finally (return (values digits count)))))
 
-(def function timezone-as-HHMM-string (local-time)
-  "Returns the time-zone of LOCAL-TIME in [+-]HH:MM format."
-  (let ((offset (timezone local-time))) 
+(def function timezone-as-HHMM-string (timestamp)
+  "Returns the time-zone of TIMESTAMP in [+-]HH:MM format."
+  (declare (ignore timestamp))
+  (let ((offset (not-yet-implemented) #+nil(timezone timestamp))) 
     (multiple-value-bind (hour sec) (floor (abs offset) 3600)
       (format nil "~C~2,'0D:~2,'0D"
               (if (> offset 0) #\+ #\-)
@@ -488,9 +489,9 @@ digit is the first or NIL for 0."
 ;; FIXME: this should be in local-time
 (def function make-timezone (hours minutes)
   (let ((offset-in-sec (* (+ (* 60 hours) minutes) 60)))
-      (if (and (= minutes 0)
-               (= hours 0))
-          +utc-zone+
-          (local-time::make-timezone :subzones `((,offset-in-sec nil "anonymous" nil nil))
-                         :name "anonymous"
-                         :loaded t))))
+    (if (and (= minutes 0)
+             (= hours 0))
+        +utc-zone+
+        (local-time::make-timezone :subzones `((,offset-in-sec nil "anonymous" nil nil))
+                                   :name "anonymous"
+                                   :loaded t))))
