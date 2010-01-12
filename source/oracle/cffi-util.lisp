@@ -60,10 +60,10 @@
   `(get-statement-attribute ,statement oci:+attr-row-count+ 'oci:ub-4))
 
 (def macro with-foreign-oci-string ((string c-string c-size &key (null-terminated-p #f)) &body body)
-  `(cffi:with-foreign-string (,c-string ,string :byte-size-variable ,c-size
+  `(cffi:with-foreign-string ((,c-string ,c-size) ,string
                               :encoding (connection-encoding-of (database-of *transaction*))
                               :null-terminated-p ,null-terminated-p)
-    ,@body))
+     ,@body))
 
 (def macro foreign-oci-string-alloc (string &rest args)
   `(cffi:foreign-string-alloc
