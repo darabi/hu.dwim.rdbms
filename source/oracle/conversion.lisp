@@ -226,14 +226,14 @@
         (hour (1- (cffi:mem-aref ptr 'oci:ub-1 4)))
         (min (1- (cffi:mem-aref ptr 'oci:ub-1 5)))
         (sec (1- (cffi:mem-aref ptr 'oci:ub-1 6))))
-    (encode-local-time 0
-                       sec
-                       min
-                       hour
-                       day
-                       month
-                       (+ (* 100 century) year)
-                       :timezone +utc-zone+)))
+    (encode-timestamp 0
+                      sec
+                      min
+                      hour
+                      day
+                      month
+                      (+ (* 100 century) year)
+                      :timezone +utc-zone+)))
 
 (def function local-time-to-oci-date (timestamp)
   ;; FIXME using fields of the opaque OCIDate structure, because the OCIDateSetDate and
@@ -263,14 +263,14 @@
          (hour (cffi:foreign-slot-value oci-time 'oci:time 'oci::time-hh))
          (min (cffi:foreign-slot-value oci-time 'oci:time 'oci::time-mi))
          (sec (cffi:foreign-slot-value oci-time 'oci:time 'oci::time-ss)))
-    (encode-local-time 0
-                       sec
-                       min
-                       hour
-                       day
-                       month
-                       year
-                       :timezone +utc-zone+)))
+    (encode-timestamp 0
+                      sec
+                      min
+                      hour
+                      day
+                      month
+                      year
+                      :timezone +utc-zone+)))
 
 ;; TODO rename to something like to-oracle-timestamp
 (def function local-time-to-timestamp (timestamp)
@@ -323,14 +323,14 @@
                                          min
                                          sec
                                          fsec))
-       (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
-                          (cffi:mem-ref sec 'oci:ub-1)
-                          (cffi:mem-ref min 'oci:ub-1)
-                          (cffi:mem-ref hour 'oci:ub-1)
-                          (cffi:mem-ref day 'oci:ub-1)
-                          (cffi:mem-ref month 'oci:ub-1)
-                          (cffi:mem-ref year 'oci:sb-2)
-                          :timezone +utc-zone+)))))
+       (encode-timestamp (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
+                         (cffi:mem-ref sec 'oci:ub-1)
+                         (cffi:mem-ref min 'oci:ub-1)
+                         (cffi:mem-ref hour 'oci:ub-1)
+                         (cffi:mem-ref day 'oci:ub-1)
+                         (cffi:mem-ref month 'oci:ub-1)
+                         (cffi:mem-ref year 'oci:sb-2)
+                         :timezone +utc-zone+)))))
 
 (def function local-time-to-timestamp-tz (timestamp)
   (let ((environment-handle (environment-handle-of *transaction*))
@@ -396,16 +396,16 @@
                                                       offset-hour
                                                       offset-minute))
 
-        (encode-local-time (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
-                           (cffi:mem-ref sec 'oci:ub-1)
-                           (cffi:mem-ref min 'oci:ub-1)
-                           (cffi:mem-ref hour 'oci:ub-1)
-                           (cffi:mem-ref day 'oci:ub-1)
-                           (cffi:mem-ref month 'oci:ub-1)
-                           (cffi:mem-ref year 'oci:sb-2)
-                           :timezone (make-timezone
-                                      (cffi:mem-ref offset-hour 'oci:sb-1)
-                                      (cffi:mem-ref offset-minute 'oci:sb-1)))))))
+        (encode-timestamp (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
+                          (cffi:mem-ref sec 'oci:ub-1)
+                          (cffi:mem-ref min 'oci:ub-1)
+                          (cffi:mem-ref hour 'oci:ub-1)
+                          (cffi:mem-ref day 'oci:ub-1)
+                          (cffi:mem-ref month 'oci:ub-1)
+                          (cffi:mem-ref year 'oci:sb-2)
+                          :timezone (make-timezone
+                                     (cffi:mem-ref offset-hour 'oci:sb-1)
+                                     (cffi:mem-ref offset-minute 'oci:sb-1)))))))
 
 ;;;
 ;;; Helpers
