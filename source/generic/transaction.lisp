@@ -222,7 +222,8 @@
     (makunbound '*transaction*))
   (values))
 
-(def (function ioe) execute (command &rest args &key visitor bindings result-type (with-transaction *implicit-transaction*) &allow-other-keys)
+(def (function ioe) execute (command &rest args &key visitor bindings result-type (with-transaction *implicit-transaction*)
+                                     (implicit-transaction-terminal-action *implicit-transaction-default-terminal-action*) &allow-other-keys)
   "Executes an SQL command. If VISITOR is not present the result is returned in a sequence. The type of the sequence is determined by RESULT-TYPE which is either LIST or VECTOR. When VISITOR is present it will be called for each row in the result."
   (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
   (flet ((%execute-command ()
@@ -230,15 +231,18 @@
     (if (or (eq :new with-transaction)
             (and (not (in-transaction-p))
                  (eq :ensure with-transaction)))
-        (with-transaction* (:default-terminal-action *implicit-transaction-default-terminal-action*)
+        (with-transaction* (:default-terminal-action implicit-transaction-terminal-action)
           (%execute-command))
         (progn
           (assert-transaction-in-progress)
           (%execute-command)))))
 
-(def (function e) execute-ddl (command &rest args &key &allow-other-keys)
-  "A DDL statement is executed in a separate transaction."
-  (apply #'execute command :with-transaction :ensure args))
+(def (function e) execute-ddl (command &rest args &key implicit-transaction-terminal-action &allow-other-keys)
+  "A DDL statement is executed in a separate transaction if there is no active transaction."
+  (apply #'execute command
+         :with-transaction :ensure
+         :implicit-transaction-terminal-action (or implicit-transaction-terminal-action :commit)
+         args))
 
 (def method transaction-mixin-class list (database)
   'transaction)
