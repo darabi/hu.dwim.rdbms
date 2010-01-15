@@ -117,9 +117,17 @@
   0.5
   -0.5
   1.23e+9
-  -1.23e+9
+  -1.23e+9)
+
+(def test test/type/ratio ()
   ;; we test here that ratio's precision is lost only up to double-float
-  (1/3 #.(coerce 1/3 'double-float)))
+  (with-transaction
+    (unwind-protect
+         (progn
+           (execute-ddl (sql (create table alma ((a (sql-unquote (compile-sexp-sql-type '(float 64)) nil))))))
+           (signals error (execute (sql (insert alma (a) ((sql-unquote (sql-literal :value 1/3 :type (compile-sexp-sql-type '(float 64))) nil))))))
+           (execute (sql (delete alma))))
+      (ignore-errors (execute-ddl (sql (drop table alma)))))))
 
 (def simple-type-test test/type/blob blob
   (:null :null)
