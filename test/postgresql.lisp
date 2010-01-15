@@ -13,4 +13,5 @@
 
 (def test (test/postgresql :in test) ()
   (with-database *postgresql-database*
+    (test/basic)
     (test/type)))

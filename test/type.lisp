@@ -12,21 +12,21 @@
   `(def test ,name ()
      (with-transaction
        ;; the first , is unquote relative to the sql syntax, the second is relative to `
-       ;; TODO [create table alma ((a ,,sql-type))] should just work fine...
+       ;; TODO [create table test_table ((a ,,sql-type))] should just work fine...
        (unwind-protect
          (progn
-           (execute-ddl [create table alma ((a ,(compile-sexp-sql-type ',type)))])
+           (execute-ddl [create table test_table ((a ,(compile-sexp-sql-type ',type)))])
            ,@(iter (for (comparator value expected) :in values)
                    (unless expected
                      (setf expected value))
                    (collect `(progn
-                               (execute [insert alma (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
+                               (execute [insert test_table (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
                                (is (funcall ',comparator
-                                            (first-elt (first-elt (execute [select * alma] :result-type 'list)))
+                                            (first-elt (first-elt (execute [select * test_table] :result-type 'list)))
                                             ,expected))
-                               (execute [delete alma])))))
+                               (execute [delete test_table])))))
          (ignore-errors
-           (execute-ddl [drop table alma]))))))
+           (execute-ddl [drop table test_table]))))))
 
 (def definer simple-type-test (name type &body values)
   `(def type-test ,name ,type
@@ -124,10 +124,10 @@
   (with-transaction
     (unwind-protect
          (progn
-           (execute-ddl (sql (create table alma ((a (sql-unquote (compile-sexp-sql-type '(float 64)) nil))))))
-           (signals error (execute (sql (insert alma (a) ((sql-unquote (sql-literal :value 1/3 :type (compile-sexp-sql-type '(float 64))) nil))))))
-           (execute (sql (delete alma))))
-      (ignore-errors (execute-ddl (sql (drop table alma)))))))
+           (execute-ddl (sql (create table test_table ((a (sql-unquote (compile-sexp-sql-type '(float 64)) nil))))))
+           (signals error (execute (sql (insert test_table (a) ((sql-unquote (sql-literal :value 1/3 :type (compile-sexp-sql-type '(float 64))) nil))))))
+           (execute (sql (delete test_table))))
+      (ignore-errors (execute-ddl (sql (drop table test_table)))))))
 
 (def simple-type-test test/type/blob blob
   (:null :null)

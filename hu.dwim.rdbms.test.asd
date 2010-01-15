@@ -13,7 +13,7 @@
   :depends-on (:hu.dwim.rdbms
                :hu.dwim.stefil+hu.dwim.def+swank)
   :components ((:module "test"
-                :components (#+nil(:file "basic" :depends-on ("suite")) ; split to database specific and generic
+                :components ((:file "basic" :depends-on ("suite")) ; split to database specific and generic
                              (:file "package")
                              (:file "suite" :depends-on ("package"))
                              #+nil(:file "syntax" :depends-on ("suite")) ; split to database specific and generic

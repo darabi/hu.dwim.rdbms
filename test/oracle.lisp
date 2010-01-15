@@ -17,4 +17,5 @@
 
 (def test (test/oracle :in test) ()
   (with-database *oracle-database*
+    (test/basic)
     (test/type)))

@@ -41,7 +41,7 @@
 (def definer reader-dialect-test (name &body body)
   `(def dialect-test ,name :reader ,@body))
 
-(def suite* (test/syntax :in test))
+(def suite* (test/syntax :auto-call #f))
 
 (def sexp-sql-dialect-test test/syntax/sexp-dialect
   '(select "bar" table)
@@ -58,19 +58,19 @@
 
   `(select
     (foo.column "bar")
-    ,(list (sql-table-alias :name "alma" :alias "alma_alias")))
-  ((oracle "SELECT \"foo\".\"column\", \"bar\" FROM \"alma\" \"alma_alias\"")
-   (t "SELECT foo.column, bar FROM alma alma_alias"))
+    ,(list (sql-table-alias :name "test_table" :alias "test_table_alias")))
+  ((oracle "SELECT \"foo\".\"column\", \"bar\" FROM \"test_table\" \"test_table_alias\"")
+   (t "SELECT foo.column, bar FROM test_table test_table_alias"))
 
-  '(create table (:temporary :drop) alma ((col1 varchar) ("col2" (integer 32))))
-  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"alma\" (\"col1\" VARCHAR2, \"col2\" NUMBER(10)) ON COMMIT DROP")
-   (postgresql "CREATE GLOBAL TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP")
-   (sqlite "CREATE GLOBAL TEMPORARY TABLE alma (col1 CHARACTER VARYING, col2 INTEGER) ON COMMIT DROP"))
+  '(create table (:temporary :drop) test_table ((col1 varchar) ("col2" (integer 32))))
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col1\" VARCHAR2, \"col2\" NUMBER(10)) ON COMMIT DROP")
+   (postgresql "CREATE GLOBAL TEMPORARY TABLE test_table (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP")
+   (sqlite "CREATE GLOBAL TEMPORARY TABLE test_table (col1 CHARACTER VARYING, col2 INTEGER) ON COMMIT DROP"))
 
-  '(create table (:temporary :delete-rows) alma (("col2" (integer 32))))
-  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"alma\" (\"col2\" NUMBER(10)) ON COMMIT DELETE ROWS")
-   (postgresql "CREATE GLOBAL TEMPORARY TABLE alma (col2 INT) ON COMMIT DELETE ROWS")
-   (sqlite "CREATE GLOBAL TEMPORARY TABLE alma (col2 INTEGER) ON COMMIT DELETE ROWS")))
+  '(create table (:temporary :delete-rows) test_table (("col2" (integer 32))))
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col2\" NUMBER(10)) ON COMMIT DELETE ROWS")
+   (postgresql "CREATE GLOBAL TEMPORARY TABLE test_table (col2 INT) ON COMMIT DELETE ROWS")
+   (sqlite "CREATE GLOBAL TEMPORARY TABLE test_table (col2 INTEGER) ON COMMIT DELETE ROWS")))
 
 (def reader-dialect-test test/syntax/sql-reader
   [select "bar" table]
@@ -197,11 +197,11 @@
 (def suite* (test/format :in test/syntax))
 
 (def ast-dialect-test test/syntax/format/identifier
-  (sql-identifier :name "alma")
-  "alma"
+  (sql-identifier :name "test_table")
+  "test_table"
 
-  (sql-identifier :name 'alma)
-  "alma")
+  (sql-identifier :name 'test_table)
+  "test_table")
 
 (def ast-dialect-test test/syntax/format/create-table
   (sql-create-table :name "a"

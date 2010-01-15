@@ -6,41 +6,41 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(def suite* (test/basic :in test))
+(def suite* (test/basic :auto-call #f))
 
-(def test* test/basic/connect ()
+(def test test/basic/connect ()
   (finishes
     (with-transaction
       (execute "select 1"))))
 
-(def test* test/basic/create-table ()
+(def test test/basic/create-table ()
   (finishes
     (unwind-protect
-         (execute-ddl "CREATE TABLE alma (name varchar(40))")
+         (execute-ddl "CREATE TABLE test_table (name varchar(40))")
       (ignore-errors
-        (execute-ddl "DROP TABLE alma")))))
+        (execute-ddl "DROP TABLE test_table")))))
 
-(def test* test/basic/encoding ()
+(def test test/basic/encoding ()
   (bind ((unicode-text "éáúóüőű"))
     (unwind-protect
          (with-transaction
-           (execute-ddl "CREATE TABLE alma (name varchar(40))")
-           (execute (format nil "INSERT INTO alma VALUES ('~A')" unicode-text))
-           (is (string= (first-elt (first-elt (execute "SELECT name FROM alma"))) unicode-text)))
+           (execute-ddl "CREATE TABLE test_table (name varchar(40))")
+           (execute (format nil "INSERT INTO test_table VALUES ('~A')" unicode-text))
+           (is (string= (first-elt (first-elt (execute "SELECT name FROM test_table"))) unicode-text)))
       (ignore-errors
-        (execute-ddl "DROP TABLE alma")))))
+        (execute-ddl "DROP TABLE test_table")))))
 
-(def test* test/basic/basic-binding ()
+(def test test/basic/basic-binding ()
   (bind ((unicode-text "éáúóüőű"))
     (unwind-protect
          (with-transaction
-           (execute-ddl [create table alma ((name (varchar 50)))])
-           (execute [insert alma (name) ((,unicode-text varchar))])
-           (is (string= (first-elt (first-elt (execute [select * alma]))) unicode-text)))
+           (execute-ddl [create table test_table ((name (varchar 50)))])
+           (execute [insert test_table (name) ((,unicode-text varchar))])
+           (is (string= (first-elt (first-elt (execute [select * test_table]))) unicode-text)))
       (ignore-errors
-        (execute-ddl [drop table alma])))))
+        (execute-ddl [drop table test_table])))))
 
-(def test* test/basic/binding ()
+(def test test/basic/binding ()
   (bind ((columns (compile-sexp-sql-columns
                    `((a (integer 32))
                      (string_column (varchar 50))
@@ -62,15 +62,15 @@
                                            (make-instance 'sql-literal :value value :type type)))))
     (unwind-protect
          (with-transaction
-           (execute-ddl [create table alma ,columns])
-           (execute [insert alma
+           (execute-ddl [create table test_table ,columns])
+           (execute [insert test_table
                             ,columns
                             ,(append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
                                      binding-literals
                                      (list (compile-sexp-sql-literal '(? named2 (integer 32)))))]
                     :bindings `(named1 11
-                                named2 22))
-           (execute [select ,columns alma]
+                                       named2 22))
+           (execute [select ,columns test_table]
                     :visitor (let ((first-time #t))
                                (lambda (row)
                                  (let ((idx -1))
@@ -85,71 +85,71 @@
                                      (is (eql (next) (value-of (fourth binding-literals))))
                                      (is (eql (next) 22)))))))
            (signals unbound-binding-variable-error
-             (execute [insert alma
+             (execute [insert test_table
                               ,columns
                               ,(append (list (compile-sexp-sql-literal '(? named1 (integer 32))))
                                        binding-literals
                                        (list (compile-sexp-sql-literal '(? named2 (integer 32)))))])))
       (ignore-errors
-        (execute-ddl [drop table alma])))))
+        (execute-ddl [drop table test_table])))))
 
-(def test* test/basic/terminal-action ()
+(def test test/basic/terminal-action ()
   (unwind-protect
        (progn
-         (execute-ddl "CREATE TABLE alma (x integer)")
+         (execute-ddl "CREATE TABLE test_table (x integer)")
          (with-transaction
-           (execute "INSERT INTO alma VALUES (42)")
-           (is (= (first-elt (first-elt (execute "SELECT x FROM alma"))) 42))
+           (execute "INSERT INTO test_table VALUES (42)")
+           (is (= (first-elt (first-elt (execute "SELECT x FROM test_table"))) 42))
            (mark-transaction-for-rollback-only))
          (with-transaction
-           (is (zerop (first-elt (first-elt (execute "SELECT count(*) FROM alma"))))))
+           (is (zerop (first-elt (first-elt (execute "SELECT count(*) FROM test_table"))))))
          (with-transaction
-           (execute "INSERT INTO alma VALUES (42)"))
+           (execute "INSERT INTO test_table VALUES (42)"))
          (with-transaction
-           (is (= 1 (first-elt (first-elt (execute "SELECT count(*) FROM alma")))))))
+           (is (= 1 (first-elt (first-elt (execute "SELECT count(*) FROM test_table")))))))
     (ignore-errors
-      (execute-ddl "DROP TABLE alma"))))
+      (execute-ddl "DROP TABLE test_table"))))
 
-(def test* test/basic/insert-record ()
+(def test test/basic/insert-record ()
   (unwind-protect
        (let ((columns (compile-sexp-sql-columns
                        `((a (integer 32))
                          (b (varchar 50))))))
-         (create-table 'alma columns)
+         (create-table 'test_table columns)
          (with-transaction
-           (insert-record 'alma columns (list 1 "alma"))
-           (let ((row (first-elt (select-records columns '(alma)))))
+           (insert-record 'test_table columns (list 1 "test_table"))
+           (let ((row (first-elt (select-records columns '(test_table)))))
              (is (= (elt row 0) 1))
-             (is (string= (elt row 1) "alma")))))
+             (is (string= (elt row 1) "test_table")))))
     (ignore-errors
-      (execute-ddl [drop table alma]))))
+      (execute-ddl [drop table test_table]))))
 
-(def test* test/basic/update-records ()
+(def test test/basic/update-records ()
   (unwind-protect
        (let ((columns (compile-sexp-sql-columns
                        `((a (integer 32))
                          (b (varchar 50))))))
-         (create-table 'alma columns)
+         (create-table 'test_table columns)
          (with-transaction
-           (execute [insert alma (a b) (:null :null)])
-           (update-records 'alma columns (list 1 "alma"))
-           (let ((row (first-elt (select-records columns '(alma)))))
+           (execute [insert test_table (a b) (:null :null)])
+           (update-records 'test_table columns (list 1 "test_table"))
+           (let ((row (first-elt (select-records columns '(test_table)))))
              (is (= (elt row 0) 1))
-             (is (string= (elt row 1) "alma")))))
+             (is (string= (elt row 1) "test_table")))))
     (ignore-errors
-      (execute-ddl [drop table alma]))))
+      (execute-ddl [drop table test_table]))))
 
-(def test* test/basic/expand-sql-ast/binding ()
+(def test test/basic/expand-sql-ast/binding ()
   (unwind-protect
        (with-transaction
-         (execute-ddl [create table alma ((a boolean))])
-         (execute [insert alma (a) (t)])
+         (execute-ddl [create table test_table ((a boolean))])
+         (execute [insert test_table (a) (t)])
          (is (length= 1 (execute
                          (compile
                           nil
                           (expand-sql-ast-into-lambda-form
                            (sql-select :columns '(a)
-                                       :tables '(alma)
+                                       :tables '(test_table)
                                        :where (sql-= (sql-identifier :name 'a)
                                                      (sql-unquote :form '(sql-binding-variable :name 'a :type (sql-boolean-type)))))))
                          :bindings '(a t))))
@@ -158,7 +158,7 @@
                           nil
                           (expand-sql-ast-into-lambda-form
                            (sql-select :columns '(a)
-                                       :tables '(alma)
+                                       :tables '(test_table)
                                        :where (sql-= (sql-identifier :name 'a)
                                                      (sql-binding-variable :name 'a
                                                                            :type
@@ -167,4 +167,4 @@
                                                                              `(sql-boolean-type)))))))
                          :bindings '(a t)))))
     (ignore-errors
-      (execute-ddl [drop table alma]))))
+      (execute-ddl [drop table test_table]))))
