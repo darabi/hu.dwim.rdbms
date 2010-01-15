@@ -6,31 +6,35 @@
 
 (in-package :hu.dwim.rdbms.test)
 
+(def function find-database-class (name)
+  (if (eq name t)
+      (find-class 'database)
+      (bind ((package (find-package (string+ "HU.DWIM.RDBMS." (string-upcase name)))))
+        (when package
+          (bind ((class-name (find-symbol (string-upcase name) package)))
+            (find-class class-name))))))
+
 (def definer syntax-test (name database args &body body)
   `(def test ,name ,args
-     (with-database (closer-mop:class-prototype
-                     (find-class
-                      ',(if (eq database t)
-                            'database
-                            database)))
+     (with-database (closer-mop:class-prototype (find-database-class ',database))
        ,@body)))
 
 (def definer dialect-test (name kind &body body)
   `(def test ,name ()
-     (with-database *test-database*
-       ,@(iter (for (sql string-or-case-body) :on body :by #'cddr)
-               (collect `(is (equalp
-                              ,(ecase kind
-                                 (:sexp   `(format-sql-to-string (compile-sexp-sql ,sql)))
-                                 (:ast    `(format-sql-to-string ,sql))
-                                 (:reader (once-only (sql)
-                                            `(etypecase ,sql
-                                               (string ,sql)
-                                               (function (funcall ,sql))))))
-                              ,(if (stringp string-or-case-body)
-                                   string-or-case-body
-                                   `(typecase *database*
-                                      ,@string-or-case-body)))))))))
+     ,@(iter (for (sql string-or-case-bodies) :on body :by #'cddr)
+             (collect `(is (equalp
+                            ,(ecase kind
+                               (:sexp  `(format-sql-to-string (compile-sexp-sql ,sql)))
+                               (:ast   `(format-sql-to-string ,sql))
+                               (:reader (once-only (sql)
+                                          `(etypecase ,sql
+                                             (string ,sql)
+                                             (function (funcall ,sql))))))
+                            ,(if (stringp string-or-case-bodies)
+                                 string-or-case-bodies
+                                 `(cond ,@(iter (for case-body :in string-or-case-bodies)
+                                                (collect `((typep *database* (find-database-class ',(first case-body)))
+                                                           ,@(rest case-body))))))))))))
 
 (def definer sexp-sql-dialect-test (name &body body)
   `(def dialect-test ,name :sexp ,@body))
@@ -41,7 +45,7 @@
 (def definer reader-dialect-test (name &body body)
   `(def dialect-test ,name :reader ,@body))
 
-(def suite* (test/syntax :auto-call #f))
+(def suite* (test/syntax :in test/backend))
 
 (def sexp-sql-dialect-test test/syntax/sexp-dialect
   '(select "bar" table)
@@ -89,9 +93,8 @@
                         ,(sql-literal :value (string-upcase "some random text")
                                       :type (sql-character-varying-type))
                         ,(sql-binding-variable :name 'dynamic-binding
-                                               :type (sql-character-varying-type))
-                        (? 'static-binding (float 32)))])
-  ((postgresql "INSERT INTO t (col1, col2, col3, col4) VALUES (42, $2::CHARACTER VARYING, $3::CHARACTER VARYING, $1::FLOAT4)")))
+                                               :type (sql-character-varying-type)))])
+  ((postgresql "INSERT INTO t (col1, col2, col3, col4) VALUES (42, $1::CHARACTER VARYING, $2::CHARACTER VARYING)")))
 
 (def syntax-test test/syntax/expand-sql-ast/unquote/1 postgresql (&optional (n 3))
   ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
@@ -194,7 +197,7 @@
       (is (eql (first-elt binding-values) 43))
       (is (every #'null (subseq binding-values 1))))))
 
-(def suite* (test/format :in test/syntax))
+(def suite* (test/format :in test/backend))
 
 (def ast-dialect-test test/syntax/format/identifier
   (sql-identifier :name "test_table")
@@ -317,30 +320,3 @@
                   :mode :share
                   :wait #f)
   "LOCK TABLE a IN SHARE MODE NOWAIT")
-
-#|
-this variant runs the tests for all dialects, but it's not useful because
-that would require all the backends to be loaded (for their syntax customizations)
-which can be a headache for complex backends like the oracle one.
-
-(def definer dialect-test (name sexp-p &body body)
-  `(def test ,name ()
-     ,@(flet ((construct-entry (database expected)
-                `(is (equalp
-                      (with-database
-                          (closer-mop:class-prototype
-                           (find-class
-                            ',(if (eq database t)
-                                  'database
-                                  database)))
-                        (format-sql-to-string sql-ast))
-                      ,expected))))
-         (iter (for (sql cases) :on body :by #'cddr)
-               (collect `(bind ((sql-ast ,(if sexp-p
-                                              `(compile-sexp-sql ,sql)
-                                              sql)))
-                           ,@(if (stringp cases)
-                                 (list (construct-entry t cases))
-                                 (iter (for (database expected) :in cases)
-                                       (collect (construct-entry database expected))))))))))
-|#

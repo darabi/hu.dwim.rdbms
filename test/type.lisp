@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(def suite* (test/type :auto-call #f))
+(def suite* (test/type :in test/backend))
 
 (def definer type-test (name type &body values)
   `(def test ,name ()

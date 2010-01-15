@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms.test)
 
-(def suite* (test/basic :auto-call #f))
+(def suite* (test/basic :in test/backend))
 
 (def test test/basic/connect ()
   (finishes
