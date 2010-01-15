@@ -30,13 +30,13 @@
 
 (def definer simple-type-test (name type &body values)
   `(def type-test ,name ,type
-       ,@(mapcar
-          (lambda (value)
-            (setf value (ensure-list value))
-            (list 'equalp (first value) (if (rest value)
-                                            (second value)
-                                            (first value))))
-          values)))
+     ,@(mapcar
+        (lambda (value)
+          (setf value (ensure-list value))
+          (list 'equalp (first value) (if (rest value)
+                                          (second value)
+                                          (first value))))
+        values)))
 
 (def simple-type-test test/type/boolean boolean
   :null
