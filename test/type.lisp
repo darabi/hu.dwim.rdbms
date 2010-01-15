@@ -11,19 +11,22 @@
 (def definer type-test (name type &body values)
   `(def test ,name ()
      (with-transaction
-       (execute-ddl [drop table alma])
        ;; the first , is unquote relative to the sql syntax, the second is relative to `
        ;; TODO [create table alma ((a ,,sql-type))] should just work fine...
-       (execute-ddl [create table alma ((a ,(compile-sexp-sql-type ',type)))])
-       ,@(iter (for (comparator value expected) :in values)
-               (unless expected
-                 (setf expected value))
-               (collect `(progn
-                           (execute [insert alma (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
-                           (is (funcall ',comparator
-                                        (first-elt (first-elt (execute [select * alma] :result-type 'list)))
-                                        ,expected))
-                           (execute [delete alma])))))))
+       (unwind-protect
+         (progn
+           (execute-ddl [create table alma ((a ,(compile-sexp-sql-type ',type)))])
+           ,@(iter (for (comparator value expected) :in values)
+                   (unless expected
+                     (setf expected value))
+                   (collect `(progn
+                               (execute [insert alma (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
+                               (is (funcall ',comparator
+                                            (first-elt (first-elt (execute [select * alma] :result-type 'list)))
+                                            ,expected))
+                               (execute [delete alma])))))
+         (ignore-errors
+           (execute-ddl [drop table alma]))))))
 
 (def definer simple-type-test (name type &body values)
   `(def type-test ,name ,type
