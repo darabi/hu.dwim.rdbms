@@ -108,8 +108,8 @@
   (:documentation "Extension point for with-transaction macro.")
 
   (:method (database transaction function)
-           (declare (ignore database transaction))
-           (funcall function)))
+    (declare (ignore database transaction))
+    (funcall function)))
 
 (def (with-macro* e) with-transaction* (&rest args &key (default-terminal-action :commit) database &allow-other-keys)
   "Evaluates FORMS within the dynamic scope of a new TRANSACTION."
@@ -247,46 +247,46 @@
   (:documentation "Extension point for with-transaction.")
 
   (:method :before (database &key &allow-other-keys)
-           (rdbms.debug "About to BEGIN transaction in database ~A" database))
+    (rdbms.debug "About to BEGIN transaction in database ~A" database))
 
   (:method (database &rest args &key default-result-type &allow-other-keys)
-           (apply #'make-instance (transaction-class-of database)
-                  :database database
-                  :state :in-progress
-                  :default-result-type (or default-result-type (default-result-type-of database))
-                  args)))
+    (apply #'make-instance (transaction-class-of database)
+           :database database
+           :state :in-progress
+           :default-result-type (or default-result-type (default-result-type-of database))
+           args)))
 
 (def (generic e) begin-transaction (database transaction)
   (:documentation "Extension point for with-transaction and begin.")
 
   (:method (database transaction)
-           (execute-command database transaction "BEGIN")))
+    (execute-command database transaction "BEGIN")))
 
 (def (generic e) commit-transaction (database transaction)
   (:documentation "Extension point for with-transaction and commit.")
 
   (:method :around (database transaction)
-           (rdbms.debug "About to COMMIT transaction ~A" transaction)
-           (when (begin-was-executed-p transaction)
-             (call-next-method))
-           (setf (state-of transaction) :committed)
-           (values))
+    (rdbms.debug "About to COMMIT transaction ~A" transaction)
+    (when (begin-was-executed-p transaction)
+      (call-next-method))
+    (setf (state-of transaction) :committed)
+    (values))
 
   (:method (database transaction)
-           (execute-command database transaction "COMMIT")))
+    (execute-command database transaction "COMMIT")))
 
 (def (generic e) rollback-transaction (database transaction)
   (:documentation "Extension point for with-transaction and rollback.")
 
   (:method :around (database transaction)
-           (rdbms.dribble "About to ROLLBACK transaction ~A" transaction)
-           (when (begin-was-executed-p transaction)
-             (call-next-method))
-           (setf (state-of transaction) :rolled-back)
-           (values))
+    (rdbms.dribble "About to ROLLBACK transaction ~A" transaction)
+    (when (begin-was-executed-p transaction)
+      (call-next-method))
+    (setf (state-of transaction) :rolled-back)
+    (values))
 
   (:method (database transaction)
-           (execute-command database transaction "ROLLBACK")))
+    (execute-command database transaction "ROLLBACK")))
 
 (def (generic e) cleanup-transaction (transaction)
   (:documentation "Extension point with-transaction and commit/rollback.")
@@ -335,25 +335,25 @@
                               command)))))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
-           (when (break-on-next-command-p *transaction*)
-             (setf (break-on-next-command-p *transaction*) #f)
-             (cerror "Continue transaction" "Break requested on rdbms command ~S" command))
-           (apply #'call-next-method database transaction command :result-type result-type args))
+    (when (break-on-next-command-p *transaction*)
+      (setf (break-on-next-command-p *transaction*) #f)
+      (cerror "Continue transaction" "Break requested on rdbms command ~S" command))
+    (apply #'call-next-method database transaction command :result-type result-type args))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
-           (let ((command-counter (command-counter-of transaction)))
-             (cond ((starts-with-subseq "INSERT" command :test #'equalp)
-                    (incf (insert-counter-of command-counter))
-                    (notify-transaction-event transaction :insert))
-                   ((starts-with-subseq "SELECT" command :test #'equalp)
-                    (incf (select-counter-of command-counter))
-                    (notify-transaction-event transaction :select))
-                   ((starts-with-subseq "UPDATE" command :test #'equalp)
-                    (incf (update-counter-of command-counter))
-                    (notify-transaction-event transaction :update))
-                   ((starts-with-subseq "DELETE" command :test #'equalp)
-                    (incf (delete-counter-of command-counter))
-                    (notify-transaction-event transaction :delete))))))
+    (let ((command-counter (command-counter-of transaction)))
+      (cond ((starts-with-subseq "INSERT" command :test #'equalp)
+             (incf (insert-counter-of command-counter))
+             (notify-transaction-event transaction :insert))
+            ((starts-with-subseq "SELECT" command :test #'equalp)
+             (incf (select-counter-of command-counter))
+             (notify-transaction-event transaction :select))
+            ((starts-with-subseq "UPDATE" command :test #'equalp)
+             (incf (update-counter-of command-counter))
+             (notify-transaction-event transaction :update))
+            ((starts-with-subseq "DELETE" command :test #'equalp)
+             (incf (delete-counter-of command-counter))
+             (notify-transaction-event transaction :delete))))))
 
 (def class* transaction-with-hooks-mixin ()
   ((hooks nil :type list)))
