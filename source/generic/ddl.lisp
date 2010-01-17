@@ -105,9 +105,17 @@
     (-body-)))
 
 (def (function e) update-table (name columns)
-  (if (table-exists-p name)
-      (update-existing-table name columns)
-      (create-table name columns)))
+  (tagbody
+   :retry
+     (if (table-exists-p name)
+         (restart-case
+             (update-existing-table name columns)
+           (drop-table ()
+             :report (lambda (stream)
+                       (format stream "DESTRUCTIVE: Drop table ~S and try operation ~S again" name 'update-table))
+             (drop-table name :cascade #t)
+             (go :retry)))
+         (create-table name columns))))
 
 (def generic rdbms-type-for (type database)
   (:documentation "Maps the given type to the smallest matching type.")
