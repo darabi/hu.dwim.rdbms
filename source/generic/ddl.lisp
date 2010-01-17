@@ -139,9 +139,9 @@
                            :new-rdbms-type new-rdbms-type))
                   (restart-case
                       (alter-column-type table-name column)
-                    (continue nil
+                    (drop-column ()
                       :report (lambda (stream)
-                                (format stream "DESTRUCTIVE: Drop column ~S in table ~S to try to workaround the error coming from the ALTER TABLE SQL statement"
+                                (format stream "DESTRUCTIVE: Drop column ~S in table ~S and try adding it brand new"
                                         table-name column-name))
                       (drop-column table-name column-name #t)
                       (add-column table-name column))))))
