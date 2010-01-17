@@ -130,13 +130,15 @@
             (let ((new-rdbms-type (rdbms-type-for (type-of column) *database*)))
               (unless (equal-type-p (type-of table-column) new-rdbms-type *database*)
                 (with-transaction
-                  (with-simple-restart
-                      (continue-with-schema-change "DESTRUCTIVE: Alter the table ~S by updating the column ~S from the current rdbms type ~A to new rdbms type ~A (derived from ~A)"
-                                                   table-name column-name (type-of table-column) new-rdbms-type (type-of column))
-                    (error 'unconfirmed-destructive-schema-change/alter-column-type :table-name table-name :column-name column-name
-                           :old-type (type-of table-column)
-                           :new-type (type-of column)
-                           :new-rdbms-type new-rdbms-type))
+                  (restart-case
+                      (error 'unconfirmed-destructive-schema-change/alter-column-type :table-name table-name :column-name column-name
+                             :old-type (type-of table-column)
+                             :new-type (type-of column)
+                             :new-rdbms-type new-rdbms-type)
+                    (continue-with-schema-change ()
+                      :report (lambda (stream)
+                                (format stream "DESTRUCTIVE: Alter the table ~S by updating the column ~S from the current rdbms type ~A to new rdbms type ~A (derived from ~A)"
+                                        table-name column-name (type-of table-column) new-rdbms-type (type-of column)))))
                   (restart-case
                       (alter-column-type table-name column)
                     (drop-column ()
