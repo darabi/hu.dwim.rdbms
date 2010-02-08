@@ -137,22 +137,24 @@
             ;; change column type where needed
             (let ((new-rdbms-type (rdbms-type-for (type-of column) *database*)))
               (unless (equal-type-p (type-of table-column) new-rdbms-type *database*)
-                (with-transaction
-                  (restart-case
-                      (error 'unconfirmed-destructive-schema-change/alter-column-type :table-name table-name :column-name column-name
-                             :old-type (type-of table-column)
-                             :new-type (type-of column)
-                             :new-rdbms-type new-rdbms-type)
-                    (continue-with-schema-change ()
-                      :report (lambda (stream)
-                                (format stream "DESTRUCTIVE: Alter the table ~S by updating the column ~S from the current rdbms type ~A to new rdbms type ~A (derived from ~A)"
-                                        table-name column-name (type-of table-column) new-rdbms-type (type-of column)))))
-                  (restart-case
-                      (alter-column-type table-name column)
-                    (drop-column ()
-                      :report (lambda (stream)
-                                (format stream "DESTRUCTIVE: Drop column ~S in table ~S and try adding it brand new"
-                                        table-name column-name))
+                (restart-case
+                    ;; open a nested RESTART-CASE so that the outer DROP-COLUMN restart is available in case an error comes from the alter table statement
+                    (restart-case
+                        (error 'unconfirmed-destructive-schema-change/alter-column-type :table-name table-name :column-name column-name
+                               :old-type (type-of table-column)
+                               :new-type (type-of column)
+                               :new-rdbms-type new-rdbms-type)
+                      (continue-with-schema-change ()
+                        :report (lambda (stream)
+                                  (format stream "DESTRUCTIVE: Alter the table ~S by updating the column ~S from the current rdbms type ~A to new rdbms type ~A (derived from ~A)"
+                                          table-name column-name (type-of table-column) new-rdbms-type (type-of column)))
+                        (with-transaction
+                          (alter-column-type table-name column))))
+                  (drop-column ()
+                    :report (lambda (stream)
+                              (format stream "DESTRUCTIVE: Drop column ~S in table ~S (type ~A) and try adding it brand the new with type ~A"
+                                      table-name column-name (type-of table-column) (type-of column)))
+                    (with-transaction
                       (drop-column table-name column-name #t)
                       (add-column table-name column))))))
             ;; add missing columns not present in the table
