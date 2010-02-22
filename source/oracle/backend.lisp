@@ -16,8 +16,10 @@
 (def function ensure-oracle-oci-is-loaded ()
   (unless *oracle-oci-foreign-library*
     ;; TODO let the user control version, path and stuff (through slots on *database*? if so then *oracle-oci-foreign-library* must be a slot there, too)
+    (push #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/"
+          cffi:*foreign-library-directories*)
     (setf *oracle-oci-foreign-library*
-          (cffi:load-foreign-library 'oracle-oci :search-path (list #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")))))
+          (cffi:load-foreign-library 'oracle-oci))))
 
 ;;;;;;
 ;;; Backend API
