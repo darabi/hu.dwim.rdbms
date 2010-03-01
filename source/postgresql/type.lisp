@@ -82,7 +82,3 @@
            (if (with-timezone-p type)
                "timestamptz"
                "timestamp")))
-
-(def generic binding-type-for-sql-type (sql-type database))
-
-
