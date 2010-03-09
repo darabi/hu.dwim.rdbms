@@ -283,7 +283,7 @@
   (:documentation "Extension point for with-transaction and rollback.")
 
   (:method :around (database transaction)
-    (rdbms.dribble "About to ROLLBACK transaction ~A" transaction)
+    (rdbms.debug "About to ROLLBACK transaction ~A" transaction)
     (when (begin-was-executed-p transaction)
       (call-next-method))
     (setf (state-of transaction) :rolled-back)
