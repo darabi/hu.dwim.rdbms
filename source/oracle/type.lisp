@@ -97,7 +97,7 @@
     :oci-to-lisp #'byte-array-from-long-varraw)
 
 (def generic typemap-for-sql-type (type)
-  
+
   (:method ((type sql-boolean-type))
            ;; booleans are stored as CHAR(1) internally
            boolean/char)
@@ -167,7 +167,7 @@
 
 (def function internal-type-for-sql-type (type)
   (assert (typep *database* 'oracle))
-  (let ((str (format-sql-to-string type *database*)))
+  (let ((str (format-sql-to-string type :database *database*)))
     (string-downcase
      (aif (position #\( str :test #'char=)
           (subseq str 0 it)             ; TODO ???
