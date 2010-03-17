@@ -11,7 +11,8 @@
 (def test test/basic/connect ()
   (finishes
     (with-transaction
-      (execute "select 1"))))
+      (execute "CREATE GLOBAL TEMPORARY TABLE tmp (col CHAR)")
+      (execute "DROP TABLE tmp"))))
 
 (def test test/basic/create-table ()
   (finishes
