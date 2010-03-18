@@ -113,7 +113,7 @@
 (def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
   (declare (ignore database))
   `(funcall
-    (with-cache ((type-of *database*))
+    (with-cache ((*database* :test (lambda (x y) (eq (type-of x) (type-of y)))))
       (compile
        nil
        `(lambda ()
