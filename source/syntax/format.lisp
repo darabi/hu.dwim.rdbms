@@ -61,10 +61,70 @@
     (replace vector extension :start1 original-length)
     vector))
 
+;;; from http://common-lisp.net/cgi-bin/darcsweb/darcsweb.cgi?r=plexippus-xpath-plexippus-xpath;a=annotate_shade;f=/utils.lisp
+
+;; Cache the result of COMPILATION-BODY as long as KEYS still match.
+;; This is thread-safe because the cache is replaced atomically.  We will
+;; lose cache conses if threads replace them simultaneously.  But that's
+;; okay, since correctness is not affected.  Losing some values is easier
+;; than having to use locking, and contention is not a case we are
+;; optimizing for.
+;;
+;; zzz extend this to use a vector of multiple cache-conses, using either
+;; linear search with round-robin replacement, or using SXHASH-based
+;; hashing.  Make the size of that table static, but configurable.
+(defmacro with-cache ((&rest keys) &body compilation-body)
+  (let ((key-values '())
+        (key-tests '()))
+    (dolist (key keys)
+      (destructuring-bind (value &key (test 'equal)) key
+        (push value key-values)
+        (push test key-tests)))
+    (setf key-values (nreverse key-values))
+    (setf key-tests (nreverse key-tests))
+    (let* ((keysyms (loop repeat (length keys) collect (gensym)))
+           (place (gensym))
+           (previous (gensym))
+           (check
+            (when keysyms
+              `((let ((l (cdr ,PREVIOUS)))
+                  , (labels ((recurse (vars tests)
+                               `(and (,(car tests) (car l) ,(car vars))
+                                     ,@ (when (cdr vars)
+                                          `((let ((l (cdr l)))
+                                              ,(recurse (cdr vars)
+                                                        (cdr tests))))))))
+                      (recurse keysyms key-tests)))))))
+      `(let* ((,PLACE (load-time-value (cons nil nil)))
+              (,PREVIOUS (car ,PLACE))
+              ,@(mapcar #'list keysyms key-values))
+         (cond
+           ((and ,PREVIOUS ,@check)
+            (car ,PREVIOUS))
+           (t
+            (let ((thunk (progn ,@compilation-body)))
+              (setf (car ,PLACE) (list thunk ,@keysyms))
+              thunk)))))))
+
+;; sql statements via sql macro and custom reader compile prematurely
+;; without knowing the right backend.  We need to recompile in case
+;; the backend at compilation time was different from the one we are
+;; actually using.
+(def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
+  (declare (ignore database))
+  `(funcall
+    (with-cache ((type-of *database*))
+      (compile
+       nil
+       `(lambda ()
+          ,(expand-sql-ast-into-lambda-form2 ',syntax-node
+                                             :database *database*
+                                             :toplevel ',toplevel))))))
+
 ;; TODO: if sql-quote is added this should return a lambda returning
 ;; the syntax-node unaltered unless it is an sql-quote in which case
 ;; it can be process
-(def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
+(def function expand-sql-ast-into-lambda-form2 (syntax-node &key database (toplevel #t))
   (bind ((*print-pretty* #f)
          (*print-circle* #f)
          (*sql-stream* (make-string-output-stream))
