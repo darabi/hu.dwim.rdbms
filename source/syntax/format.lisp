@@ -73,7 +73,7 @@
 ;; zzz extend this to use a vector of multiple cache-conses, using either
 ;; linear search with round-robin replacement, or using SXHASH-based
 ;; hashing.  Make the size of that table static, but configurable.
-(defmacro with-cache ((&rest keys) &body compilation-body)
+(def macro with-cache ((&rest keys) &body compilation-body)
   (let ((key-values '())
         (key-tests '()))
     (dolist (key keys)
@@ -106,6 +106,9 @@
               (setf (car ,PLACE) (list thunk ,@keysyms))
               thunk)))))))
 
+(def function same-backend-p (x y)
+  (cl:eq (cl:type-of x) (cl:type-of y)))
+
 ;; sql statements via sql macro and custom reader compile prematurely
 ;; without knowing the right backend.  We need to recompile in case
 ;; the backend at compilation time was different from the one we are
@@ -113,7 +116,7 @@
 (def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
   (declare (ignore database))
   `(funcall
-    (with-cache ((*database* :test (lambda (x y) (eq (type-of x) (type-of y)))))
+    (with-cache ((*database* :test same-backend-p))
       (compile
        nil
        `(lambda ()
