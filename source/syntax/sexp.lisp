@@ -10,10 +10,11 @@
 
 ;; TODO support [select (count *) !(some lisp generating the from part)] syntax
 
-(def macro sql (body)
+(def macro sql (body &environment env)
   "Parse BODY as an sexp-sql sexp."
   (expand-sql-ast-into-lambda-form
    (compile-sexp-sql body)
+   :env env
    :toplevel (and (consp body)
                   (member (first body) '(select insert update delete create drop)
                           :test #'sql-symbol-equal))))

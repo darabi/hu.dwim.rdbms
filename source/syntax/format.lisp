@@ -113,16 +113,25 @@
 ;; without knowing the right backend.  We need to recompile in case
 ;; the backend at compilation time was different from the one we are
 ;; actually using.
-(def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
+(def function expand-sql-ast-into-lambda-form (syntax-node &key env database (toplevel #t))
   (declare (ignore database))
-  `(funcall
-    (with-cache ((*database* :test same-backend-p))
-      (compile
-       nil
-       `(lambda ()
-          ,(expand-sql-ast-into-lambda-form2 ',syntax-node
-                                             :database *database*
-                                             :toplevel ',toplevel))))))
+  (let ((lvars nil))
+    (when env
+      (hu.dwim.walker:iterate-variables-in-lexenv
+       (lambda (name &key ignored? special? macro? macro-body type)
+         (declare (ignore macro-body type))
+         (unless (or ignored? special? macro?)
+           (push name lvars)))
+       env))
+    `(funcall
+      (with-cache ((*database* :test same-backend-p))
+        (compile
+         nil
+         `(lambda ,',lvars
+            ,(expand-sql-ast-into-lambda-form2 ',syntax-node
+                                               :database *database*
+                                               :toplevel ',toplevel))))
+      ,@lvars)))
 
 ;; TODO: if sql-quote is added this should return a lambda returning
 ;; the syntax-node unaltered unless it is an sql-quote in which case
