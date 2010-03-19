@@ -12,6 +12,9 @@
 (def method database-list-tables ((database oracle))
   (mapcar #'first (execute "select table_name from user_tables" :result-type 'list)))
 
+(def method database-list-views ((database oracle))
+  (mapcar #'first (execute "select view_name from user_views" :result-type 'list)))
+
 (def method database-list-table-columns (name (database oracle))
   (map 'list
    (lambda (column)
