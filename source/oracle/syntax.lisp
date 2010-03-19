@@ -193,3 +193,43 @@
             (format-char ",")
             (format-sql-syntax-node else database)
             (format-string ")"))))))
+
+(def method format-sql-syntax-node ((x sql-drop-view) (database oracle))
+  (if (ignore-missing-p x)
+      (progn
+        (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP VIEW ")
+        (format-sql-identifier (name-of x) database)
+        (format-string "'; exception when others then null; end;"))
+      (progn
+        (format-string "DROP VIEW ")
+        (format-sql-identifier (name-of x) database))))
+
+(def method format-sql-syntax-node ((x sql-drop-table) (database oracle))
+  (if (ignore-missing-p x)
+      (progn
+        (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP TABLE ")
+        (format-sql-identifier (name-of x) database)
+        (format-string "'; exception when others then null; end;"))
+      (progn
+        (format-string "DROP TABLE ")
+        (format-sql-identifier (name-of x) database))))
+
+(def method format-sql-syntax-node ((x sql-drop-index) (database oracle))
+  (if (ignore-missing-p x)
+      (progn
+        (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP INDEX ")
+        (format-sql-identifier (name-of x) database)
+        (format-string "'; exception when others then null; end;"))
+      (progn
+        (format-string "DROP INDEX ")
+        (format-sql-identifier (name-of x) database))))
+
+(def method format-sql-syntax-node ((x sql-drop-sequence) (database oracle))
+  (if (ignore-missing-p x)
+      (progn
+        (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE ")
+        (format-sql-identifier (name-of x) database)
+        (format-string "'; exception when others then null; end;"))
+      (progn
+        (format-string "DROP SEQUENCE ")
+        (format-sql-identifier (name-of x) database))))
