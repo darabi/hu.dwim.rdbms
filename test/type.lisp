@@ -97,7 +97,7 @@
   12345678901234567890123456789012345678
   -12345678901234567890123456789012345678)
 
-(def simple-type-test test/type/float float
+(def simple-type-test test/type/float (float 32)
   (:null :null)
   (nil :null)
   0.0
