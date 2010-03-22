@@ -254,7 +254,8 @@
          (bind-handle-pointer (cffi:foreign-alloc :pointer :initial-element null))
          (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if (eq value :null) -1 0)))) 
     (multiple-value-bind (data-pointer data-size)
-        (if (eql value :null)
+        (if (or (eql value :null)
+                (and (cl:null value) (not (typep sql-type 'sql-boolean-type))))
             (values null 0)
             (funcall converter value))
 
