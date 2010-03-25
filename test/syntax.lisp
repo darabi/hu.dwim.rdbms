@@ -96,7 +96,7 @@
                                       :type (sql-character-varying-type))
                         ,(sql-binding-variable :name 'dynamic-binding
                                                :type (sql-character-varying-type)))])
-  ((oracle "INSERT INTO \"t\" (\"col1\", \"col2\", \"col3\", \"col4\") VALUES (42, :1, :2)")
+  ((oracle "INSERT INTO \"t\" (\"col1\", \"col2\", \"col3\", \"col4\") VALUES (42, :1, :2)") ;; TODO THL and the type spec ars?
    (postgresql "INSERT INTO t (col1, col2, col3, col4) VALUES (42, $1::CHARACTER VARYING, $2::CHARACTER VARYING)")))
 
 (def syntax-test test/syntax/expand-sql-ast/unquote/1 postgresql (&optional (n 3))
