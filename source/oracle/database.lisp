@@ -92,4 +92,4 @@
 (def method calculate-rdbms-name ((db oracle) thing name)
   ;; TODO this may not be neccessary for oracle, or at least not the same way as for the postgres backend.
   ;; table names in oracle queries are unconditionally in quotes (iirc, that is)
-  (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+))
+  (calculate-rdbms-name-with-utf-8-length-limit name +maximum-rdbms-name-length+ :prefix "_"))
