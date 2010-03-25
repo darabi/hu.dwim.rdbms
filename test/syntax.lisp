@@ -235,7 +235,7 @@
   (sql-alter-table :name "a"
                    :actions (list (sql-alter-column-type-action :name "a"
                                                                 :type (sql-integer-type))))
-  ((oracle "ALTER TABLE \"a\" ALTER COLUMN \"a\" TYPE NUMBER")
+  ((oracle "ALTER TABLE \"a\" MODIFY (\"a\" NUMBER)")
    (t "ALTER TABLE a ALTER COLUMN a TYPE NUMERIC"))
 
   (sql-alter-table :name "a"
