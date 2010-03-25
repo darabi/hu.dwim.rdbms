@@ -232,3 +232,53 @@
       (progn
         (format-string "DROP SEQUENCE ")
         (format-sql-identifier (name-of x) database))))
+
+;; TODO THL class for each operator for easier dispatch?
+(def method format-sql-syntax-node ((x sql-unary-operator) (database oracle))
+  (with-slots (name expression) x
+    (cond
+      ((equal "@" name)
+       (format-string "ABS(")
+       (format-sql-syntax-node expression database)
+       (format-string ")"))
+      ((equal "|/" name)
+       (format-string "SQRT(")
+       (format-sql-syntax-node expression database)
+       (format-string ")"))
+      ((equal "|/" name)
+       (format-string "SQRT(")
+       (format-sql-syntax-node expression database)
+       (format-string ")"))
+      (t (call-next-method)))))
+
+;; TODO THL class for each operator for easier dispatch?
+(def method format-sql-syntax-node ((x sql-binary-operator) (database oracle))
+  (with-slots (name left right) x
+    (cond
+      ((equal "&" name)
+       (format-string "BITAND(")
+       (format-sql-syntax-node left database)
+       (format-string ",")
+       (format-sql-syntax-node right database)
+       (format-string ")"))
+      ((equal "^" name)
+       (format-string "(")
+       (format-sql-syntax-node left database)
+       (format-string "**")
+       (format-sql-syntax-node right database)
+       (format-string ")"))
+      (t (call-next-method)))))
+
+(def method format-sql-syntax-node ((x sql-drop-column-action) (database oracle))
+  (with-slots (name type constraints default-value cascade) x
+    (format-string "DROP COLUMN ")
+    (format-sql-identifier name database)
+    (when cascade (format-string " CASCADE CONSTRAINTS"))))
+
+(def method format-sql-syntax-node ((x sql-alter-column-type-action) (database oracle))
+  (with-slots (name type constraints default-value) x
+    (format-string "MODIFY (")
+    (format-sql-identifier name database)
+    (format-string " ")
+    (format-sql-syntax-node type database)
+    (format-string ")")))
