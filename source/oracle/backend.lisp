@@ -228,7 +228,7 @@
                                 :row-count row-limit))
            (close-cursor cursor))))
       (t
-       nil))))
+       (values nil (get-row-count-attribute statement)))))) ;; TODO THL what should the first value be?
 
 ;;;;;;
 ;;; Binding
