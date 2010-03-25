@@ -1,0 +1,10 @@
+# -*- mode: org; eval: (setf org-tags-column 80) -*-
+#+TAGS: { Attila(a) Levy(l) Tomi(t) Kami(k) Hlavaty(h) Unassigned(u) }
+#+TAGS: { critical(c) major(m) minor(n) }
+#+TAGS: { BUG(b) FEATURE(f) TASK(s) }
+#+STARTUP: hidestars
+#+STARTUP: overview
+
+* TODO [#B] add a slot to database to specify whether names must be wrapped in quotes or not  :Unassigned:minor:FEATURE:
+
+Databases are usually case insensitive, but there might be an existing database which is not.
