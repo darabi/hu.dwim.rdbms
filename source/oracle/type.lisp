@@ -198,6 +198,7 @@
      ("VARCHAR2" (sql-character-varying-type :size char-length))
      ("CLOB" (sql-character-large-object-type)) ; FIXME size not mapped
      ("BLOB" (sql-binary-large-object-type)) ; FIXME size not mapped
+     ("RAW" (sql-binary-large-object-type  :size char-length)) ; FIXME size not mapped
      ("DATE" (sql-date-type))
      ("TIMESTAMP(6)" (sql-time-type))   ; FIXME sql-timestamp-type?
      ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-type :with-timezone #t)))))
@@ -224,7 +225,8 @@
     (#.oci:+sqlt-timestamp+ local-time/timestamp)    ; CHECK: was 180
     (#.oci:+sqlt-timestamp-tz+ local-time/timestamp-tz) ; CHECK: was 181
     (#.oci:+sqlt-clob+ string/long-varchar)
-    (#.oci:+sqlt-blob+ byte-array/long-varraw)))
+    (#.oci:+sqlt-blob+ byte-array/long-varraw)
+    (23 byte-array/long-varraw)))
 
 (def function data-size-for (external-type column-size)
   (declare (fixnum external-type))
