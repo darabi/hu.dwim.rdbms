@@ -198,7 +198,7 @@
       (progn
         (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP VIEW ")
         (format-sql-identifier (name-of x) database)
-        (format-string "'; exception when others then null; end;"))
+        (format-string "'; EXCEPTION WHEN OTHERS THEN NULL; END;"))
       (progn
         (format-string "DROP VIEW ")
         (format-sql-identifier (name-of x) database))))
@@ -208,7 +208,7 @@
       (progn
         (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP TABLE ")
         (format-sql-identifier (name-of x) database)
-        (format-string "'; exception when others then null; end;"))
+        (format-string "'; EXCEPTION WHEN OTHERS THEN NULL; END;"))
       (progn
         (format-string "DROP TABLE ")
         (format-sql-identifier (name-of x) database))))
@@ -218,7 +218,7 @@
       (progn
         (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP INDEX ")
         (format-sql-identifier (name-of x) database)
-        (format-string "'; exception when others then null; end;"))
+        (format-string "'; EXCEPTION WHEN OTHERS THEN NULL; END;"))
       (progn
         (format-string "DROP INDEX ")
         (format-sql-identifier (name-of x) database))))
@@ -228,7 +228,7 @@
       (progn
         (format-string "DECLARE BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE ")
         (format-sql-identifier (name-of x) database)
-        (format-string "'; exception when others then null; end;"))
+        (format-string "'; EXCEPTION WHEN OTHERS THEN NULL; END;"))
       (progn
         (format-string "DROP SEQUENCE ")
         (format-sql-identifier (name-of x) database))))
