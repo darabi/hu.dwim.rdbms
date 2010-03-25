@@ -6,20 +6,10 @@
 
 (in-package :hu.dwim.rdbms.oracle)
 
-(cffi:define-foreign-library oracle-oci
+(cffi:define-foreign-library (oracle-oci :search-path #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")
   (:unix "libocixe.so")
   (:windows "libocixe.dll")
   (t (:default "libocixe")))
-
-(def special-variable *oracle-oci-foreign-library* nil)
-
-(def function ensure-oracle-oci-is-loaded ()
-  (unless *oracle-oci-foreign-library*
-    ;; TODO let the user control version, path and stuff (through slots on *database*? if so then *oracle-oci-foreign-library* must be a slot there, too)
-    (push #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/"
-          cffi:*foreign-library-directories*)
-    (setf *oracle-oci-foreign-library*
-          (cffi:load-foreign-library 'oracle-oci))))
 
 ;;;;;;
 ;;; Backend API
@@ -80,7 +70,7 @@
 
 (def function connect (transaction)
   (assert (cl:null (environment-handle-pointer transaction)))
-  (ensure-oracle-oci-is-loaded)
+  (cffi:load-foreign-library 'oracle-oci)
   (bind (((&key datasource user-name (password "")) (connection-specification-of (database-of transaction))))
     (macrolet ((alloc (&rest whats)
                  `(progn
