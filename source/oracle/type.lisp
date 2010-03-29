@@ -19,82 +19,82 @@
 
 (def typemap boolean/char
     :external-type oci:+sqlt-afc+
-    :lisp-to-oci #'boolean-to-char
-    :oci-to-lisp #'boolean-from-char)
+    :lisp-to-oci 'boolean-to-char
+    :oci-to-lisp 'boolean-from-char)
 
 (def typemap integer/int8
     :external-type oci:+sqlt-int+
-    :lisp-to-oci #'integer-to-int8
-    :oci-to-lisp #'integer-from-int8)
+    :lisp-to-oci 'integer-to-int8
+    :oci-to-lisp 'integer-from-int8)
 
 (def typemap integer/int16
     :external-type oci:+sqlt-int+
-    :lisp-to-oci #'integer-to-int16
-    :oci-to-lisp #'integer-from-int16)
+    :lisp-to-oci 'integer-to-int16
+    :oci-to-lisp 'integer-from-int16)
 
 (def typemap integer/int32
     :external-type oci:+sqlt-int+
-    :lisp-to-oci #'integer-to-int32
-    :oci-to-lisp #'integer-from-int32)
+    :lisp-to-oci 'integer-to-int32
+    :oci-to-lisp 'integer-from-int32)
 
 (def typemap integer/varnum
     :external-type oci:+sqlt-vnu+
-    :lisp-to-oci #'integer-to-varnum     ;; TODO: pass precision/scale
-    :oci-to-lisp #'integer-from-varnum)
+    :lisp-to-oci 'integer-to-varnum     ;; TODO: pass precision/scale
+    :oci-to-lisp 'integer-from-varnum)
 
 (def typemap float/bfloat
     :external-type oci:+sqlt-bfloat+
-    :lisp-to-oci #'float-to-bfloat
-    :oci-to-lisp #'float-from-bfloat)
+    :lisp-to-oci 'float-to-bfloat
+    :oci-to-lisp 'float-from-bfloat)
 
 (def typemap double/bdouble
     :external-type oci:+sqlt-bdouble+
-    :lisp-to-oci #'double-to-bdouble
-    :oci-to-lisp #'double-from-bdouble)
+    :lisp-to-oci 'double-to-bdouble
+    :oci-to-lisp 'double-from-bdouble)
 
 (def typemap rational/varnum
     :external-type oci:+sqlt-vnu+
-    :lisp-to-oci #'rational-to-varnum      ;; TODO: pass precision/scale
-    :oci-to-lisp #'rational-from-varnum)
+    :lisp-to-oci 'rational-to-varnum      ;; TODO: pass precision/scale
+    :oci-to-lisp 'rational-from-varnum)
 
 (def typemap string/string
     :external-type oci:+sqlt-str+
-    :lisp-to-oci #'string-to-string
-    :oci-to-lisp #'string-from-string)
+    :lisp-to-oci 'string-to-string
+    :oci-to-lisp 'string-from-string)
 
 (def typemap string/long-varchar
     :external-type oci:+sqlt-lvc+
-    :lisp-to-oci #'string-to-long-varchar
-    :oci-to-lisp #'string-from-long-varchar)
+    :lisp-to-oci 'string-to-long-varchar
+    :oci-to-lisp 'string-from-long-varchar)
 
 (def typemap local-time/date
     :external-type oci:+sqlt-dat+
-    :lisp-to-oci #'local-time-to-date
-    :oci-to-lisp #'local-time-from-date)
+    :lisp-to-oci 'local-time-to-date
+    :oci-to-lisp 'local-time-from-date)
 
 (def typemap local-time/oci-date
     :external-type oci:+sqlt-odt+
-    :lisp-to-oci #'local-time-to-oci-date
-    :oci-to-lisp #'local-time-from-oci-date)
+    :lisp-to-oci 'local-time-to-oci-date
+    :oci-to-lisp 'local-time-from-oci-date)
 
 (def typemap local-time/timestamp
     :external-type oci:+sqlt-timestamp+
-    :lisp-to-oci #'local-time-to-timestamp
-    :oci-to-lisp #'local-time-from-timestamp
-    :allocate-instance #'allocate-oci-date-time
-    :free-instance #'free-oci-date-time)
+    :lisp-to-oci 'local-time-to-timestamp
+    :oci-to-lisp 'local-time-from-timestamp
+    :allocate-instance 'allocate-oci-date-time
+    :free-instance 'free-oci-date-time)
 
 (def typemap local-time/timestamp-tz
     :external-type oci:+sqlt-timestamp-tz+
-    :lisp-to-oci #'local-time-to-timestamp-tz
-    :oci-to-lisp #'local-time-from-timestamp-tz
-    :allocate-instance #'allocate-oci-date-time-tz
-    :free-instance #'free-oci-date-time-tz)
+    :lisp-to-oci 'local-time-to-timestamp-tz
+    :oci-to-lisp 'local-time-from-timestamp-tz
+    :allocate-instance 'allocate-oci-date-time-tz
+    :free-instance 'free-oci-date-time-tz)
 
 (def typemap byte-array/long-varraw
     :external-type oci:+sqlt-lvb+
-    :lisp-to-oci #'byte-array-to-long-varraw
-    :oci-to-lisp #'byte-array-from-long-varraw)
+    :lisp-to-oci 'byte-array-to-long-varraw
+    :oci-to-lisp 'byte-array-from-long-varraw)
 
 (def generic typemap-for-sql-type (type)
 
