@@ -93,7 +93,10 @@ Restarts:
  5: [CONTINUE] Skip the rest of the test HU.DWIM.PEREC.TEST::TEST/PERSISTENCE/TYPE/TIMESTAMP/1 and continue by returning (values)
 #+end_src
 
-* TODO [#A] fix HU.DWIM.RDBMS.TEST::TEST/TYPE/CLOB HU.DWIM.RDBMS.TEST::TEST/TYPE/BLOB
+* DONE [#A] fix HU.DWIM.RDBMS.TEST::TEST/TYPE/CLOB HU.DWIM.RDBMS.TEST::TEST/TYPE/BLOB :Hlavaty:major:BUG:
+  CLOSED: [2010-03-29 Mon 18:18]
+
+had to set indicator to -1 correctly and use empty lob for nil and :null cases
 
 Doesn't work for :null|nil
 
