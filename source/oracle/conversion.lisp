@@ -196,7 +196,6 @@
                    (cffi:mem-aref ptr 'oci:ub-1 (+ 4 i))))
     result))
 
-
 ;;;;;;
 ;;; Datetime conversions
 
