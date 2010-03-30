@@ -179,8 +179,10 @@
            (core)
            (format-string ")) WHERE ")
            (format-sql-syntax-node offset database)
-           (format-string " < \"kaeD8Ot7\" AND \"kaeD8Ot7\" <= ")
-           (format-sql-syntax-node (+ (value-of offset) (value-of limit)) database)))))))
+           (format-string " < \"kaeD8Ot7\"")
+           (when limit
+             (format-string " AND \"kaeD8Ot7\" <= ")
+             (format-sql-syntax-node (+ (value-of offset) (value-of limit)) database))))))))
 
 (def function format-sql-column-reference (column database)
   (typecase column
