@@ -135,28 +135,52 @@
 
 ;;;;;;
 ;;; Selects
-;;; add FROM dual when no table, ignore OFFSET, LIMIT
 
 (def method format-sql-syntax-node ((self sql-select) (database oracle))
   (with-slots (distinct columns tables where order-by offset limit for wait) self
-    (format-string "SELECT ")
-    (when distinct
-      (format-string "DISTINCT "))
-    (format-comma-separated-list columns database 'format-sql-column-reference)
-    (if tables
-        (progn
-          (format-string " FROM ")
-          (format-comma-separated-list tables database 'format-sql-table-reference))
-        (format-string " FROM dual "))
-    (format-sql-where where database)
-    (when order-by
-      (format-string " ORDER BY ")
-      (format-comma-separated-list order-by database))
-    (when for
-      (format-string " FOR ")
-      (format-string (symbol-name for))
-      (unless wait
-        (format-string " NOWAIT")))))
+    (flet ((core ()
+             (format-string "SELECT ")
+             (when distinct
+               (format-string "DISTINCT "))
+             (format-comma-separated-list columns database 'format-sql-column-reference)
+             (if tables
+                 (progn
+                   (format-string " FROM ")
+                   (format-comma-separated-list tables database
+                                                'format-sql-table-reference))
+                 (format-string " FROM dual "))
+             (format-sql-where where database)
+             (when order-by
+               (format-string " ORDER BY ")
+               (format-comma-separated-list order-by database))
+             (when for
+               (format-string " FOR ")
+               (format-string (symbol-name for))
+               (unless wait
+                 (format-string " NOWAIT")))))
+      (cond
+        ((and (not limit) (not offset))
+         (core))
+        ((and limit (not offset))
+         (format-string "SELECT * FROM (")
+         (core)
+         (format-string ") WHERE ROWNUM <= ")
+         (format-sql-syntax-node limit database))
+        (t
+         (flet ((cols ()
+                  (format-comma-separated-list
+                   columns database
+                   (lambda (x db) (format-sql-identifier (column-of x) db)))))
+           (format-string "SELECT ")
+           (cols)
+           (format-string " FROM (SELECT ")
+           (cols)
+           (format-string ", ROWNUM \"kaeD8Ot7\" FROM (") ;; name unlikely to clash
+           (core)
+           (format-string ")) WHERE ")
+           (format-sql-syntax-node offset database)
+           (format-string " < \"kaeD8Ot7\" AND \"kaeD8Ot7\" <= ")
+           (format-sql-syntax-node (+ (value-of offset) (value-of limit)) database)))))))
 
 (def function format-sql-column-reference (column database)
   (typecase column
