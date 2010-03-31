@@ -21,7 +21,8 @@
 ;;; Boolean conversions
 
 (def function boolean-to-char (value)
-  (foreign-oci-string-alloc (if value "T" "F") :null-terminated-p #f))
+  (foreign-oci-string-alloc (if (member value '(nil "FALSE") :test #'equal) "F" "T")
+                            :null-terminated-p #f))
 
 (def function boolean-from-char (ptr len)
   (assert (= len (oci-char-width)))
