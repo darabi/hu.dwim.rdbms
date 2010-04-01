@@ -244,7 +244,10 @@ Restarts:
  4: [CONTINUE] Skip the rest of the test HU.DWIM.PEREC.TEST::TEST/QUERY/TYPE/T/2 and continue by returning (values)
 #+end_src
 
-* TODO [#A] fix ORA-01459: invalid length for variable character string
+* DONE [#A] fix ORA-01459: invalid length for variable character string         :Hlavaty:major:BUG:
+  CLOSED: [2010-04-01 Thu 12:22]
+
+fixed by HU.DWIM.PEREC.TEST::TEST/PERSISTENCE/TYPE/TEXT/3 bellow
 
 maybe something about "" (length 0) being NULL in oracle?
 
@@ -324,7 +327,10 @@ Restarts:
  5: [CONTINUE] Skip the rest of the test HU.DWIM.PEREC.TEST::TEST/PERSISTENCE/TYPE/BOOLEAN/2 and continue by returning (values)
 #+end_src
 
-* TODO [#A] fix this too whatever it is
+* DONE [#A] fix HU.DWIM.PEREC.TEST::TEST/PERSISTENCE/TYPE/TEXT/3                :Hlavaty:major:BUG:
+  CLOSED: [2010-04-01 Thu 12:24]
+
+oracle-string and oracle-text implemented
 
 #+begin_src text
 Test assertion failed:
