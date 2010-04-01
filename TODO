@@ -192,9 +192,12 @@ Restarts:
  5: [RETEST] Rerun the test HU.DWIM.RDBMS.TEST::TEST/TYPE/CLOB
 #+end_src
 
-* TODO [#A] fix HU.DWIM.PEREC.TEST::TEST/QUERY/SELECT/WITH-LEXICAL-VARIABLES-1
+* DONE [#A] fix HU.DWIM.PEREC.TEST::TEST/QUERY/SELECT/WITH-LEXICAL-VARIABLES-1  :Hlavaty:major:BUG:
+  CLOSED: [2010-04-01 Thu 18:24]
 
-The new expand-sql-ast-into-lambda-form doesn't handle special vars well.
+fixed, used old expand-sql-ast-into-lambda-form from perec (query ->
+ast; ast -> backend already known);
+expand-sql-ast-into-lambda-form-cached for rdbms sql macro
 
 #+begin_src text
 reader -> sexp -> ast -> lambda -> string
