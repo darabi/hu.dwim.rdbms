@@ -244,11 +244,19 @@
          (oci-type-code (typemap-external-type typemap))
          (converter (typemap-lisp-to-oci typemap))
          (bind-handle-pointer (cffi:foreign-alloc :pointer :initial-element null))
-         (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if (eq value :null) -1 0)))) 
+         (is-null (or (eql value :null)
+                      (and (cl:null value) (not (typep sql-type 'sql-boolean-type)))))
+         (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if is-null -1 0))))
     (multiple-value-bind (data-pointer data-size)
-        (if (or (eql value :null)
-                (and (cl:null value) (not (typep sql-type 'sql-boolean-type))))
-            (values null 0)
+        (if is-null
+            (if (or (typep sql-type 'sql-character-large-object-type)
+                    (typep sql-type 'sql-binary-large-object-type))
+                ;; TODO THL why "empty" lob needed when indicator is -1?
+                (bind ((locator (cffi::foreign-alloc :pointer)))
+                  (allocate-oci-lob-locator locator)
+                  (set-empty-lob locator)
+                  (values locator (1+ (cffi:foreign-type-size :pointer)))) ;; TODO THL why 1+ ???
+                (values null 0))
             (funcall converter value))
 
       (rdbms.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
