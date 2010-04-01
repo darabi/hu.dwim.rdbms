@@ -113,7 +113,7 @@
 ;; without knowing the right backend.  We need to recompile in case
 ;; the backend at compilation time was different from the one we are
 ;; actually using.
-(def function expand-sql-ast-into-lambda-form (syntax-node &key env database (toplevel #t))
+(def function expand-sql-ast-into-lambda-form-cached (syntax-node &key env database (toplevel #t))
   (declare (ignore database))
   (let ((lvars nil))
     (when env
@@ -128,15 +128,15 @@
         (compile
          nil
          `(lambda ,',lvars
-            ,(expand-sql-ast-into-lambda-form2 ',syntax-node
-                                               :database *database*
-                                               :toplevel ',toplevel))))
+            ,(expand-sql-ast-into-lambda-form ',syntax-node
+                                              :database *database*
+                                              :toplevel ',toplevel))))
       ,@lvars)))
 
 ;; TODO: if sql-quote is added this should return a lambda returning
 ;; the syntax-node unaltered unless it is an sql-quote in which case
 ;; it can be process
-(def function expand-sql-ast-into-lambda-form2 (syntax-node &key database (toplevel #t))
+(def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
   (bind ((*print-pretty* #f)
          (*print-circle* #f)
          (*sql-stream* (make-string-output-stream))

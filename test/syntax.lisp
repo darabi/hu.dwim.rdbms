@@ -126,7 +126,7 @@
            (funcall
             (compile
              nil
-             (expand-sql-ast-into-lambda-form
+             (expand-sql-ast-into-lambda-form-cached
               (sql-select :columns '(a b)
                           :tables '(t)
                           :where criteria)))))))))
@@ -171,7 +171,7 @@
            (funcall
             (compile
              nil
-             (expand-sql-ast-into-lambda-form
+             (expand-sql-ast-into-lambda-form-cached
               (sql-select :columns '(a b)
                           :tables '(t)
                           :where criteria)))))))))
