@@ -190,7 +190,7 @@
 
 (def function execute-prepared-statement (transaction statement binding-types binding-values visitor result-type
                                                &key (start-row 0) row-limit)
-
+  (setq start-row 0) ;; TODO THL why are start-row and row-limit here when it is handled by offset and limit in the sql query as oposed to fetching query results? probably old idea before handling that on the query side
   (let ((needs-scrollable-cursor-p (and start-row (> start-row 0))))
     ;; make bindings
     (setf (bindings-of statement) (make-bindings statement transaction binding-types binding-values))
