@@ -137,7 +137,9 @@
 ;;; Selects
 
 (def method format-sql-syntax-node ((self sql-select) (database oracle))
-  (with-slots (distinct columns tables where order-by offset limit for wait) self
+  (with-slots
+        (distinct columns tables where group-by having order-by offset limit for wait)
+      self
     (flet ((core ()
              (format-string "SELECT ")
              (when distinct
@@ -150,6 +152,12 @@
                                                 'format-sql-table-reference))
                  (format-string " FROM dual "))
              (format-sql-where where database)
+             (when group-by
+               (format-string " GROUP BY ")
+               (format-comma-separated-list group-by database))
+             (when having
+               (format-string " HAVING ")
+               (format-sql-syntax-node having database))
              (when order-by
                (format-string " ORDER BY ")
                (format-comma-separated-list order-by database))
