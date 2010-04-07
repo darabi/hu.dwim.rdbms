@@ -181,8 +181,14 @@
            (format-sql-syntax-node offset database)
            (format-string " < \"kaeD8Ot7\"")
            (when limit
-             (format-string " AND \"kaeD8Ot7\" <= ")
-             (format-sql-syntax-node (+ (value-of offset) (value-of limit)) database))))))))
+             (labels ((val (x)
+                        (etypecase x
+                          (number x)
+                          (sql-literal (val (value-of x)))
+                          (sql-unquote
+                            (expand-sql-unquote x database 'format-sql-syntax-node)))))
+               (format-string " AND \"kaeD8Ot7\" <= ")
+               (format-sql-syntax-node (+ (val offset) (val limit)) database)))))))))
 
 (def function format-sql-column-reference (column database)
   (typecase column
