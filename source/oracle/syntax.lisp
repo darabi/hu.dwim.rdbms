@@ -166,39 +166,34 @@
                (format-string (symbol-name for))
                (unless wait
                  (format-string " NOWAIT")))))
-      (labels ((val (x)
-                 (etypecase x
-                   (sql-literal (format-sql-syntax-node x database))
-                   (sql-unquote
-                     (expand-sql-unquote x database 'format-sql-syntax-node)))))
-        (cond
-          ((and (not limit) (not offset))
-           (core))
-          ((and limit (not offset))
-           (format-string "SELECT * FROM (")
+      (cond
+        ((and (not limit) (not offset))
+         (core))
+        ((and limit (not offset))
+         (format-string "SELECT * FROM (")
+         (core)
+         (format-string ") WHERE ROWNUM <= ")
+         (format-sql-syntax-node limit database))
+        (t
+         (flet ((cols ()
+                  (format-comma-separated-list
+                   columns database
+                   (lambda (x db) (format-sql-identifier (column-of x) db)))))
+           (format-string "SELECT ")
+           (cols)
+           (format-string " FROM (SELECT ")
+           (cols)
+           (format-string ", ROWNUM \"kaeD8Ot7\" FROM (") ;; name unlikely to clash
            (core)
-           (format-string ") WHERE ROWNUM <= ")
-           (val limit))
-          (t
-           (flet ((cols ()
-                    (format-comma-separated-list
-                     columns database
-                     (lambda (x db) (format-sql-identifier (column-of x) db)))))
-             (format-string "SELECT ")
-             (cols)
-             (format-string " FROM (SELECT ")
-             (cols)
-             (format-string ", ROWNUM \"kaeD8Ot7\" FROM (") ;; name unlikely to clash
-             (core)
-             (format-string ")) WHERE ")
-             (val offset)
-             (format-string " < \"kaeD8Ot7\"")
-             (when limit
-               (format-string " AND \"kaeD8Ot7\" <= (")
-               (val offset)
-               (format-string " + ")
-               (val limit)
-               (format-string ")")))))))))
+           (format-string ")) WHERE ")
+           (format-sql-syntax-node offset database)
+           (format-string " < \"kaeD8Ot7\"")
+           (when limit
+             (format-string " AND \"kaeD8Ot7\" <= (")
+             (format-sql-syntax-node offset database)
+             (format-string " + ")
+             (format-sql-syntax-node limit database)
+             (format-string ")"))))))))
 
 (def function format-sql-column-reference (column database)
   (typecase column
