@@ -177,14 +177,13 @@
                           :where criteria)))))))))
 
 (def syntax-test test/syntax/expand-sql-ast/unquote/3 postgresql (&optional (n 3))
-  (bind ((criteria [or ,@(iter (for i :from 1 :to n)
-                               (rebind (i)
-                                 (collect [= a
+  (bind ((criteria [or ,@(loop for i from 1 to n
+                               collect [= a
                                              (+ b
                                                 ,(sql-binding-variable
                                                   :type (sql-integer-type)
                                                   :name (format-symbol (find-package :hu.dwim.rdbms.test) "VAR-~A" i))
-                                                ,i)])))])
+                                                ,i)])])
          (extra-columns '(c d)))
     (bind (((:values command binding-variables binding-types binding-values)
             (funcall [select (a b ,@extra-columns)
