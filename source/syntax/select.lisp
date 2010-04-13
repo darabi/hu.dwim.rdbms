@@ -170,7 +170,7 @@
 
 (def syntax-node sql-distinct-spec (sql-identifier)
   ((column-spec
-    :type (or integer sql-column-alias*)))
+    :type (or number sql-column-alias*)))
   (:format-sql-identifier
    (format-string "DISTINCT ")
    (format-sql-syntax-node column-spec)))
