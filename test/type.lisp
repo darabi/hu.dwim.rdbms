@@ -14,7 +14,8 @@
                  :columns (list (make-instance 'sql-column
                                                :type (compile-sexp-sql-type type)
                                                :name 'a))
-                 :values (list value)))
+                 :values (list (sql-literal :value value
+                                            :type (compile-sexp-sql-type type)))))
 
 (def definer type-test (name type &body values)
   `(def test ,name ()
