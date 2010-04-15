@@ -56,6 +56,14 @@
                (error-handle-of *transaction*)))
     (dereference-foreign-pointer data-pointer ,type size-pointer)))
 
+(def function select-p (prepared-statement)
+  (= oci:+stmt-select+
+     (get-statement-attribute prepared-statement oci:+attr-stmt-type+ 'oci:ub-2)))
+
+(def function insert-p (prepared-statement)
+  (= oci:+stmt-insert+
+     (get-statement-attribute prepared-statement oci:+attr-stmt-type+ 'oci:ub-2)))
+
 (def macro get-row-count-attribute (statement)
   `(get-statement-attribute ,statement oci:+attr-row-count+ 'oci:ub-4))
 
@@ -184,12 +192,57 @@
 (def function free-oci-date-time-tz (descriptor-ptr)
   (descriptor-free descriptor-ptr oci:+dtype-timestamp-tz+))
 
-(def function set-empty-lob (descriptor-ptr-ptr)
+(def function set-empty-lob (locator)
   (cffi:with-foreign-object (attribute 'oci:ub-4)
     (setf (cffi:mem-aref attribute 'oci:ub-4) 0)
-    (oci-call (oci:attr-set (cffi:mem-aref descriptor-ptr-ptr :pointer)
+    (oci-call (oci:attr-set locator
                             oci:+dtype-lob+
                             attribute
                             0
                             oci:+attr-lobempty+
                             (error-handle-of *transaction*)))))
+
+(def function make-lob-locator (&optional empty)
+  (cffi:with-foreign-object (descriptor-ptr-ptr :pointer)
+    (allocate-oci-lob-locator descriptor-ptr-ptr)
+    (let ((locator (cffi:mem-aref descriptor-ptr-ptr :pointer)))
+      (when empty
+        (set-empty-lob locator))
+      (values locator (cffi:foreign-type-size :pointer)))))
+
+(def function lobp (sql-type)
+  (or (typep sql-type 'sql-character-large-object-type)
+      (typep sql-type 'sql-binary-large-object-type)))
+
+(def method upload-lob (locator (value string))
+  (multiple-value-bind (bufp siz) (foreign-oci-string-alloc value)
+    (let* ((svchp (service-context-handle-of *transaction*))
+           (errhp (error-handle-of *transaction*)))
+      (oci-call (oci:lob-enable-buffering svchp errhp locator))
+      (cffi:with-foreign-object (amtp 'oci:sb-4)
+        (setf (cffi:mem-ref amtp 'oci:sb-4) siz)
+        (oci-call (oci:lob-write svchp errhp locator amtp 1 bufp siz oci:+one-piece+
+                                 null null 0 oci:+sqlcs-implicit+))
+        (assert (= siz (cffi:mem-ref amtp 'oci:sb-4))))
+      (oci-call (oci:lob-flush-buffer svchp errhp locator oci:+lob-buffer-nofree+)))
+    (cffi:foreign-string-free bufp)))
+
+(def function download-clob (locator)
+  (let* ((svchp (service-context-handle-of *transaction*))
+         (errhp (error-handle-of *transaction*))
+         (siz (cffi:with-foreign-object (len 'oci:ub-4)
+                (oci:lob-get-length svchp errhp locator len)
+                (assert (plusp (cffi:mem-ref len 'oci:ub-4)))
+                (cffi:mem-ref len 'oci:ub-4)))
+         (bufp (cffi::foreign-alloc :char :count siz)))
+    (oci-call (oci:lob-enable-buffering svchp errhp locator))
+    (cffi:with-foreign-object (amtp 'oci:sb-4)
+      (setf (cffi:mem-ref amtp 'oci:sb-4) siz)
+      (oci-call (oci:lob-read svchp errhp locator amtp 1 bufp siz
+                              null null 0 oci:+sqlcs-implicit+))
+      (assert (= siz (cffi:mem-ref amtp 'oci:sb-4))))
+    (prog1
+      (oci-string-to-lisp bufp (- siz (cffi::null-terminator-len ;; \0 char width
+                                       (connection-encoding-of
+                                        (database-of *transaction*)))))
+      (cffi-sys:foreign-free bufp))))

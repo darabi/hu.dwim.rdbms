@@ -63,9 +63,11 @@
     :oci-to-lisp 'string-from-string)
 
 (def typemap string/long-varchar
-    :external-type oci:+sqlt-lvc+
+    :external-type oci:+sqlt-clob+
     :lisp-to-oci 'string-to-long-varchar
-    :oci-to-lisp 'string-from-long-varchar)
+    :oci-to-lisp 'string-from-long-varchar
+    :allocate-instance 'allocate-oci-lob-locator
+    :free-instance 'free-oci-lob-locator)
 
 (def typemap local-time/date
     :external-type oci:+sqlt-dat+
@@ -250,4 +252,6 @@
     (#.oci:+sqlt-odt+ (cffi:foreign-type-size 'oci:date))
     (#.oci:+sqlt-timestamp+ (cffi:foreign-type-size :pointer))
     (#.oci:+sqlt-timestamp-tz+ (cffi:foreign-type-size :pointer))
+    (#.oci:+sqlt-clob+ (cffi:foreign-type-size :pointer))
+    (#.oci:+sqlt-blob+ (cffi:foreign-type-size :pointer))
     (#.oci:+sqlt-lvb+ (min (+ column-size 4) 8000)))) ; FIXME

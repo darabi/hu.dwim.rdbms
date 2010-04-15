@@ -36,8 +36,7 @@
 
 (def class* oracle-prepared-statement (prepared-statement)
   ((statement-handle-pointer nil :accessor statement-handle-pointer)
-   (bindings nil :type list)
-   (select #f :type boolean)))
+   (bindings nil :type list)))
 
 (def function statement-handle-of (statement)
   (cffi:mem-ref (statement-handle-pointer statement) '(:pointer :void)))

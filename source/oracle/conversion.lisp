@@ -154,26 +154,11 @@
   (oci-string-to-lisp ptr))
 
 (def function string-to-long-varchar (str)
-  (let* ((encoding (connection-encoding-of (database-of *transaction*)))
-         (character-width (cffi::null-terminator-len encoding))
-         (str-len (* character-width (length str)))
-         (ptr (cffi::foreign-alloc :char
-                                   :count (+ (cffi:foreign-type-size 'oci:sb-4) ; length field
-                                             str-len
-                                             character-width ; for terminating null added by the cffi call
-                                             ))))
-    (setf (cffi:mem-ref ptr 'oci:sb-4) str-len)
-    (cffi:lisp-string-to-foreign str
-                                 (cffi:inc-pointer ptr (cffi:foreign-type-size 'oci:sb-4))
-                                 (+ str-len character-width)
-                                 :encoding encoding)
-    (values ptr (+ str-len 4))))
+  (make-lob-locator))
 
 (def function string-from-long-varchar (ptr len)
-  (assert (>= len 4))
-  (oci-string-to-lisp
-   (cffi:inc-pointer ptr (cffi:foreign-type-size 'oci:sb-4))
-   (cffi:mem-ref ptr 'oci:sb-4)))
+  (assert (= #.(cffi:foreign-type-size :pointer) len))
+  (download-clob (cffi:mem-ref ptr :pointer)))
 
 ;;;;;;
 ;;; Binary data conversions

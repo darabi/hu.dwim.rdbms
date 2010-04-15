@@ -176,11 +176,6 @@
     (handle-alloc (statement-handle-pointer statement) oci:+htype-stmt+)
     (stmt-prepare statement command)
     (rdbms.dribble "Statement is allocated")
-    (setf (select-p statement) (= (get-statement-attribute
-                                   statement
-                                   oci:+attr-stmt-type+
-                                   'oci:ub-2)
-                                  oci:+stmt-select+))
     statement))
 
 (def function free-prepared-statement (statement)
@@ -218,6 +213,14 @@
                                 :row-count row-limit))
            (close-cursor cursor))))
       (t
+       (when (insert-p statement)
+         (loop
+            for type across binding-types
+            for value across binding-values
+            for binding in (bindings-of statement)
+            do (when (lobp type)
+                 (let ((**locator (cffi:mem-aref (data-pointer-of binding) :pointer)))
+                 (upload-lob **locator value)))))
        (values nil (get-row-count-attribute statement)))))) ;; TODO THL what should the first value be?
 
 ;;;;;;
@@ -248,19 +251,13 @@
                       (and (cl:null value) (not (typep sql-type 'sql-boolean-type)))))
          (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if is-null -1 0))))
     (multiple-value-bind (data-pointer data-size)
-        (if is-null
-            (if (or (typep sql-type 'sql-character-large-object-type)
-                    (typep sql-type 'sql-binary-large-object-type))
-                ;; TODO THL why "empty" lob needed when indicator is -1?
-                (bind ((locator (cffi::foreign-alloc :pointer)))
-                  (allocate-oci-lob-locator locator)
-                  (set-empty-lob locator)
-                  (values locator (1+ (cffi:foreign-type-size :pointer)))) ;; TODO THL why 1+ ???
-                (values null 0))
+        (if (or (eql value :null)
+                (and (cl:null value) (not (typep sql-type 'sql-boolean-type))))
+            (values null 0)
             (funcall converter value))
 
       (rdbms.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
-
+      
       (oci-call (oci:bind-by-pos statement-handle
                                  bind-handle-pointer
                                  error-handle

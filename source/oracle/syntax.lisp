@@ -200,6 +200,63 @@
     ((or symbol string sql-column sql-column-alias) (format-sql-identifier column database))
     (t (format-sql-syntax-node column database))))
 
+(def syntax-node sql-empty-clob (sql-syntax-node)
+  ()
+  (:format-sql-syntax-node
+   (format-string "EMPTY_CLOB()")))
+
+(def syntax-node sql-empty-blob (sql-syntax-node)
+  ()
+  (:format-sql-syntax-node
+   (format-string "EMPTY_BLOB()")))
+
+(def method format-sql-syntax-node ((self sql-insert) (database oracle))
+  (with-slots (table columns values subselect) self
+    (flet ((make-lob (column)
+             (etypecase (type-of column)
+               (sql-character-large-object-type (make-instance 'sql-empty-clob))
+               (sql-binary-large-object-type (make-instance 'sql-empty-blob)))))
+      (let ((lob-columns nil)
+            (other-columns nil)
+            (lob-values nil)
+            (other-values nil))
+        (loop
+           for column in columns
+           for value in values
+           do (if (lobp (type-of column))
+                  (progn
+                    (push column lob-columns)
+                    (push value lob-values))
+                  (progn
+                    (push column other-columns)
+                    (push value other-values))))
+        (format-string "INSERT INTO ")
+        (format-sql-identifier table database)
+        (format-string " (")
+        (format-comma-separated-identifiers (append other-columns lob-columns) database)
+        (format-char ")")
+        (when (slot-boundp self 'values)
+          (format-string " VALUES (")
+          (format-comma-separated-list
+           (append other-values (mapcar #'make-lob lob-values))
+           database)
+          (format-char ")"))
+        (when (slot-boundp self 'subselect)
+          (format-sql-syntax-node subselect database))
+        (when lob-columns
+          (format-string " RETURNING ")
+          (loop
+             for n = (length lob-columns)
+             for column in lob-columns
+             for value in lob-values
+             for j from 1
+             do (progn
+                  (when (< 1 j n)
+                    (format-char ","))
+                  (format-sql-identifier column database)
+                  (format-string " INTO ")
+                  (format-sql-literal value database))))))))
+
 ;;;;;;
 ;;; Expressions
 
