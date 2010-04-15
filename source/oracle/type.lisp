@@ -101,9 +101,11 @@
     :free-instance 'free-oci-date-time-tz)
 
 (def typemap byte-array/long-varraw
-    :external-type oci:+sqlt-lvb+
+    :external-type oci:+sqlt-blob+
     :lisp-to-oci 'byte-array-to-long-varraw
-    :oci-to-lisp 'byte-array-from-long-varraw)
+    :oci-to-lisp 'byte-array-from-long-varraw
+    :allocate-instance 'allocate-oci-lob-locator
+    :free-instance 'free-oci-lob-locator)
 
 (def generic typemap-for-sql-type (type)
 

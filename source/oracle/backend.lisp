@@ -218,9 +218,8 @@
             for type across binding-types
             for value across binding-values
             for binding in (bindings-of statement)
-            do (when (lobp type)
-                 (let ((**locator (cffi:mem-aref (data-pointer-of binding) :pointer)))
-                 (upload-lob **locator value)))))
+            when (and (lobp type) (not (member value '(:null nil))))
+            do (upload-lob (cffi:mem-aref (data-pointer-of binding) :pointer) value)))
        (values nil (get-row-count-attribute statement)))))) ;; TODO THL what should the first value be?
 
 ;;;;;;

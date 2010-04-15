@@ -165,22 +165,11 @@
 
 (def function byte-array-to-long-varraw (ba)
   (assert (typep ba 'vector)) ; '(vector (unsigned-byte 8))
-  (let* ((len (length ba))
-         (ptr (cffi::foreign-alloc 'oci:ub-1 :count (+ len 4))))
-    (setf (cffi:mem-ref ptr :int32) len)
-    (loop for byte across ba
-          for i from 4
-          do (setf (cffi:mem-aref ptr 'oci:ub-1 i) byte))
-    (values ptr (+ len 4))))
+  (make-lob-locator))
 
 (def function byte-array-from-long-varraw (ptr len)
-  (assert (>= len 4))
-  (let* ((size (cffi:mem-ref ptr 'oci:sb-4))
-         (result (make-array size)))
-    (loop for i from 0 below size
-          do (setf (aref result i)
-                   (cffi:mem-aref ptr 'oci:ub-1 (+ 4 i))))
-    result))
+  (assert (= #.(cffi:foreign-type-size :pointer) len))
+  (download-blob (cffi:mem-ref ptr :pointer)))
 
 ;;;;;;
 ;;; Datetime conversions

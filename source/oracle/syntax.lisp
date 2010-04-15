@@ -10,10 +10,11 @@
 ;;; Literals
 
 (def method format-sql-literal ((literal vector) (database oracle))
-  (format-string "to_Blob('")
-  (loop for el across literal
-        do (format *sql-stream* "~2,'0x" el))
-  (format-string "')"))
+  (vector-push-extend nil *binding-variables*)
+  (vector-push-extend (sql-binary-large-object-type) *binding-types*)
+  (vector-push-extend literal *binding-values*)
+  (format-string ":")
+  (format-string (princ-to-string (length *binding-types*))))
 
 (def method format-sql-literal ((value (eql nil)) (database oracle))
   (format-string "'F'"))
@@ -238,18 +239,20 @@
         (when (slot-boundp self 'values)
           (format-string " VALUES (")
           (format-comma-separated-list
-           (append other-values (mapcar #'make-lob lob-values))
+           (append other-values (mapcar #'make-lob lob-columns))
            database)
           (format-char ")"))
         (when (slot-boundp self 'subselect)
           (format-sql-syntax-node subselect database))
-        (when lob-columns
+        (when (and lob-columns
+                   (remove-if (lambda (x) (member x '(:null nil))) lob-values))
           (format-string " RETURNING ")
           (loop
              for n = (length lob-columns)
              for column in lob-columns
              for value in lob-values
              for j from 1
+             unless (member value '(:null nil))
              do (progn
                   (when (< 1 j n)
                     (format-char ","))
