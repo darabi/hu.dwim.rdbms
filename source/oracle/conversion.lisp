@@ -153,21 +153,22 @@
   (declare (ignore length)) ; null terminated
   (oci-string-to-lisp ptr))
 
-(def function string-to-long-varchar (str)
+(def function string-to-clob (str)
+  (declare (ignore str))
   (make-lob-locator))
 
-(def function string-from-long-varchar (ptr len)
+(def function string-from-clob (ptr len)
   (assert (= #.(cffi:foreign-type-size :pointer) len))
   (download-clob (cffi:mem-ref ptr :pointer)))
 
 ;;;;;;
 ;;; Binary data conversions
 
-(def function byte-array-to-long-varraw (ba)
+(def function byte-array-to-blob (ba)
   (assert (typep ba 'vector)) ; '(vector (unsigned-byte 8))
   (make-lob-locator))
 
-(def function byte-array-from-long-varraw (ptr len)
+(def function byte-array-from-blob (ptr len)
   (assert (= #.(cffi:foreign-type-size :pointer) len))
   (download-blob (cffi:mem-ref ptr :pointer)))
 

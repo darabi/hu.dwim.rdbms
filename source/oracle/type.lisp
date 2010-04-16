@@ -62,10 +62,10 @@
     :lisp-to-oci 'string-to-string
     :oci-to-lisp 'string-from-string)
 
-(def typemap string/long-varchar
+(def typemap string/clob
     :external-type oci:+sqlt-clob+
-    :lisp-to-oci 'string-to-long-varchar
-    :oci-to-lisp 'string-from-long-varchar
+    :lisp-to-oci 'string-to-clob
+    :oci-to-lisp 'string-from-clob
     :allocate-instance 'allocate-oci-lob-locator
     :free-instance 'free-oci-lob-locator)
 
@@ -100,10 +100,10 @@
     :allocate-instance 'allocate-oci-date-time-tz
     :free-instance 'free-oci-date-time-tz)
 
-(def typemap byte-array/long-varraw
+(def typemap byte-array/blob
     :external-type oci:+sqlt-blob+
-    :lisp-to-oci 'byte-array-to-long-varraw
-    :oci-to-lisp 'byte-array-from-long-varraw
+    :lisp-to-oci 'byte-array-to-blob
+    :oci-to-lisp 'byte-array-from-blob
     :allocate-instance 'allocate-oci-lob-locator
     :free-instance 'free-oci-lob-locator)
 
@@ -156,9 +156,7 @@
            string/string)
 
   (:method ((type sql-character-large-object-type))
-           ;; string values stored as CLOB internally
-           ;; their external format is LONG VARCHAR allowing max 2^31-5 bytes
-           string/long-varchar)
+           string/clob)
 
   (:method ((type sql-date-type))
            local-time/date)
@@ -173,9 +171,7 @@
     local-time/timestamp-tz)
 
   (:method ((type sql-binary-large-object-type))
-           ;; binary values stored as BLOB internally
-           ;; their external format is LONG VARRAW allowing max 2^31-5 bytes
-           byte-array/long-varraw))
+           byte-array/blob))
 
 (def function internal-type-for-sql-type (type)
   (assert (typep *database* 'oracle))
@@ -210,7 +206,7 @@
      ("VARCHAR2" (sql-character-varying-type :size char-length))
      ("CLOB" (sql-character-large-object-type)) ; FIXME size not mapped
      ("BLOB" (sql-binary-large-object-type)) ; FIXME size not mapped
-     ("RAW" (sql-binary-large-object-type  :size char-length)) ; FIXME size not mapped
+     ("RAW" (sql-binary-large-object-type :size char-length)) ;; for db reflection only
      ("DATE" (sql-date-type))
      ("TIMESTAMP(6)" (sql-timestamp-type))
      ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-with-timezone-type)))))
@@ -236,9 +232,8 @@
     (#.oci:+sqlt-ibdouble+ double/bdouble)
     (#.oci:+sqlt-timestamp+ local-time/timestamp)    ; CHECK: was 180
     (#.oci:+sqlt-timestamp-tz+ local-time/timestamp-tz) ; CHECK: was 181
-    (#.oci:+sqlt-clob+ string/long-varchar)
-    (#.oci:+sqlt-blob+ byte-array/long-varraw)
-    (23 byte-array/long-varraw)))
+    (#.oci:+sqlt-clob+ string/clob)
+    (#.oci:+sqlt-blob+ byte-array/blob)))
 
 (def function data-size-for (external-type column-size)
   (declare (fixnum external-type))
@@ -249,11 +244,11 @@
     (#.oci:+sqlt-bfloat+ 4)
     (#.oci:+sqlt-bdouble+ 8)
     (#.oci:+sqlt-str+ (* (oci-char-width) (1+ column-size)))
-    (#.oci:+sqlt-lvc+ (min (+ column-size 4) 8000)) ; FIXME
+    #+nil(#.oci:+sqlt-lvc+ (min (+ column-size 4) 8000)) ; FIXME
     (#.oci:+sqlt-dat+ 7)
     (#.oci:+sqlt-odt+ (cffi:foreign-type-size 'oci:date))
     (#.oci:+sqlt-timestamp+ (cffi:foreign-type-size :pointer))
     (#.oci:+sqlt-timestamp-tz+ (cffi:foreign-type-size :pointer))
     (#.oci:+sqlt-clob+ (cffi:foreign-type-size :pointer))
     (#.oci:+sqlt-blob+ (cffi:foreign-type-size :pointer))
-    (#.oci:+sqlt-lvb+ (min (+ column-size 4) 8000)))) ; FIXME
+    #+nil(#.oci:+sqlt-lvb+ (min (+ column-size 4) 8000)))) ; FIXME

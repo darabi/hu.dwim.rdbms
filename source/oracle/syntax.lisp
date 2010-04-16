@@ -84,11 +84,7 @@
   (error "sql-interval-type not yet supported"))
 
 (def method format-sql-syntax-node ((self sql-binary-large-object-type) (database oracle))
-  (aif (size-of self)
-       (progn
-         (format-string "RAW")
-         (format-size it))
-       (format-string "BLOB")))
+  (format-string "BLOB"))
 
 (def function format-character-size (size)
   (when size
