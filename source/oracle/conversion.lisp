@@ -80,6 +80,7 @@
 ;;; Float conversions
 
 (def function float-to-bfloat (value)
+  (assert (floatp value))
   (values
    (cffi:foreign-alloc :float :initial-element (coerce value 'single-float))
    4))
@@ -89,6 +90,7 @@
   (cffi:mem-ref ptr :float))
 
 (def function double-to-bdouble (value)
+  (assert (floatp value))
   (values
    (cffi:foreign-alloc :double :initial-element (coerce value 'double-float))
    8))
