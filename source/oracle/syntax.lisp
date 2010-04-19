@@ -220,7 +220,7 @@
         (loop
            for column in columns
            for value in values
-           do (if (lobp (type-of column))
+           do (if (lobp (and (typep column 'sql-column) (type-of column)))
                   (progn
                     (push column lob-columns)
                     (push value lob-values))
