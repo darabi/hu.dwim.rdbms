@@ -133,12 +133,20 @@
                               mode)))
 
 (def function stmt-fetch-2 (statement number-of-rows orientation offset)
-  (let ((status (oci:stmt-fetch-2 (statement-handle-of statement)
-                                  (error-handle-of *transaction*)
-                                  number-of-rows
-                                  orientation
-                                  offset
-                                  *default-oci-flags*)))
+  (let ((status
+         #+allegro ;; TODO THL report error when offset used?
+          (oci:stmt-fetch (statement-handle-of statement)
+                          (error-handle-of *transaction*)
+                          number-of-rows
+                          orientation
+                          *default-oci-flags*)
+          #-allegro
+          (oci:stmt-fetch-2 (statement-handle-of statement)
+                            (error-handle-of *transaction*)
+                            number-of-rows
+                            orientation
+                            offset
+                            *default-oci-flags*)))
     (case status
       (#.oci:+success+ #t)
       (#.oci:+no-data+ #f)
