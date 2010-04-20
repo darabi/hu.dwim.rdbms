@@ -18,24 +18,31 @@
                                             :type (compile-sexp-sql-type type)))))
 
 (def definer type-test (name type &body values)
-  `(def test ,name ()
-     (with-transaction
-       ;; the first , is unquote relative to the sql syntax, the second is relative to `
-       ;; TODO [create table test_table ((a ,,sql-type))] should just work fine...
-       (unwind-protect
-         (progn
-           (execute-ddl [create table test_table ((a ,(compile-sexp-sql-type ',type)))])
-           ,@(iter (for (comparator value expected) :in values)
-                   (unless expected
-                     (setf expected value))
-                   (collect `(progn
-                               (execute [insert test_table (a) (,(sql-literal :value ,value :type (compile-sexp-sql-type ',type)))])
-                               (is (funcall ',comparator
-                                            (first-elt (first-elt (execute [select * test_table] :result-type 'list)))
-                                            ,expected))
-                               (execute [delete test_table])))))
-         (ignore-errors
-           (execute-ddl [drop table test_table]))))))
+  (flet ((make-inserter-form (value type)
+           `(execute (type-test-insert ,value ',type))))
+    `(def test ,name ()
+       (with-transaction
+         ;; the first , is unquote relative to the sql syntax, the second is relative to `
+         ;; TODO [create table test_table ((a ,,sql-type))] should just work fine...
+         (unwind-protect
+              (progn
+                (execute-ddl [create table test_table ((a ,(compile-sexp-sql-type ',type)))])
+                ,@(iter (for entry :in values)
+                        (case (first entry)
+                          (signals
+                           (bind (((condition-type value) (rest entry)))
+                             (declare (ignore x))
+                             (collect `(signals ,condition-type ,(make-inserter-form value type)))))
+                          (otherwise
+                           (bind (((comparator value &optional (expected value)) entry))
+                             (collect `(progn
+                                         ,(make-inserter-form value type)
+                                         (is (funcall ',comparator
+                                                      (first-elt (first-elt (execute [select * test_table] :result-type 'list)))
+                                                      ,expected))
+                                         (execute [delete test_table]))))))))
+           (ignore-errors
+             (execute-ddl [drop table test_table])))))))
 
 (def definer simple-type-test (name type &body values)
   `(def type-test ,name ,type
