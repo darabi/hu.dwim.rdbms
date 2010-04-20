@@ -204,6 +204,7 @@
 ;; - when losing resolution, use nsec and round up to sec
 ;; - what about the timezone? is this what we want?
 (def function local-time-to-date (timestamp)
+  (assert (local-time::%valid-date? timestamp))
   (with-decoded-timestamp (:sec ss :minute mm :hour hh :day day :month month :year year :timezone +utc-zone+)
       timestamp
     (bind (((:values century year) (floor year 100))
@@ -271,6 +272,10 @@
                       month
                       year
                       :timezone +utc-zone+)))
+
+(def function local-time-to-time (timestamp)
+  (assert (local-time::%valid-time-of-day? timestamp))
+  (local-time-to-timestamp timestamp))
 
 ;; TODO rename to something like to-oracle-timestamp
 (def function local-time-to-timestamp (timestamp)

@@ -77,6 +77,13 @@
     :lisp-to-oci 'local-time-to-oci-date
     :oci-to-lisp 'local-time-from-oci-date)
 
+(def typemap local-time/time
+    :external-type oci:+sqlt-timestamp+
+    :lisp-to-oci 'local-time-to-time
+    :oci-to-lisp 'local-time-from-timestamp
+    :allocate-instance 'allocate-oci-date-time
+    :free-instance 'free-oci-date-time)
+
 (def typemap local-time/timestamp
     :external-type oci:+sqlt-timestamp+
     :lisp-to-oci 'local-time-to-timestamp
@@ -153,7 +160,7 @@
            local-time/date)
 
   (:method ((type sql-time-type))
-           local-time/timestamp)
+           local-time/time)
 
   (:method ((type sql-timestamp-type))
     local-time/timestamp)
