@@ -327,5 +327,5 @@
     (format-sql-syntax-node type database)
     (format-string ")")))
 
-(def method format-sql-syntax-node ((x hu.dwim.rdbms::sql-false-expression) (database oracle)) ;; TODO THL export sql-false-expression
+(def method format-sql-syntax-node ((x sql-false-expression) (database oracle))
   (format-string "1 = 2"))
