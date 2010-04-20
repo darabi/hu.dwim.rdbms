@@ -156,9 +156,10 @@
            local-time/timestamp)
 
   (:method ((type sql-timestamp-type))
-           (if (with-timezone-p type)
-               local-time/timestamp-tz
-               local-time/timestamp))
+    local-time/timestamp)
+
+  (:method ((type sql-timestamp-with-timezone-type))
+    local-time/timestamp-tz)
 
   (:method ((type sql-binary-large-object-type))
            ;; binary values stored as BLOB internally
@@ -200,8 +201,8 @@
      ("BLOB" (sql-binary-large-object-type)) ; FIXME size not mapped
      ("RAW" (sql-binary-large-object-type  :size char-length)) ; FIXME size not mapped
      ("DATE" (sql-date-type))
-     ("TIMESTAMP(6)" (sql-time-type))   ; FIXME sql-timestamp-type?
-     ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-type :with-timezone #t)))))
+     ("TIMESTAMP(6)" (sql-timestamp-type))
+     ("TIMESTAMP(6) WITH TIME ZONE" (sql-timestamp-with-timezone-type)))))
 
 
 (def function external-type-for-sql-type (type)

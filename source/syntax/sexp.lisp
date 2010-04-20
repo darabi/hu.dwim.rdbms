@@ -252,8 +252,9 @@
              ((sql-symbol-equal name "time")
               (make-instance 'sql-time-type))
              ((sql-symbol-equal name "timestamp")
-              (make-instance 'sql-timestamp-type :with-timezone (when type-args
-                                                                  (first type-args))))
+              (make-instance 'sql-timestamp-type))
+             ((sql-symbol-equal name "timestamp-with-timezone")
+              (make-instance 'sql-timestamp-with-timezone-type))
              ((sql-symbol-equal name "clob")
               (make-instance 'sql-character-large-object-type :size (when type-args
                                                                       (first type-args))))
