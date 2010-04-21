@@ -219,7 +219,7 @@
             (other-values nil))
         (loop
            for column in columns
-           for value in values
+           for value in (when (slot-boundp self 'values) values)
            do (if (lobp (and (typep column 'sql-column) (type-of column)))
                   (progn
                     (push column lob-columns)
@@ -229,9 +229,11 @@
                     (push value other-values))))
         (format-string "INSERT INTO ")
         (format-sql-identifier table database)
-        (format-string " (")
-        (format-comma-separated-identifiers (append other-columns lob-columns) database)
-        (format-char ")")
+        (let ((cols (append other-columns lob-columns)))
+          (when cols
+            (format-string " (")
+            (format-comma-separated-identifiers cols database)
+            (format-char ")")))
         (when (slot-boundp self 'values)
           (format-string " VALUES (")
           (format-comma-separated-list
