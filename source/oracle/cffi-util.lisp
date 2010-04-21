@@ -227,19 +227,19 @@
     (oci:lob-get-length svchp errhp locator len)
     (cffi:mem-ref len 'oci:ub-4)))
 
-(def function lob-read (svchp errhp locator bufp siz)
+(def function lob-read (svchp errhp locator bufp siz &optional amt csid)
   (cffi:with-foreign-object (amtp 'oci:sb-4)
-    (setf (cffi:mem-ref amtp 'oci:sb-4) siz)
-    (oci-call (oci:lob-read svchp errhp locator amtp 1 bufp siz null null 0
+    (setf (cffi:mem-ref amtp 'oci:sb-4) (or amt siz))
+    (oci-call (oci:lob-read svchp errhp locator amtp 1 bufp siz null null (or csid 0)
                             oci:+sqlcs-implicit+))
-    (assert (= siz (cffi:mem-ref amtp 'oci:sb-4)))))
+    (assert (= (or amt siz) (cffi:mem-ref amtp 'oci:sb-4)))))
 
-(def function lob-write (svchp errhp locator bufp siz)
+(def function lob-write (svchp errhp locator bufp siz &optional amt csid)
   (cffi:with-foreign-object (amtp 'oci:sb-4)
-    (setf (cffi:mem-ref amtp 'oci:sb-4) siz)
+    (setf (cffi:mem-ref amtp 'oci:sb-4) (or amt siz))
     (oci-call (oci:lob-write svchp errhp locator amtp 1 bufp siz oci:+one-piece+
-                             null null 0 oci:+sqlcs-implicit+))
-    (assert (= siz (cffi:mem-ref amtp 'oci:sb-4)))))
+                             null null (or csid 0) oci:+sqlcs-implicit+))
+    (assert (= (or amt siz) (cffi:mem-ref amtp 'oci:sb-4)))))
 
 (def function lob-enable-buffering (svchp errhp locator)
   (oci-call (oci:lob-enable-buffering svchp errhp locator)))
@@ -251,18 +251,16 @@
   (assert (plusp (length value))) ;; use :null instead
   (let ((svchp (service-context-handle-of *transaction*))
         (errhp (error-handle-of *transaction*)))
-    (lob-enable-buffering svchp errhp locator)
     (multiple-value-bind (bufp siz) (foreign-oci-string-alloc value)
-      (unwind-protect (lob-write svchp errhp locator bufp siz)
-        (cffi:foreign-string-free bufp)))
-    (lob-flush-buffer svchp errhp locator)))
+      (unwind-protect (lob-write svchp errhp locator bufp siz
+                                 (length value) oci:+utf-16-id+)
+        (cffi:foreign-string-free bufp)))))
 
 (def method upload-lob (locator (value vector))
   (assert (plusp (length value))) ;; use :null instead
   (let ((svchp (service-context-handle-of *transaction*))
         (errhp (error-handle-of *transaction*))
         (siz (array-dimension value 0)))
-    (lob-enable-buffering svchp errhp locator)
     (let ((bufp (cffi::foreign-alloc 'oci:ub-1 :count siz)))
       (unwind-protect
            (progn
@@ -271,19 +269,23 @@
                 for i from 0
                 do (setf (cffi:mem-aref bufp 'oci:ub-1 i) byte))
              (lob-write svchp errhp locator bufp siz))
-        (cffi:foreign-string-free bufp)))
-    (lob-flush-buffer svchp errhp locator)))
+        (cffi:foreign-string-free bufp)))))
 
 (def function download-clob (locator)
   (let* ((svchp (service-context-handle-of *transaction*))
          (errhp (error-handle-of *transaction*))
          (siz (lob-get-length svchp errhp locator)))
     (if (plusp siz)
-        (let ((bufp (cffi::foreign-alloc :char :count siz)))
+        (let* ((amt siz)
+               (encoding (connection-encoding-of (database-of *transaction*)))
+               (character-width (cffi::null-terminator-len encoding))
+               (siz (+ character-width (* character-width siz)))
+               (bufp (cffi::foreign-alloc :char :count siz)))
           (unwind-protect
                (progn
-                 (lob-enable-buffering svchp errhp locator)
-                 (lob-read svchp errhp locator bufp siz)
+                 (lob-read svchp errhp locator bufp siz amt oci:+utf-16-id+)
+                 (dotimes (i character-width) ;; \0 terminator
+                   (setf (cffi:mem-aref bufp 'oci:ub-1 (- siz i 1)) 0))
                  (oci-string-to-lisp bufp siz))
             (cffi-sys:foreign-free bufp)))
         :null)))
@@ -297,7 +299,6 @@
               (result (make-array siz)))
           (unwind-protect
                (progn
-                 (lob-enable-buffering svchp errhp locator)
                  (lob-read svchp errhp locator bufp siz)
                  (loop
                     for i from 0 below siz
