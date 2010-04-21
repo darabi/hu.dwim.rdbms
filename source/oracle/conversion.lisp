@@ -337,7 +337,7 @@
                                            hh
                                            mm
                                            ss
-                                           (round (/ nsec 1000))
+                                           nsec
                                            c-timezone-ptr
                                            c-timezone-size))))
     (values
@@ -378,7 +378,7 @@
                                                       offset-hour
                                                       offset-minute))
 
-        (encode-timestamp (round (/ (cffi:mem-ref fsec 'oci:ub-4) 1000))
+        (encode-timestamp (cffi:mem-ref fsec 'oci:ub-4)
                           (cffi:mem-ref sec 'oci:ub-1)
                           (cffi:mem-ref min 'oci:ub-1)
                           (cffi:mem-ref hour 'oci:ub-1)
