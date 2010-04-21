@@ -364,18 +364,12 @@
        (format-string ")"))
       ((equal "=" name)
        (format-string "(")
-       (let ((xclob (and (typep left 'sql-literal)
-                         (typep (type-of left) 'sql-character-large-object-type)
-                         (not (size-of (type-of left)))))
-             (yclob (and (typep right 'sql-literal)
-                         (typep (type-of right) 'sql-character-large-object-type)
-                         (not (size-of (type-of right)))))
-             (xblob (and (typep left 'sql-literal)
+       (let ((xblob (and (typep left 'sql-literal)
                          (typep (type-of left) 'sql-binary-large-object-type)))
              (yblob (and (typep right 'sql-literal)
                          (typep (type-of right) 'sql-binary-large-object-type))))
          (if (or xblob yblob)
-             (flet ((blob (vector)
+             (flet ((blob (vector) ;; blob=
                       (loop
                          for x across vector
                          do (format *sql-stream* "~2,'0x" x))))
@@ -394,15 +388,33 @@
                      (format-string "')"))
                    (format-sql-syntax-node right database))
                (format-string ")"))
-             (let ((xlob (and xclob (typep right 'sql-column-alias)))
-                   (ylob (and yclob (typep right 'sql-column-alias))))
-               (when xlob (format-string "to_char("))
-               (format-sql-syntax-node left database)
-               (when xlob (format-string ")"))
-               (format-string "=")
-               (when ylob (format-string "to_char("))
-               (format-sql-syntax-node right database)
-               (when ylob (format-string ")")))))
+             (let ((xclob (and (typep left 'sql-literal)
+                               (typep (type-of left) 'sql-character-large-object-type)
+                               (not (size-of (type-of left)))))
+                   (yclob (and (typep right 'sql-literal)
+                               (typep (type-of right) 'sql-character-large-object-type)
+                               (not (size-of (type-of right))))))
+               (if (or xclob yclob)
+                   (progn ;; clob=
+                     (format-string "0=dbms_lob.compare(")
+                     (if xclob
+                         (progn
+                           (format-string "to_clob('")
+                           (format-string (value-of left))
+                           (format-string "')"))
+                         (format-sql-syntax-node left database))
+                     (format-string ",")
+                     (if yclob
+                         (progn
+                           (format-string "to_clob('")
+                           (format-string (value-of right))
+                           (format-string "')"))
+                         (format-sql-syntax-node right database))
+                     (format-string ")"))
+                   (progn ;; =
+                     (format-sql-syntax-node left database)
+                     (format-string "=")
+                     (format-sql-syntax-node right database))))))
        (format-string ")"))
       (t (call-next-method)))))
 
