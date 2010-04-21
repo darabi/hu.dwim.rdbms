@@ -149,6 +149,7 @@
                             *default-oci-flags*)))
     (case status
       (#.oci:+success+ #t)
+      (#.oci:+success-with-info+ #t) ;; warning, e.g. ORA-24347 sum over null
       (#.oci:+no-data+ #f)
       (t (handle-oci-error)))))
 
