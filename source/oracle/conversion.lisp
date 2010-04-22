@@ -453,7 +453,7 @@ digit is the first or NIL for 0."
 (def function timezone-as-HHMM-string (timestamp)
   "Returns the time-zone of TIMESTAMP in [+-]HH:MM format."
   (declare (ignore timestamp))
-  (let ((offset (not-yet-implemented) #+nil(timezone timestamp))) 
+  (let ((offset 0 #+nil(not-yet-implemented) #+nil(timezone timestamp))) ;; TODO THL fix this properly?
     (multiple-value-bind (hour sec) (floor (abs offset) 3600)
       (format nil "~C~2,'0D:~2,'0D"
               (if (> offset 0) #\+ #\-)
