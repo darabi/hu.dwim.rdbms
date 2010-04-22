@@ -26,8 +26,8 @@
                            (aref column 3)
                            (aref column 4))))
    (execute
-    (format nil "select column_name, data_type, char_length, data_precision, data_scale from user_tab_columns where lower(table_name) = '~A'"
-            (string-downcase name)) ;; FIXME should be case sensitive, but perec
+    (format nil "select column_name, data_type, char_length, data_precision, data_scale from user_tab_columns where table_name = '~A'"
+            name) ;; FIXME should be case sensitive, but perec
                                     ;; does not use case consistently
     :result-type 'vector)))
 
@@ -38,6 +38,6 @@
                     :name (first column)
                     :table-name name))
    (execute
-    (format nil "select index_name from user_indexes where lower(table_name) = '~A'"
-            (string-downcase name)) ;; FIXME see prev
+    (format nil "select index_name from user_indexes where table_name = '~A'"
+            name) ;; FIXME see prev
     :result-type 'list)))
