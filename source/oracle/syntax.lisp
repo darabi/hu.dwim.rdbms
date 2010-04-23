@@ -252,10 +252,19 @@
              for j from 1
              unless (member value '(:null nil))
              do (progn
-                  (when (< 1 j n)
+                  (when (<= 2 j n)
                     (format-char ","))
-                  (format-sql-identifier column database)
-                  (format-string " INTO ")
+                  (format-sql-identifier column database)))
+          (format-string " INTO ")
+          (loop
+             for n = (length lob-columns)
+             for column in lob-columns
+             for value in lob-values
+             for j from 1
+             unless (member value '(:null nil))
+             do (progn
+                  (when (<= 2 j n)
+                    (format-char ","))
                   (format-sql-literal value database))))))))
 
 ;;;;;;
