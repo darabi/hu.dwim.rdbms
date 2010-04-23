@@ -374,9 +374,13 @@
       ((equal "=" name)
        (format-string "(")
        (let ((xblob (and (typep left 'sql-literal)
-                         (typep (type-of left) 'sql-binary-large-object-type)))
+                         (typep (type-of left) 'sql-binary-large-object-type)
+                         (vectorp (value-of left))
+                         (value-of left)))
              (yblob (and (typep right 'sql-literal)
-                         (typep (type-of right) 'sql-binary-large-object-type))))
+                         (typep (type-of right) 'sql-binary-large-object-type)
+                         (vectorp (value-of right))
+                         (value-of right))))
          (if (or xblob yblob)
              (flet ((blob (vector) ;; blob=
                       (loop
@@ -386,37 +390,41 @@
                (if xblob
                    (progn
                      (format-string "to_blob('")
-                     (blob (value-of left))
+                     (blob xblob)
                      (format-string "')"))
                    (format-sql-syntax-node left database))
                (format-string ",")
                (if yblob
                    (progn
                      (format-string "to_blob('")
-                     (blob (value-of right))
+                     (blob yblob)
                      (format-string "')"))
                    (format-sql-syntax-node right database))
                (format-string ")"))
              (let ((xclob (and (typep left 'sql-literal)
                                (typep (type-of left) 'sql-character-large-object-type)
-                               (not (size-of (type-of left)))))
+                               (not (size-of (type-of left)))
+                               (stringp (value-of left))
+                               (value-of left)))
                    (yclob (and (typep right 'sql-literal)
                                (typep (type-of right) 'sql-character-large-object-type)
-                               (not (size-of (type-of right))))))
+                               (not (size-of (type-of right)))
+                               (stringp (value-of right))
+                               (value-of right))))
                (if (or xclob yclob)
                    (progn ;; clob=
                      (format-string "0=dbms_lob.compare(")
                      (if xclob
                          (progn
                            (format-string "to_clob('")
-                           (format-string (value-of left))
+                           (format-string xclob)
                            (format-string "')"))
                          (format-sql-syntax-node left database))
                      (format-string ",")
                      (if yclob
                          (progn
                            (format-string "to_clob('")
-                           (format-string (value-of right))
+                           (format-string yclob)
                            (format-string "')"))
                          (format-sql-syntax-node right database))
                      (format-string ")"))
