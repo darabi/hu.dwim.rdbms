@@ -27,8 +27,7 @@
                            (aref column 4))))
    (execute
     (format nil "select column_name, data_type, char_length, data_precision, data_scale from user_tab_columns where table_name = '~A'"
-            name) ;; FIXME should be case sensitive, but perec
-                                    ;; does not use case consistently
+            name)
     :result-type 'vector)))
 
 (def method database-list-table-indices (name (database oracle))
@@ -36,8 +35,17 @@
    (lambda (column)
      (make-instance 'sql-index
                     :name (first column)
-                    :table-name name))
+                    :table-name name
+                    :unique (equal "UNIQUE" (second column))))
    (execute
-    (format nil "select index_name from user_indexes where table_name = '~A'"
-            name) ;; FIXME see prev
+    (format nil "select index_name, uniqueness from user_indexes where table_name = '~A'"
+            name)
+    :result-type 'list)))
+
+(def method database-list-table-primary-constraints (name (database oracle))
+  (mapcar
+   (lambda (column) (make-instance 'sql-constraint :name (first column)))
+   (execute
+    (format nil "select constraint_name from user_constraints where constraint_type='P' and table_name='~A'"
+            name)
     :result-type 'list)))
