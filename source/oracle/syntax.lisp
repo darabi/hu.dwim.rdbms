@@ -282,20 +282,32 @@
 #+nil
 (def method format-sql-syntax-node ((self sql-case) (database oracle))
   (with-slots (clauses) self
-    (if (or (/= (length clauses) 2)
-            (not (eq (first (second clauses)) t)))
-        (call-next-method)
-        (let ((cond (first (first clauses)))
-              (then (second (first clauses)))
-              (else (second (second clauses))))
-          (progn
-            (format-string "sql_if(")
-            (format-sql-syntax-node cond database)
-            (format-char ",")
-            (format-sql-syntax-node then database)
-            (format-char ",")
-            (format-sql-syntax-node else database)
-            (format-string ")"))))))
+    (format-char "(")
+    (format-string "'Y'=(CASE")
+    (dolist (clause clauses)
+      (let ((when (first clause))
+            (then (second clause)))
+        (format-char " ")
+        (if (eq when t)
+            (format-string "ELSE")
+            (progn
+              (format-string "WHEN")
+              (format-char " ")
+              (format-sql-syntax-node when database)
+              (format-char " ")
+              (format-string "THEN")))
+        (format-char " ")
+        (typecase then
+          (sql-literal
+            (ecase (value-of then)
+              (:null (format-string "'N'"))))
+          (t
+           (format-string "(CASE WHEN ")
+           (format-sql-syntax-node then database)
+           (format-string " THEN 'Y' ELSE 'N' END)")))))
+    (format-char " ")
+    (format-string "END)")
+    (format-char ")")))
 
 (def method format-sql-syntax-node ((x sql-drop-view) (database oracle))
   (if (ignore-missing-p x)
