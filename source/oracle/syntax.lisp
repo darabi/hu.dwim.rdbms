@@ -279,7 +279,6 @@
   (format-string (if (case-sensitive-p regexp-like) "'c'" "'i'"))
   (format-char ")"))
 
-#+nil
 (def method format-sql-syntax-node ((self sql-case) (database oracle))
   (with-slots (clauses) self
     (format-char "(")
