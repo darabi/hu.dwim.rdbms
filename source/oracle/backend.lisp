@@ -579,3 +579,5 @@
                            (cffi:inc-pointer buffer (* row-index size))
                            size))))
     (rdbms.debug "Fetched: ~S" it)))
+
+(def method backend-release-savepoint (name (db oracle))) ;; TODO THL nothing needed?

@@ -143,3 +143,6 @@
     (rdbms.debug "Closing Postgresql connection ~A of transaction ~A in database ~A" it tr (database-of tr))
     (cl-postgres:close-database it)
     (setf (connection-of tr) nil)))
+
+(def method backend-release-savepoint (name (db postgresql))
+  (execute (format nil "RELEASE SAVEPOINT ~a" name)))
