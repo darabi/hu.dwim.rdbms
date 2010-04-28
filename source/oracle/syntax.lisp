@@ -299,7 +299,7 @@
         (typecase then
           (sql-literal
             (ecase (value-of then)
-              (:null (format-string "'N'"))))
+              ((:null nil) (format-string "'N'"))))
           (t
            (format-string "(CASE WHEN ")
            (format-sql-syntax-node then database)
