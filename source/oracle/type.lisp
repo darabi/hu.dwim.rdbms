@@ -143,7 +143,6 @@
            ;; their external type is byte[22] (varnum)
            ;; NOTE: when rationals stored in a numeric column, their precision may be lost
            ;;       e.g. 1/3 -> 3333.../10000...
-    (error "use more specific type with oracle backend") ;; TODO THL handle this better?
            rational/varnum)
 
   (:method ((type sql-character-type))
@@ -190,7 +189,7 @@
                            clauses)
                  (t (error "Falling through estringcase: ~S" ,keyform)))))
     (estringcase data-type
-     ("NUMBER" (if (eql 0 scale)
+     ("NUMBER" (if (or (eq scale :null) (zerop scale))
                    (if precision
                        (case precision
                          (5 (sql-integer-type :bit-size 16)) ; KLUDGE
@@ -226,7 +225,7 @@
          string/string))
     (#.oci:+sqlt-num+
      (if (and (<= scale 0) (<= (- precision scale) 9))
-         integer/varnum
+         integer/int32
          rational/varnum))
     (#.oci:+sqlt-dat+ local-time/date)
     (#.oci:+sqlt-ibfloat+ float/bfloat)

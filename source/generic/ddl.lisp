@@ -112,11 +112,11 @@
 
 (defun collect-column-foreign-keys (columns)
   (iter outer
-	(for column in columns)
-	(iter (for constraint in (constraints-of column))
+        (for column in columns)
+        (iter (for constraint in (constraints-of column))
               ;; FIXME a style-warning because SQL-FOREIGN-KEY-CONSTRAINT is defined in something we are a dependency of
-	      (when (typep constraint 'sql-foreign-key-constraint)
-		(in outer (collect constraint))))))
+              (when (typep constraint 'sql-foreign-key-constraint)
+                (in outer (collect constraint))))))
 
 (def function update-existing-table (table-name columns)
   (let ((table-columns (list-table-columns table-name)))
@@ -171,59 +171,59 @@
 
 (defun update-existing-table-foreign-keys (table-name columns)
   (bind ((table-fkeys (list-table-foreign-keys table-name))
-	 (add-actions (mapcar (lambda (c)
-				(constraint-to-action c table-name))
-			      (collect-column-foreign-keys columns))))
+         (add-actions (mapcar (lambda (c)
+                                (constraint-to-action c table-name))
+                              (collect-column-foreign-keys columns))))
     (dolist (existing table-fkeys)
       (unless (find (name-of existing)
-		    add-actions
-		    :key #'name-of
-		    :test #'string=)
-	(with-simple-restart (skip "Skip changing this foreign key")
-	  (when *signal-non-destructive-alter-table-commands*
-	    (with-simple-restart
-		(continue-with-schema-change "Alter the table ~S by dropping the foreign key ~S"
-					     table-name
-					     (name-of existing))
-	      (error 'unconfirmed-schema-change/drop-foreign-key
-		     :table-name table-name
-		     :column-name (source-column-of existing)
-		     :constraint-name (name-of existing))))
-	  (drop-foreign-key existing))))
+                    add-actions
+                    :key #'name-of
+                    :test #'string=)
+        (with-simple-restart (skip "Skip changing this foreign key")
+          (when *signal-non-destructive-alter-table-commands*
+            (with-simple-restart
+                (continue-with-schema-change "Alter the table ~S by dropping the foreign key ~S"
+                                             table-name
+                                             (name-of existing))
+              (error 'unconfirmed-schema-change/drop-foreign-key
+                     :table-name table-name
+                     :column-name (source-column-of existing)
+                     :constraint-name (name-of existing))))
+          (drop-foreign-key existing))))
     (dolist (existing table-fkeys)
       (let ((match (find (name-of existing)
-			 add-actions
-			 :key #'name-of
-			 :test #'string=)))
-	(when (and match (not (fkey-actions-same-p existing match)))
-	  (with-simple-restart (skip "Skip changing this foreign key")
-	    (when *signal-non-destructive-alter-table-commands*
-	      (with-simple-restart
-		  (continue-with-schema-change "Alter the table ~S by replacing the foreign key ~S"
-					       table-name
-					       (name-of existing))
-		(error 'unconfirmed-schema-change/replace-foreign-key
-		       :table-name table-name
-		       :column-name (source-column-of existing)
-		       :constraint-name (name-of existing))))
-	    (drop-foreign-key existing)
-	    (add-foreign-key-constraint table-name match)))))
+                         add-actions
+                         :key #'name-of
+                         :test #'string=)))
+        (when (and match (not (fkey-actions-same-p existing match)))
+          (with-simple-restart (skip "Skip changing this foreign key")
+            (when *signal-non-destructive-alter-table-commands*
+              (with-simple-restart
+                  (continue-with-schema-change "Alter the table ~S by replacing the foreign key ~S"
+                                               table-name
+                                               (name-of existing))
+                (error 'unconfirmed-schema-change/replace-foreign-key
+                       :table-name table-name
+                       :column-name (source-column-of existing)
+                       :constraint-name (name-of existing))))
+            (drop-foreign-key existing)
+            (add-foreign-key-constraint table-name match)))))
     (dolist (action add-actions)
       (unless (find (name-of action)
-		    table-fkeys
-		    :key #'name-of
-		    :test #'string=)
-	(with-simple-restart (skip "Skip changing this foreign key")
-	  (when *signal-non-destructive-alter-table-commands*
-	    (with-simple-restart
-		(continue-with-schema-change "Alter the table ~S by adding the foreign key ~S"
-					     table-name
-					     (name-of action))
-	      (error 'unconfirmed-schema-change/add-foreign-key
-		     :table-name table-name
-		     :column-name (car (source-columns-of action))
-		     :constraint-name (name-of action))))
-	  (add-foreign-key-constraint table-name action))))))
+                    table-fkeys
+                    :key #'name-of
+                    :test #'string=)
+        (with-simple-restart (skip "Skip changing this foreign key")
+          (when *signal-non-destructive-alter-table-commands*
+            (with-simple-restart
+                (continue-with-schema-change "Alter the table ~S by adding the foreign key ~S"
+                                             table-name
+                                             (name-of action))
+              (error 'unconfirmed-schema-change/add-foreign-key
+                     :table-name table-name
+                     :column-name (car (source-columns-of action))
+                     :constraint-name (name-of action))))
+          (add-foreign-key-constraint table-name action))))))
 
 ;;;;;;
 ;;; Create, drop view
@@ -358,15 +358,15 @@ to avoid re-indexing a possibly large table, if nothing has changed."
 
 (def print-object foreign-key-descriptor
   (format t "~_CONSTRAINT ~A~_FOREIGN KEY ~A ~A"
-	  (name-of -self-)
-	  (source-table-of -self-)
-	  (list (source-column-of -self-)))
+          (name-of -self-)
+          (source-table-of -self-)
+          (list (source-column-of -self-)))
   (format t " ~_REFERENCES ~A ~A"
-	  (target-table-of -self-)
-	  (list (target-column-of -self-)))
+          (target-table-of -self-)
+          (list (target-column-of -self-)))
   (format t " ~_ON DELETE ~S ~_ON UPDATE ~S"
-	  (delete-rule-of -self-)
-	  (update-rule-of -self-)))
+          (delete-rule-of -self-)
+          (update-rule-of -self-)))
 
 (def (function e) list-table-foreign-keys (name)
   (database-list-table-foreign-keys name *database*))

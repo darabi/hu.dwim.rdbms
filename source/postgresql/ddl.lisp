@@ -128,13 +128,13 @@ FROM(SELECT DISTINCT nr.nspname, r.relname, r.relowner, a.attname, nc.nspname,
        AND c.contype = 'c'::\"char\"
        AND r.relkind = 'r'::\"char\"
        AND NOT a.attisdropped
-   UNION ALL 
+   UNION ALL
      SELECT nr.nspname, r.relname, r.relowner, a.attname, nc.nspname, c.conname
      FROM pg_namespace nr,
-     	  pg_class r,
-	  pg_attribute a,
-	  pg_namespace nc,
-	  pg_constraint c
+          pg_class r,
+          pg_attribute a,
+          pg_namespace nc,
+          pg_constraint c
      WHERE nr.oid = r.relnamespace
        AND r.oid = a.attrelid
        AND nc.oid = c.connamespace
@@ -144,32 +144,32 @@ FROM(SELECT DISTINCT nr.nspname, r.relname, r.relowner, a.attname, nc.nspname,
              ELSE r.oid = c.conrelid AND (a.attnum = ANY (c.conkey))
              END
            AND NOT a.attisdropped
-	   AND (c.contype = ANY (ARRAY['p'::\"char\", 'u'::\"char\", 'f'::\"char\"]))
-	   AND r.relkind = 'r'::\"char\")
+           AND (c.contype = ANY (ARRAY['p'::\"char\", 'u'::\"char\", 'f'::\"char\"]))
+           AND r.relkind = 'r'::\"char\")
    x(tblschema, tblname, tblowner, colname, cstrschema, cstrname)")
 
 (def method database-list-table-foreign-keys (table-name (database postgresql))
   (map 'list
        (lambda (row)
-	 (make-instance 'foreign-key-descriptor
-			:name (elt row 0)
-			:source-table (elt row 1)
-			:source-column (elt row 2)
-			:target-table (elt row 3)
-			:target-column (elt row 4)
-			:delete-rule (sql-rule-name-to-lisp (elt row 5))
-			:update-rule (sql-rule-name-to-lisp (elt row 6))))
+         (make-instance 'foreign-key-descriptor
+                        :name (elt row 0)
+                        :source-table (elt row 1)
+                        :source-column (elt row 2)
+                        :target-table (elt row 3)
+                        :target-column (elt row 4)
+                        :delete-rule (sql-rule-name-to-lisp (elt row 5))
+                        :update-rule (sql-rule-name-to-lisp (elt row 6))))
        (execute
-	(format nil "SELECT DISTINCT
+        (format nil "SELECT DISTINCT
                   tc.constraint_name,
                   tc.table_name,
-                  kcu.column_name, 
+                  kcu.column_name,
                   ccu.table_name AS foreign_table_name,
                   ccu.column_name AS foreign_column_name,
                   rc.delete_rule,
                   rc.update_rule
                 FROM
-                  information_schema.table_constraints AS tc 
+                  information_schema.table_constraints AS tc
                   JOIN information_schema.key_column_usage AS kcu
                     ON tc.constraint_name = kcu.constraint_name
                     AND tc.constraint_catalog = kcu.constraint_catalog
@@ -182,16 +182,16 @@ FROM(SELECT DISTINCT nr.nspname, r.relname, r.relowner, a.attname, nc.nspname,
                 WHERE constraint_type = 'FOREIGN KEY'
                   AND tc.constraint_catalog='~A'
                   AND tc.table_name='~A';"
-		*information_schema.constraint_column_usage*
-		(getf (connection-specification-of *database*)
-		      :database)
-		(string-downcase table-name)))))
+                *information_schema.constraint_column_usage*
+                (getf (connection-specification-of *database*)
+                      :database)
+                (string-downcase table-name)))))
 
 (def method database-list-view-definitions ((database postgresql))
   (execute "select viewname, definition from pg_views"
-	   :result-type 'list))
+           :result-type 'list))
 
 (def method database-view-definition (view-name (database postgresql))
   (caar (execute (format nil "select definition from pg_views where viewname='~A'"
-			 view-name)
-		 :result-type 'list)))
+                         view-name)
+                 :result-type 'list)))

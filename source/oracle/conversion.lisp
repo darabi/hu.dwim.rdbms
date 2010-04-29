@@ -21,7 +21,7 @@
 ;;; Boolean conversions
 
 (def function boolean-to-char (value)
-  (foreign-oci-string-alloc (if (member value '(nil "FALSE") :test #'equal) "N" "Y")
+  (foreign-oci-string-alloc (if (member value '(nil "FALSE") :test #'equal) "F" "T")
                             :null-terminated-p #f))
 
 (def function boolean-from-char (ptr len)
@@ -30,8 +30,8 @@
     (assert (= (length str) 1))
     (let ((ch (char str 0)))
       (case ch
-        (#\Y #t)
-        (#\N #f)
+        (#\T #t)
+        (#\F #f)
         (t ch)))))                ; KLUDGE real char(1), not a boolean
 
 ;;;;;;
@@ -149,7 +149,6 @@
 ;;; Character data conversions
 
 (def function string-to-string (value)
-  (assert (and (stringp value) (not (equal "" value))))
   (foreign-oci-string-alloc value))
 
 (def function string-from-string (ptr length)
@@ -157,7 +156,7 @@
   (oci-string-to-lisp ptr))
 
 (def function string-to-clob (str)
-  (assert (and (stringp str) (not (equal "" str))))
+  (declare (ignore str))
   (make-lob-locator))
 
 (def function string-from-clob (ptr len)
@@ -168,7 +167,7 @@
 ;;; Binary data conversions
 
 (def function byte-array-to-blob (ba)
-  (assert (and (typep ba 'vector) (not (equalp #() ba)))) ; '(vector (unsigned-byte 8))
+  (assert (typep ba 'vector)) ; '(vector (unsigned-byte 8))
   (make-lob-locator))
 
 (def function byte-array-from-blob (ptr len)
@@ -421,16 +420,11 @@
              ;; mantissa
              (multiple-value-bind (base-100-digits length) (base-100-digits mantissa)
                (incf base-100-exponent length)
-               (iter
-                 (while (zerop (elt base-100-digits (1- length))))
-                 (decf length))
                (if negativep
                    (loop for d in base-100-digits
-                         repeat length
                          while (< (length result) max-len)
                          do (vector-push-extend (- 101 d) result))
                    (loop for d in base-100-digits
-                         repeat length
                          while (< (length result) max-len)
                          do (vector-push-extend (1+ d) result))))
              ;; exponent
@@ -480,12 +474,6 @@ digit is the first or NIL for 0."
     (if (and (= minutes 0)
              (= hours 0))
         +utc-zone+
-        (let ((subzone (local-time::make-subzone
-                        :offset (* hours 60 60)
-                        :daylight-p nil ;; TODO THL what should be here?
-                        :abbrev "anonymous")))
-          (local-time::make-timezone
-           :subzones (make-array 1 :initial-contents (list subzone))
-           :path nil
-           :name "anonymous"
-           :loaded t)))))
+        (local-time::make-timezone :subzones `((,offset-in-sec nil "anonymous" nil nil))
+                                   :name "anonymous"
+                                   :loaded t))))

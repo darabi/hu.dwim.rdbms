@@ -4,7 +4,7 @@
 ;;;
 ;;; See LICENCE for details.
 
-(in-package :hu.dwim.def)
+(in-package :hu.dwim.util)
 
 (def package :hu.dwim.rdbms.oracle
   (:use :hu.dwim.common
@@ -30,3 +30,4 @@
   (when (and (eq (symbol-package symbol) #.(find-package :hu.dwim.rdbms))
              (not (find-symbol (symbol-name symbol) #.(find-package :hu.dwim.rdbms.oracle))))
     (import symbol)))
+

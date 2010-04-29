@@ -64,10 +64,6 @@
   (= oci:+stmt-insert+
      (get-statement-attribute prepared-statement oci:+attr-stmt-type+ 'oci:ub-2)))
 
-(def function update-p (prepared-statement)
-  (= oci:+stmt-update+
-     (get-statement-attribute prepared-statement oci:+attr-stmt-type+ 'oci:ub-2)))
-
 (def macro get-row-count-attribute (statement)
   `(get-statement-attribute ,statement oci:+attr-row-count+ 'oci:ub-4))
 
@@ -84,8 +80,18 @@
     ,@args))
 
 (def function oci-string-to-lisp (pointer &optional size)
+  #+nil
   (cffi:foreign-string-to-lisp pointer :count size
-                               :encoding (connection-encoding-of (database-of *transaction*))))
+                               :encoding (connection-encoding-of (database-of *transaction*)))
+  ;; the above doesn't work, because babel thinks the encoding is
+  ;; invalid and returns question marks only.  Perhaps Babel doesn't
+  ;; understand the endianness?  Need to investigate.
+  (coerce (iter (for i from 0 by 2)
+		(when size (while (< i size)))
+		(let ((code (cffi:mem-ref pointer :short i)))
+		  (until (zerop code))
+		  (collect (code-char code))))
+	  'string))
 
 (def function oci-char-width ()
   (cffi::null-terminator-len (connection-encoding-of (database-of *transaction*)))) ;; FIXME using internal fn
@@ -213,15 +219,9 @@
         (set-empty-lob locator))
       (values locator (cffi:foreign-type-size :pointer)))))
 
-(def function clob-type-p (sql-type)
-  (typep sql-type 'sql-character-large-object-type))
-
-(def function blob-type-p (sql-type)
-  (typep sql-type 'sql-binary-large-object-type))
-
-(def function lob-type-p (sql-type)
-  (or (clob-type-p sql-type)
-      (blob-type-p sql-type)))
+(def function lobp (sql-type)
+  (or (typep sql-type 'sql-character-large-object-type)
+      (typep sql-type 'sql-binary-large-object-type)))
 
 (def function lob-get-length (svchp errhp locator)
   (cffi:with-foreign-object (len 'oci:ub-4)
@@ -249,7 +249,7 @@
   (oci-call (oci:lob-flush-buffer svchp errhp locator oci:+lob-buffer-nofree+)))
 
 (def method upload-lob (locator (value string))
-  (assert (plusp (length value)))
+  (assert (plusp (length value))) ;; use :null instead
   (let ((svchp (service-context-handle-of *transaction*))
         (errhp (error-handle-of *transaction*)))
     (multiple-value-bind (bufp siz) (foreign-oci-string-alloc value)
@@ -258,7 +258,7 @@
         (cffi:foreign-string-free bufp)))))
 
 (def method upload-lob (locator (value vector))
-  (assert (plusp (length value)))
+  (assert (plusp (length value))) ;; use :null instead
   (let ((svchp (service-context-handle-of *transaction*))
         (errhp (error-handle-of *transaction*))
         (siz (array-dimension value 0)))
@@ -289,9 +289,7 @@
                    (setf (cffi:mem-aref bufp 'oci:ub-1 (- siz i 1)) 0))
                  (oci-string-to-lisp bufp siz))
             (cffi-sys:foreign-free bufp)))
-        (if (zerop siz)
-            ""
-            (error "unexpected clob length ~s" siz)))))
+        :null)))
 
 (def function download-blob (locator)
   (let* ((svchp (service-context-handle-of *transaction*))
@@ -308,6 +306,4 @@
                     do (setf (aref result i) (cffi:mem-aref bufp 'oci:ub-1 i)))
                  result)
             (cffi:foreign-string-free bufp)))
-        (if (zerop siz)
-            #()
-            (error "unexpected blob length ~s" siz)))))
+        :null)))

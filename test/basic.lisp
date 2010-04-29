@@ -191,31 +191,30 @@
 ;; TODO THL this test must be independent of what backend i'm using right now
 (def test test/basic/expand-sql-ast/binding ()
   (unwind-protect
-       (with-expected-failures
-         (with-transaction
-           (execute-ddl [create table test_table ((a boolean))])
-           (execute [insert test_table (a) (t)])
-           (is (length= 1 (execute
-                           (compile
-                            nil
-                            (hu.dwim.rdbms::expand-sql-ast-into-lambda-form-cached
-                             (sql-select :columns '(a)
-                                         :tables '(test_table)
-                                         :where (sql-= (sql-identifier :name 'a)
-                                                       (sql-unquote :form '(sql-binding-variable :name 'a :type (sql-boolean-type)))))))
-                           :bindings '(a t))))
-           (is (length= 1 (execute
-                           (compile
-                            nil
-                            (hu.dwim.rdbms::expand-sql-ast-into-lambda-form-cached
-                             (sql-select :columns '(a)
-                                         :tables '(test_table)
-                                         :where (sql-= (sql-identifier :name 'a)
-                                                       (sql-binding-variable :name 'a
-                                                                             :type
-                                                                             (sql-unquote
-                                                                               :form
-                                                                               `(sql-boolean-type)))))))
-                           :bindings '(a t))))))
+       (with-transaction
+         (execute-ddl [create table test_table ((a boolean))])
+         (execute [insert test_table (a) (t)])
+         (is (length= 1 (execute
+                         (compile
+                          nil
+                          (expand-sql-ast-into-lambda-form-cached
+                           (sql-select :columns '(a)
+                                       :tables '(test_table)
+                                       :where (sql-= (sql-identifier :name 'a)
+                                                     (sql-unquote :form '(sql-binding-variable :name 'a :type (sql-boolean-type)))))))
+                         :bindings '(a t))))
+         (is (length= 1 (execute
+                         (compile
+                          nil
+                          (expand-sql-ast-into-lambda-form-cached
+                           (sql-select :columns '(a)
+                                       :tables '(test_table)
+                                       :where (sql-= (sql-identifier :name 'a)
+                                                     (sql-binding-variable :name 'a
+                                                                           :type
+                                                                           (sql-unquote
+                                                                             :form
+                                                                             `(sql-boolean-type)))))))
+                         :bindings '(a t)))))
     (ignore-errors
       (execute-ddl [drop table test_table]))))

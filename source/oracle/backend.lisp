@@ -6,10 +6,18 @@
 
 (in-package :hu.dwim.rdbms.oracle)
 
-(cffi:define-foreign-library (oracle-oci :search-path #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")
+(cffi:define-foreign-library oracle-oci
   (:unix "libocixe.so")
-  (:windows (:or "ocixe.dll" "oci.dll"))
+  (:windows "libocixe.dll")
   (t (:default "libocixe")))
+
+(def special-variable *oracle-oci-foreign-library* nil)
+
+(def function ensure-oracle-oci-is-loaded ()
+  (unless *oracle-oci-foreign-library*
+    ;; TODO let the user control version, path and stuff (through slots on *database*? if so then *oracle-oci-foreign-library* must be a slot there, too)
+    (setf *oracle-oci-foreign-library*
+          (cffi:load-foreign-library 'oracle-oci :search-path (list #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")))))
 
 ;;;;;;
 ;;; Backend API
@@ -70,8 +78,8 @@
 
 (def function connect (transaction)
   (assert (cl:null (environment-handle-pointer transaction)))
-  (cffi:load-foreign-library 'oracle-oci)
-  (bind (((&key datasource user-name (password "") schema) (connection-specification-of (database-of transaction))))
+  (ensure-oracle-oci-is-loaded)
+  (bind (((&key datasource user-name (password "")) (connection-specification-of (database-of transaction))))
     (macrolet ((alloc (&rest whats)
                  `(progn
                    ,@(loop for what :in whats
@@ -130,13 +138,7 @@
             (return-from connecting))
           (unless (cffi:null-pointer-p (session-handle-of transaction))
             (oci-call (oci:handle-free (session-handle-of transaction) oci:+htype-session+))
-            (setf (session-handle-of transaction) null)))
-    (when schema
-      (setf (session-schema transaction) schema)
-      (execute-command (database-of transaction)
-		       transaction
-		       (format nil "ALTER SESSION SET CURRENT_SCHEMA=~A"
-			       schema)))))
+            (setf (session-handle-of transaction) null)))))
 
 (def macro ignore-errors* (&body body)
   `(block nil
@@ -148,7 +150,7 @@
 
 (def function disconnect (transaction)
   (assert (environment-handle-pointer transaction))
-
+  
   (ignore-errors*
     (rdbms.debug "Calling logoff in transaction ~A" transaction)
     (oci-call (oci:logoff (service-context-handle-of transaction)
@@ -156,7 +158,7 @@
   (ignore-errors*
     (rdbms.debug "Freeing environment handle of transaction ~A" transaction)
     (oci-call (oci:handle-free (environment-handle-of transaction) oci:+htype-env+)))
-
+  
   (macrolet ((dealloc (&rest whats)
                `(progn
                  ,@(loop for what in whats
@@ -195,13 +197,13 @@
   (let ((needs-scrollable-cursor-p (and start-row (> start-row 0))))
     ;; make bindings
     (setf (bindings-of statement) (make-bindings statement transaction binding-types binding-values))
-
+    
     ;; execute
     (stmt-execute statement
                   (if needs-scrollable-cursor-p
                       (logior *default-oci-flags* oci:+stmt-scrollable-readonly+)
                       *default-oci-flags*))
-
+  
     ;; fetch
     (cond
       ((select-p statement)
@@ -219,16 +221,12 @@
                                 :row-count row-limit))
            (close-cursor cursor))))
       (t
-       (when (and (or (insert-p statement)
-                      (update-p statement))
-                  binding-types
-                  binding-values)
+       (when (and (insert-p statement) binding-types binding-values)
          (loop
             for type across binding-types
             for value across binding-values
             for binding in (bindings-of statement)
-            when (and (lob-type-p type)
-                      (not (member value '(:null nil #()) :test #'equalp)))
+            when (and (lobp type) (not (member value '(:null nil))))
             do (upload-lob (cffi:mem-aref (data-pointer-of binding) :pointer) value)))
        (values nil (get-row-count-attribute statement)))))) ;; TODO THL what should the first value be?
 
@@ -250,44 +248,49 @@
         (collect (make-binding statement transaction position type value))))
 
 (def function make-binding (statement transaction position sql-type value)
-  (bind ((statement-handle (statement-handle-of statement))
+  (let* ((statement-handle (statement-handle-of statement))
          (error-handle (error-handle-of transaction))
          (typemap (typemap-for-sql-type sql-type))
          (oci-type-code (typemap-external-type typemap))
          (converter (typemap-lisp-to-oci typemap))
          (bind-handle-pointer (cffi:foreign-alloc :pointer :initial-element null))
-         (is-null (eq value :null))
-         (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if is-null -1 0)))
-         ((:values data-pointer data-size) (if is-null
-                                               (if (or (typep sql-type 'sql-character-large-object-type)
-                                                       (typep sql-type 'sql-binary-large-object-type))
-                                                   (make-lob-locator t) ;; TODO THL why needed when indicator is -1?
-                                                   (values null 0))
-                                               (funcall converter value))))
-    (rdbms.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
-    ;; TODO THL why **locator and not *locator? stmt-execute crashes:-{
-    (when (lob-type-p sql-type)
-      (setf data-pointer (cffi:foreign-alloc :pointer :initial-element data-pointer)))
-    (oci-call (oci:bind-by-pos statement-handle
-                               bind-handle-pointer
-                               error-handle
-                               position
-                               data-pointer
-                               data-size
-                               oci-type-code
-                               indicator
-                               null     ; alenp
-                               null     ; rcodep
-                               0        ; maxarr_len
-                               null     ; curelep
-                               *default-oci-flags*))
-    (make-instance 'oracle-binding
-                   :bind-handle-pointer bind-handle-pointer
-                   :sql-type sql-type
-                   :typemap typemap
-                   :data-pointer data-pointer
-                   :data-size data-size
-                   :indicator indicator)))
+         (is-null (or (eql value :null)
+                      (and (cl:null value) (not (typep sql-type 'sql-boolean-type)))))
+         (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if is-null -1 0))))
+    (multiple-value-bind (data-pointer data-size)
+        (if is-null
+            (if (or (typep sql-type 'sql-character-large-object-type)
+                    (typep sql-type 'sql-binary-large-object-type))
+                (make-lob-locator t) ;; TODO THL why needed when indicator is -1?
+                (values null 0))
+            (funcall converter value))
+
+      (rdbms.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
+
+      ;; TODO THL why **locator and not *locator? stmt-execute crashes:-{
+      (when (lobp sql-type)
+        (setq data-pointer (cffi:foreign-alloc :pointer :initial-element data-pointer)))
+      
+      (oci-call (oci:bind-by-pos statement-handle
+                                 bind-handle-pointer
+                                 error-handle
+                                 position
+                                 data-pointer
+                                 data-size
+                                 oci-type-code
+                                 indicator
+                                 null               ; alenp
+                                 null               ; rcodep
+                                 0                  ; maxarr_len
+                                 null               ; curelep
+                                 *default-oci-flags*))
+      (make-instance 'oracle-binding
+                     :bind-handle-pointer bind-handle-pointer
+                     :sql-type sql-type
+                     :typemap typemap
+                     :data-pointer data-pointer
+                     :data-size data-size
+                     :indicator indicator))))
 
 (def function free-bindings (bindings)
   (mapc 'free-binding bindings))
@@ -323,7 +326,7 @@
     (when constructor
       (loop for i from 0 below number-of-rows
             do (funcall constructor (cffi:inc-pointer ptr (* i size)))))
-
+    
     (values
      ptr
      size)))
@@ -477,8 +480,8 @@
              (oci-string-to-lisp
               (cffi:mem-ref attribute-value '(:pointer :unsigned-char)) ; OraText*
               (cffi:mem-ref attribute-value-length 'oci:ub-4))))
-
-
+              
+            
       (let ((column-name (oci-string-attr-get oci:+attr-name+))
             (column-type (oci-attr-get oci:+attr-data-type+ 'oci:ub-2))
             (column-size)
@@ -497,7 +500,7 @@
 
         (rdbms.dribble "Retrieving column: name=~W, type=~D, size=~D"
                        column-name column-type column-size)
-
+        
         (when (= column-type oci:+sqlt-num+)
           ;; the type of the precision attribute is 'oci:sb-2, because we
           ;; use an implicit describe here (would be sb-1 for explicit describe)
