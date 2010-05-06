@@ -17,10 +17,10 @@
   (format-string (princ-to-string (length *binding-types*))))
 
 (def method format-sql-literal ((value (eql nil)) (database oracle))
-  (format-string "'F'"))
+  (format-string "'N'"))
 
 (def method format-sql-literal ((value (eql t)) (database oracle))
-  (format-string "'T'"))
+  (format-string "'Y'"))
 
 (def method format-sql-literal ((literal sql-literal) (database oracle))
   (if (unquote-aware-format-sql-literal literal)
@@ -45,7 +45,7 @@
 
 (def method format-sql-syntax-node ((self sql-character-type) (database oracle))
   ;; signal an error when char(1) type is used
-  ;; because it would be interpreted as boolean and 'T' and 'F' would be mapped to t/nil
+  ;; because it would be interpreted as boolean and 'Y' and 'N' would be mapped to t/nil
   (with-slots (size) self
     (if (and size (= size 1))
         (error "CHAR(1) is reserved for booleans in Oracle mapping")
