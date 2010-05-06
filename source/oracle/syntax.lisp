@@ -63,11 +63,14 @@
 (def method format-sql-syntax-node ((self sql-integer-type) (database oracle))
   (with-slots (bit-size) self
     (cond
-      ((cl:null bit-size) (format-string "NUMBER"))
-      ((<= bit-size 16) (format-string "NUMBER(5)"))
-      ((<= bit-size 32) (format-string "NUMBER(10)"))
-      ((<= bit-size 64) (format-string "NUMBER(19)"))
-      (t (format-string "NUMBER")))))
+      ((cl:null bit-size) (format-string "NUMBER(*,0)"))
+      ((<= bit-size 16) (format-string "NUMBER(5,0)"))
+      ((<= bit-size 32) (format-string "NUMBER(10,0)"))
+      ((<= bit-size 64) (format-string "NUMBER(19,0)"))
+      (t (format-string "NUMBER(*,0)")))))
+
+(def method format-sql-syntax-node ((self sql-numeric-type) (database oracle))
+  (format-string "NUMBER"))
 
 (def method format-sql-syntax-node ((self sql-character-varying-type) (database oracle))
   (with-slots (size) self
