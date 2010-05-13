@@ -251,33 +251,35 @@
          (bind-handle-pointer (cffi:foreign-alloc :pointer :initial-element null))
          (is-null (or (eql value :null)
                       (and (cl:null value) (not (typep sql-type 'sql-boolean-type)))))
-         (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if is-null -1 0)))
-         ((:values data-pointer data-size) (if (or (eql value :null)
-                                                   (and (cl:null value)
-                                                        (not (typep sql-type 'sql-boolean-type))))
-                                               (values null 0)
-                                               (funcall converter value))))
-    (rdbms.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
-    (oci-call (oci:bind-by-pos statement-handle
-                               bind-handle-pointer
-                               error-handle
-                               position
-                               data-pointer
-                               data-size
-                               oci-type-code
-                               indicator
-                               null     ; alenp
-                               null     ; rcodep
-                               0        ; maxarr_len
-                               null     ; curelep
-                               *default-oci-flags*))
-    (make-instance 'oracle-binding
-                   :bind-handle-pointer bind-handle-pointer
-                   :sql-type sql-type
-                   :typemap typemap
-                   :data-pointer data-pointer
-                   :data-size data-size
-                   :indicator indicator)))
+         (indicator (cffi:foreign-alloc 'oci:sb-2 :initial-element (if is-null -1 0))))
+    (multiple-value-bind (data-pointer data-size)
+        (if (or (eql value :null)
+                (and (cl:null value) (not (typep sql-type 'sql-boolean-type))))
+            (values null 0)
+            (funcall converter value))
+
+      (rdbms.dribble "Value ~S converted to ~A" value (dump-c-byte-array data-pointer data-size))
+      
+      (oci-call (oci:bind-by-pos statement-handle
+                                 bind-handle-pointer
+                                 error-handle
+                                 position
+                                 data-pointer
+                                 data-size
+                                 oci-type-code
+                                 indicator
+                                 null               ; alenp
+                                 null               ; rcodep
+                                 0                  ; maxarr_len
+                                 null               ; curelep
+                                 *default-oci-flags*))
+      (make-instance 'oracle-binding
+                     :bind-handle-pointer bind-handle-pointer
+                     :sql-type sql-type
+                     :typemap typemap
+                     :data-pointer data-pointer
+                     :data-size data-size
+                     :indicator indicator))))
 
 (def function free-bindings (bindings)
   (mapc 'free-binding bindings))
