@@ -221,7 +221,8 @@
             for type across binding-types
             for value across binding-values
             for binding in (bindings-of statement)
-            when (and (lobp type) (not (member value '(:null nil))))
+            when (and (lob-type-p type)
+                      (not (member value '(:null nil #()) :test #'equalp)))
             do (upload-lob (cffi:mem-aref (data-pointer-of binding) :pointer) value)))
        (values nil (get-row-count-attribute statement)))))) ;; TODO THL what should the first value be?
 
