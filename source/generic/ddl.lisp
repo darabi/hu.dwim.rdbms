@@ -7,13 +7,42 @@
 (in-package :hu.dwim.rdbms)
 
 ;;;;;;
+;;; with-table-export-context
+;;;
+;;; This mechanism allows us to delay parts of CREATE TABLE into later
+;;; ALTER TABLE statements while keeping that process somewhat transparent
+;;; to the caller.
+
+(def special-variable *delayed-create-table-thunks*)
+
+(defun call-with-table-export-context (fun)
+  (let ((*delayed-create-table-thunks* '()))
+    (multiple-value-prog1
+       (funcall fun)
+      (mapc #'funcall *delayed-create-table-thunks*))))
+
+(defmacro with-table-export-context (&body body)
+  `(call-with-table-export-context (lambda () ,@body)))
+
+(defmacro delay-execute-ddl (form)
+  `(push (lambda () (execute-ddl ,form)) *delayed-create-table-thunks*))
+
+;;;;;;
 ;;; Create, drop and alter table primitives (they don't signal for schema change)
 
 ;; TODO reorganize to have the primitives first, and the signalling schema laters at the end separated
 ;; TODO drop constraint-to-action ?
 
 (def (function e) create-table (name columns &key temporary)
-  (execute-ddl (make-instance 'sql-create-table :temporary temporary :name name :columns columns)))
+  (execute-ddl (make-instance 'sql-create-table :temporary temporary :name name :columns columns))
+  (dolist (column columns)
+    (dolist (constraint (constraints-of column))
+      (when (delay-constraint-until-alter-table-p constraint)
+        (let ((constraint constraint))	;closurize
+          (delay-execute-ddl
+           (make-instance 'sql-alter-table
+                          :name name
+                          :actions (list (constraint-to-action constraint name)))))))))
 
 (def (function e) create-temporary-table (name &rest columns)
   (execute-ddl (make-instance 'sql-create-table :name name :temporary :drop :columns columns)))
