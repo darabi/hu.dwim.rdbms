@@ -70,7 +70,8 @@
   (delete-counter-of (command-counter-of *transaction*)))
 
 (def (function e) report-transaction-state ()
-  (cerror "Confirm transaction state and go on" "Reporting ~A with ~A terminal action~%statistics: ~A" *transaction* (terminal-action-of *transaction*) (command-counter-of *transaction*)))
+  (cerror "Confirm transaction state and go on" "Reporting ~A with ~A terminal action~%statistics: ~A" *transaction* (terminal-action-of *transaction*) (command-counter-of *transaction*))
+  (values))
 
 (def (function e) break-on-next-command ()
   (setf (break-on-next-command-p *transaction*) #t))
