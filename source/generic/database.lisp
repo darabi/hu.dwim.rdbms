@@ -40,6 +40,36 @@
      :type string
      :documentation "The password that is used to connect to the database.")))
 
+(def (condition* e) rdbms-error ()
+  ())
+
+(def condition* translated-rdbms-error (rdbms-error)
+  ((original-error)))
+
+(def condition* simple-rdbms-error (simple-error)
+  ())
+
+(def function simple-rdbms-error (message &rest args)
+  (error 'simple-rdbms-error :format-control message :format-arguments args))
+
+(def (condition* e) unable-to-obtain-lock-error (translated-rdbms-error simple-rdbms-error)
+  ())
+
+(def function %signal-translated-simple-rdbms-error (type message-or-nested-condition)
+  (error type
+         :format-control (princ-to-string message-or-nested-condition)
+         :original-error (when (typep message-or-nested-condition 'condition)
+                           message-or-nested-condition)))
+
+(def function unable-to-obtain-lock-error (message-or-nested-condition)
+  (%signal-translated-simple-rdbms-error 'unable-to-obtain-lock-error message-or-nested-condition))
+
+(def (condition* e) deadlock-detected-error (translated-rdbms-error simple-rdbms-error)
+  ())
+
+(def function deadlock-detected-error (message-or-nested-condition)
+  (%signal-translated-simple-rdbms-error 'deadlock-detected-error message-or-nested-condition))
+
 (def method shared-initialize :after ((database database) slot-names
                                      &key transaction-mixin generated-transaction-class-name &allow-other-keys)
   (let ((classes (mapcar #'find-class (transaction-mixin-class database))))
