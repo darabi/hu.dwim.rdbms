@@ -32,7 +32,7 @@
                                            (:file "transaction" :depends-on ("database"))))
                              (:module "syntax"
                               :depends-on ("generic")
-                              :components ((:file "alter-table" :depends-on ("create-table"))
+                              :components ((:file "alter-table" :depends-on ("create-table" "constraint"))
                                            (:file "constraint" :depends-on ("syntax"))
                                            (:file "create-table" :depends-on ("syntax" "expression"))
                                            (:file "delete" :depends-on ("syntax"))
