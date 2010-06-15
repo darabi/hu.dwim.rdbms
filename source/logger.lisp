@@ -8,7 +8,9 @@
 
 (def logger rdbms ())
 
-(def logger sql (rdbms))
+(def logger sql (rdbms)
+  ;; NOTE: in production mode the log statements would be dropped at compile time without explicitly setting the :compile-time-level
+  :compile-time-level +dribble+)
 
 (def (function e) enable-sql-log ()
   (setf (log-level 'sql) +dribble+)
