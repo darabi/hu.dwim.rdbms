@@ -6,9 +6,6 @@
 
 (in-package :hu.dwim.rdbms)
 
-(def condition* transaction-error (simple-rdbms-error)
-  ())
-
 (def class* prepared-statement ()
   ((name)
    (query :documentation "The query passed in when this statement was prepared.")))

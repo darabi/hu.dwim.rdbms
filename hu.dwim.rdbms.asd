@@ -20,10 +20,11 @@
                :ironclad
                :local-time)
   :components ((:module "source"
-                :components ((:file "package")
+                :components ((:file "conditions" :depends-on ("package"))
                              (:file "logger" :depends-on ("package"))
+                             (:file "package")
                              (:module "generic"
-                              :depends-on ("logger" "variables")
+                              :depends-on ("conditions" "logger" "variables")
                               :components ((:file "cursor" :depends-on ("transaction"))
                                            (:file "database")
                                            (:file "ddl" :depends-on ("transaction"))
