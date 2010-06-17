@@ -54,6 +54,11 @@
              (format stream "Adding the column ~S with type ~A in table ~S is a safe operation"
                      (column-name-of error) (column-type-of error) (table-name-of error)))))
 
+(def (condition* e) unconfirmed-schema-change/add-table (unconfirmed-schema-change)
+  ()
+  (:report (lambda (error stream)
+             (format stream "Adding the table ~S is a safe operation" (table-name-of error)))))
+
 (def (condition* e) unconfirmed-destructive-schema-change (unconfirmed-schema-change)
   ())
 

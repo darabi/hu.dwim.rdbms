@@ -84,7 +84,12 @@
                        (format stream "DESTRUCTIVE: Drop table ~S and try operation ~S again" name 'update-table))
              (drop-table name :cascade #t)
              (go :retry)))
-         (create-table name columns))))
+         (progn
+           (when *signal-non-destructive-alter-table-commands*
+             (with-simple-restart
+                 (continue-with-schema-change "Create the table ~S" name)
+               (error 'unconfirmed-schema-change/add-table :table-name name)))
+           (create-table name columns)))))
 
 (def generic rdbms-type-for (type database)
   (:documentation "Maps the given type to the smallest matching type.")
