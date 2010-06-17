@@ -150,7 +150,7 @@
                     (handler-case
                         (rollback-transaction *database* *transaction*)
                       (serious-condition (condition)
-                        (rdbms.warn "Ignoring error while trying to rollback transaction in a failed with-transaction block: ~A" condition))))
+                        (rdbms.warn "Ignoring error while trying to rollback transaction in a failed WITH-TRANSACTION block: ~A" condition))))
                (cleanup-transaction *transaction*))))))))
 
 (def method (setf terminal-action-of) :before (new-value (transaction transaction))
@@ -213,10 +213,12 @@
     (makunbound '*transaction*))
   (values))
 
+;; TODO rename :with-transaction to :ensure-transaction
 (def (function ioe) execute (command &rest args &key visitor bindings result-type (with-transaction *implicit-transaction*)
                                      (implicit-transaction-terminal-action *implicit-transaction-default-terminal-action*) &allow-other-keys)
   "Executes an SQL command. If VISITOR is not present the result is returned in a sequence. The type of the sequence is determined by RESULT-TYPE which is either LIST or VECTOR. When VISITOR is present it will be called for each row in the result."
   (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
+  (check-type with-transaction (member :new :ensure))
   (flet ((%execute-command ()
            (apply 'execute-command *database* *transaction* command args)))
     (if (or (eq :new with-transaction)
