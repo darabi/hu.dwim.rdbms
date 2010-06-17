@@ -218,7 +218,7 @@
                                      (implicit-transaction-terminal-action *implicit-transaction-default-terminal-action*) &allow-other-keys)
   "Executes an SQL command. If VISITOR is not present the result is returned in a sequence. The type of the sequence is determined by RESULT-TYPE which is either LIST or VECTOR. When VISITOR is present it will be called for each row in the result."
   (declare (ignore visitor bindings result-type))   ; for slime to bring up the arguments
-  (check-type with-transaction (member :new :ensure))
+  (check-type with-transaction (member nil :new :ensure))
   (flet ((%execute-command ()
            (apply 'execute-command *database* *transaction* command args)))
     (if (or (eq :new with-transaction)
