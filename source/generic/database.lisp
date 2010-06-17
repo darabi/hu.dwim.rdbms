@@ -9,8 +9,6 @@
 ;;;;;;
 ;;; Database
 
-(def (special-variable e :documentation "The current database, unbound by default. Can be rebound to access multiple databases within nested dynamic scope.") *database*)
-
 (def (class* e) database ()
   ((connection-specification
     :documentation "Backend specific connection data, usually a plist of args passed to the connect function.")

@@ -66,8 +66,6 @@
 ;;;;;;
 ;;; Update table
 
-(def special-variable *signal-non-destructive-alter-table-commands* *load-as-production?*)
-
 (def (condition* e) unconfirmed-schema-change (serious-condition)
   ((table-name
     :type string)

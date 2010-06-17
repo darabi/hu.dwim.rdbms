@@ -23,7 +23,7 @@
                 :components ((:file "package")
                              (:file "logger" :depends-on ("package"))
                              (:module "generic"
-                              :depends-on ("logger")
+                              :depends-on ("logger" "variables")
                               :components ((:file "cursor" :depends-on ("transaction"))
                                            (:file "database")
                                            (:file "ddl" :depends-on ("transaction"))
@@ -47,4 +47,5 @@
                                            (:file "sexp" :depends-on ("syntax" "expression"))
                                            (:file "syntax" :depends-on ("format"))
                                            (:file "type" :depends-on ("syntax"))
-                                           (:file "update" :depends-on ("syntax"))))))))
+                                           (:file "update" :depends-on ("syntax"))))
+                             (:file "variables" :depends-on ("package"))))))
