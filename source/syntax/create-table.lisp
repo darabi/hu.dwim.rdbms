@@ -87,7 +87,11 @@
     :type list)
    (default-value
     :type sql-syntax-node
-    :documentation "May be an sql literal or an sql expression AST node. Note: expressions as default values are not supported on all backends."))
+    :documentation "May be an sql literal or an sql expression AST node. Note: expressions as default values are not supported on all backends.")
+   (oid-default-statement		;always delayed as alter table
+    nil
+    :type (or null sql-add-oid-column-default)
+    :accessor oid-default-statement-of))
   (:documentation "An SQL column specification.")
   (:format-sql-syntax-node
    (format-sql-identifier name)
