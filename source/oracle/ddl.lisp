@@ -6,6 +6,66 @@
 
 (in-package :hu.dwim.rdbms.oracle)
 
+(macrolet ((defcache (fun (&rest args) &body body)
+	     `(defmethod ,fun :around (,@args (database oracle))
+		(let ((tab (ddl-query-cache-of database)))
+		  (if tab
+		      ,(if body
+			   `(progn ,@body)
+			   `(symbol-macrolet
+				((cache (gethash ',fun tab :empty)))
+			      (if (eq cache :empty)
+				  (setf cache (call-next-method))
+				  cache)))
+		      (call-next-method))))))
+  (defcache database-list-sequences ())
+  (defcache database-list-tables ())
+  (defcache database-list-views ())
+  (defcache database-list-triggers ())
+  ;;
+  (defcache database-list-tables-and-columns ())
+  (defcache database-list-table-columns (name)
+    (mapcar #'cdr
+	    (remove name
+		    (database-list-tables-and-columns database)
+		    :key #'car
+		    :test-not #'equal)))
+  ;;
+  (defcache database-list-tables-and-indices ())
+  (defcache database-list-table-indices (name)
+    (mapcar #'cdr
+	    (remove name
+		    (database-list-tables-and-indices database)
+		    :key #'car
+		    :test-not #'equal)))
+  ;;
+  (defcache database-list-tables-and-primary-constraints ())
+  (defcache database-list-table-primary-constraints (name)
+    (mapcar #'cdr
+	    (remove name
+		    (database-list-tables-and-primary-constraints database)
+		    :key #'car
+		    :test-not #'equal)))
+  (defcache database-list-tables-and-foreign-keys ())
+  (defcache database-list-table-foreign-keys (name)
+    (remove name
+	    (database-list-tables-and-foreign-keys database)
+	    :key #'source-table-of
+	    :test-not #'equal))
+  (defcache database-list-view-definitions ())
+  (defcache database-view-definition (name)
+    (second
+     (find name
+	   (database-list-view-definitions database)
+	   :key #'car
+	   :test #'string=))))
+
+;; FIXME?  These functions return only object names accessible without
+;; qualification by a schema name.  For use by Perec that is fine,
+;; because Perec does not support access to more than one schema anyway.
+;; But Rdbms as a general-purpose library should be taught about access
+;; to multiple schemas/databases.
+;;
 (def method database-list-sequences ((database oracle))
   (mapcar #'first (execute "select sequence_name from user_sequences" :result-type 'list)))
 
