@@ -12,11 +12,11 @@
 (def condition* translated-rdbms-error (rdbms-error)
   ((original-error)))
 
-(def condition* simple-rdbms-error (simple-error)
+(def (condition* e) simple-rdbms-error (simple-error)
   ())
 
-(def function simple-rdbms-error (message &rest args)
-  (error 'simple-rdbms-error :format-control message :format-arguments args))
+(def function simple-rdbms-error (message &rest format-arguments)
+  (error 'simple-rdbms-error :format-control message :format-arguments format-arguments))
 
 (def (condition* e) unable-to-obtain-lock-error (translated-rdbms-error simple-rdbms-error)
   ())
@@ -54,10 +54,31 @@
              (format stream "Adding the column ~S with type ~A in table ~S is a safe operation"
                      (column-name-of error) (column-type-of error) (table-name-of error)))))
 
-(def (condition* e) unconfirmed-schema-change/add-table (unconfirmed-schema-change)
+(def (condition* e) unconfirmed-schema-change/create-table (unconfirmed-schema-change)
   ()
   (:report (lambda (error stream)
              (format stream "Adding the table ~S is a safe operation" (table-name-of error)))))
+
+(def (condition* e) unconfirmed-schema-change/add-foreign-key (unconfirmed-schema-change)
+  ((constraint-name))
+  (:report (lambda (error stream)
+             (format stream "Adding a foreign key ~A is a safe operation"
+                     (constraint-name-of error)))))
+
+(def (condition* e) unconfirmed-schema-change/drop-foreign-key (unconfirmed-schema-change)
+  ((constraint-name))
+  (:report (lambda (error stream)
+             (format stream "Dropping a foreign key ~A is a safe operation"
+                     (constraint-name-of error)))))
+
+(def (condition* e) unconfirmed-schema-change/replace-foreign-key (unconfirmed-schema-change)
+  ((constraint-name))
+  (:report (lambda (error stream)
+             (format stream "Replacing a foreign key ~A is a safe operation"
+                     (constraint-name-of error)))))
+
+;;;;;;
+;;; destructive DDL
 
 (def (condition* e) unconfirmed-destructive-schema-change (unconfirmed-schema-change)
   ())

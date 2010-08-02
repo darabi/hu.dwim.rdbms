@@ -94,11 +94,8 @@
            #:*signal-non-destructive-alter-table-commands*
 	   #:oid-default-statement-of
 
-           #:backend-type
-
-           #:simple-rdbms-error
-           #:simple-rdbms-error-code
-           #:simple-rdbms-error-message)
+           ;; TODO what is this? delme?
+           #:backend-type)
   (:readtable-setup
    (hu.dwim.util:enable-standard-hu.dwim-syntaxes)
    (hu.dwim.syntax-sugar:enable-lambda-with-bang-args-syntax)))

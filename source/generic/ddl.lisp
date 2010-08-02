@@ -105,35 +105,6 @@
 ;;;;;;
 ;;; Update table
 
-(def (condition* e) unconfirmed-schema-change (serious-condition)
-  ((table-name
-    :type string)
-   (column-name
-    :type string)))
-
-(def (condition* e) unconfirmed-schema-change/add-column (unconfirmed-schema-change)
-  ((column-type))
-  (:report (lambda (error stream)
-             (format stream "Adding the column ~S with type ~A in table ~S is a safe operation"
-                     (column-name-of error) (column-type-of error) (table-name-of error)))))
-
-(def (condition* e) unconfirmed-destructive-schema-change (unconfirmed-schema-change)
-  ())
-
-(def (condition* e) unconfirmed-destructive-schema-change/alter-column-type (unconfirmed-destructive-schema-change)
-  ((old-type)
-   (new-type)
-   (new-rdbms-type))
-  (:report (lambda (error stream)
-             (format stream "Changing the type of column ~S from the current rdbms type ~A to new rdbms type ~A (derived from ~A) in table ~S will be issued in a separate transaction and your database will try to convert existing data. THIS MAY RESULT IN DATA LOSS!"
-                     (column-name-of error) (old-type-of error) (new-rdbms-type-of error) (new-type-of error) (table-name-of error)))))
-
-(def (condition* e) unconfirmed-destructive-schema-change/drop-column (unconfirmed-destructive-schema-change)
-  ()
-  (:report (lambda (error stream)
-             (format stream "Dropping the column ~S from table ~S is a destructive operation, which needs confirmation"
-                     (column-name-of error) (table-name-of error)))))
-
 (def (function e) continue-with-schema-change (&optional condition)
   (invoke-restart (find-restart 'continue-with-schema-change condition)))
 
@@ -156,7 +127,7 @@
            (when *signal-non-destructive-alter-table-commands*
              (with-simple-restart
                  (continue-with-schema-change "Create the table ~S" name)
-               (error 'unconfirmed-schema-change/add-table :table-name name)))
+               (error 'unconfirmed-schema-change/create-table :table-name name)))
            (create-table name columns)))))
 
 (def generic rdbms-type-for (type database)

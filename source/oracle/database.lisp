@@ -71,9 +71,20 @@
     (t
      (simple-rdbms-error "Unknown OCI error, code is ~A" result))))
 
+(def (condition* ea) oci-error (rdbms-error)
+  ((oci-error-message nil)
+   (oci-error-code nil))
+  (:report (lambda (condition stream)
+	     (format stream "OCI error: ~@[[~A~]]: ~@[~A~]"
+                     (oci-error-code-of condition)
+                     (oci-error-message-of condition)))))
+
+(def function oci-error (message &optional code)
+  (error 'oci-error :oci-error-message message :oci-error-code code))
+
 (def function handle-oci-error ()
   (unless (error-handle-pointer *transaction*)
-    (simple-rdbms-error "OCI error in initialization stage, too early to query the actual error"))
+    (oci-error "OCI error in initialization stage, too early to query the actual error"))
   (cffi:with-foreign-objects ((error-code 'oci:sb-4))
     (cffi:with-foreign-pointer (error-buffer oci:+error-maxmsg-size+)
 
@@ -82,11 +93,10 @@
                      error-code
                      error-buffer
                      oci:+error-maxmsg-size+ oci:+htype-error+)
-      (let ((error-message (oci-string-to-lisp error-buffer))
-	    (code (cffi:mem-ref error-code 'oci:sb-4)))
-        (rdbms.error "Signalling error: ~A" error-message)
-        (simple-rdbms-error error-message code)))))
-
+      (bind ((message (oci-string-to-lisp error-buffer))
+             (code (cffi:mem-ref error-code 'oci:sb-4)))
+        (rdbms.debug "Signalling OCI error: ~A, ~A" message code)
+        (oci-error message code)))))
 
 (def constant +maximum-rdbms-name-length+ 30)
 
