@@ -6,7 +6,7 @@
 
 (in-package :hu.dwim.rdbms.documentation)
 
-(def project :hu.dwim.rdbms :path (system-pathname :hu.dwim.rdbms))
+(def project :hu.dwim.rdbms)
 
 (def method make-project-tab-pages ((component project/detail/inspector) (project (eql (find-project :hu.dwim.rdbms))))
   (append (list (tab-page/widget (:selector (icon/widget switch-to-tab-page :label "User guide"))
