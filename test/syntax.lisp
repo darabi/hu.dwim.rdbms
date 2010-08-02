@@ -127,7 +127,7 @@
            (funcall
             (compile
              nil
-             (expand-sql-ast-into-lambda-form-cached
+             (hu.dwim.rdbms::expand-sql-ast-into-lambda-form-cached
               (sql-select :columns '(a b)
                           :tables '(t)
                           :where criteria)))))))))

@@ -133,9 +133,9 @@
          (create-table 'test_table columns)
          (with-transaction
            (execute [insert test_table (a b) (:null :null)])
-           (update-records 'test_table columns (list 1 "test_table"))
+           (is (eql 1 (update-records 'test_table columns (list 1 "test_table"))))
            (let ((row (first-elt (select-records columns '(test_table)))))
-             (is (= (elt row 0) 1))
+             (is (eql (elt row 0) 1))
              (is (string= (elt row 1) "test_table")))))
     (ignore-errors
       (execute-ddl [drop table test_table]))))
@@ -149,7 +149,7 @@
          (is (length= 1 (execute
                          (compile
                           nil
-                          (expand-sql-ast-into-lambda-form-cached
+                          (hu.dwim.rdbms::expand-sql-ast-into-lambda-form-cached
                            (sql-select :columns '(a)
                                        :tables '(test_table)
                                        :where (sql-= (sql-identifier :name 'a)
@@ -158,7 +158,7 @@
          (is (length= 1 (execute
                          (compile
                           nil
-                          (expand-sql-ast-into-lambda-form-cached
+                          (hu.dwim.rdbms::expand-sql-ast-into-lambda-form-cached
                            (sql-select :columns '(a)
                                        :tables '(test_table)
                                        :where (sql-= (sql-identifier :name 'a)
