@@ -67,13 +67,37 @@
 ;; to multiple schemas/databases.
 ;;
 (def method database-list-sequences ((database oracle))
-  (mapcar #'first (execute "select sequence_name from user_sequences" :result-type 'list)))
+  (mapcar #'first (execute (format nil "select sequence_name from all_sequences where sequence_owner='~A'"
+				   (database-effective-schema database))
+			   :result-type 'list)))
 
 (def method database-list-tables ((database oracle))
-  (mapcar #'first (execute "select table_name from user_tables" :result-type 'list)))
+  (mapcar #'first (execute (format nil "select table_name from all_tables where owner='~A'"
+				   (database-effective-schema database))
+			   :result-type 'list)))
 
 (def method database-list-views ((database oracle))
-  (mapcar #'first (execute "select view_name from user_views" :result-type 'list)))
+  (mapcar #'first (execute (format nil "select view_name from all_views where owner='~A'"
+				   (database-effective-schema database))
+			   :result-type 'list)))
+
+(def method database-list-view-definitions ((database oracle))
+  (execute (format nil "select view_name, dbms_metadata.get_ddl('VIEW',view_name, owner) from all_views where owner='~A'"
+		   (database-effective-schema database))
+	   :result-type 'list))
+
+(def method database-view-definition (view-name (database oracle))
+  (caar (execute (format nil "select dbms_metadata.get_ddl('VIEW',view_name,owner) from all_views where view_name='~A' and owner='~A'"
+			 view-name
+		   (database-effective-schema database))
+	   :result-type 'list)))
+
+(def method database-list-triggers ((database oracle))
+  ;; Must be all_triggers, not all_objects, because triggers in a different
+  ;; schema don't get shown in all_objects -- in contrast to tables:
+  (mapcar #'first (execute (format nil "select trigger_name from all_triggers where owner='~A'"
+				   (database-effective-schema database))
+			   :result-type 'list)))
 
 (def method database-list-table-columns (name (database oracle))
   (map 'list
@@ -86,9 +110,39 @@
                            (aref column 3)
                            (aref column 4))))
    (execute
-    (format nil "select column_name, data_type, char_length, data_precision, data_scale from user_tab_columns where table_name = '~A'"
-            name)
+    (format nil "select column_name, data_type, char_length, data_precision, data_scale from all_tab_columns where table_name = '~A' and owner='~A'"
+            name
+	    (database-effective-schema database))
     :result-type 'vector)))
+
+(def method database-list-tables-and-columns ((database oracle))
+  (map 'list
+   (lambda (column)
+     (cons (aref column 5)
+	   (make-instance 'sql-column
+			  :name (aref column 0)
+			  :type (sql-type-for-internal-type
+				 (aref column 1)
+				 (aref column 2)
+				 (aref column 3)
+				 (aref column 4)))))
+   (execute
+    (format nil "select column_name, data_type, char_length, data_precision, data_scale, table_name from all_tab_columns where owner='~A'"
+	    (database-effective-schema database))
+    :result-type 'vector)))
+
+(def method database-list-tables-and-indices ((database oracle))
+  (mapcar
+   (lambda (column)
+     (cons (third column)
+	   (make-instance 'sql-index
+			  :name (first column)
+			  :table-name (third column)
+			  :unique (equal "UNIQUE" (second column)))))
+   (execute
+    (format nil "select index_name, uniqueness, table_name from all_indexes where owner='~A'"
+	    (database-effective-schema database))
+    :result-type 'list)))
 
 (def method database-list-table-indices (name (database oracle))
   (mapcar
@@ -98,16 +152,28 @@
                     :table-name name
                     :unique (equal "UNIQUE" (second column))))
    (execute
-    (format nil "select index_name, uniqueness from user_indexes where table_name = '~A'"
-            name)
+    (format nil "select index_name, uniqueness from all_indexes where table_name = '~A' and owner='~A'"
+            name
+	    (database-effective-schema database))
+    :result-type 'list)))
+
+(def method database-list-tables-and-primary-constraints ((database oracle))
+  (mapcar
+   (lambda (column)
+     (cons (second column)
+	   (make-instance 'sql-constraint :name (first column))))
+   (execute
+    (format nil "select constraint_name, table_name from all_constraints where constraint_type='P' and owner='~A'"
+	    (database-effective-schema database))
     :result-type 'list)))
 
 (def method database-list-table-primary-constraints (name (database oracle))
   (mapcar
    (lambda (column) (make-instance 'sql-constraint :name (first column)))
    (execute
-    (format nil "select constraint_name from user_constraints where constraint_type='P' and table_name='~A'"
-            name)
+    (format nil "select constraint_name from all_constraints where constraint_type='P' and table_name='~A' and owner='~A'"
+            name
+	    (database-effective-schema database))
     :result-type 'list)))
 
 (defun sql-rule-name-to-lisp (str)
@@ -120,6 +186,39 @@
       (:set\ null :set-null)
       (:no\ action :restrict)
       (t (error "invalid action: ~A" str)))))
+
+(def method database-list-tables-and-foreign-keys ((database oracle))
+  (map 'list
+       (lambda (row)
+	 (make-instance 'foreign-key-descriptor
+			:name (elt row 0)
+			:source-table (elt row 1)
+			:source-column (elt row 2)
+			:target-table (elt row 3)
+			:target-column (elt row 4)
+			:delete-rule (sql-rule-name-to-lisp (elt row 5))
+			;; pretend that update and delete are the same:
+			:update-rule (sql-rule-name-to-lisp (elt row 5))))
+       (execute
+	(format nil "SELECT c3.constraint_name,
+                            c1.table_name, c1.column_name,
+                            c2.table_name, c2.column_name,
+                            c4.delete_rule
+                       FROM all_tab_columns c1
+                         JOIN all_cons_columns c3
+                           ON c1.table_name = c3.table_name
+                              AND c3.owner='~A'
+                              AND c1.column_name = c3.column_name
+                         JOIN all_constraints c4
+                           ON c3.constraint_name = c4.constraint_name
+                              AND c4.owner='~:*~A'
+                         JOIN all_cons_columns c2
+                           ON c4.r_constraint_name = c2.constraint_name
+                              AND c2.owner='~:*~A'
+                              AND c3.position = c2.position
+                     WHERE c1.owner='~:*~A'
+                           AND c4.constraint_type = 'R'"
+		(database-effective-schema database)))))
 
 (def method database-list-table-foreign-keys (table-name (database oracle))
   (map 'list
@@ -138,15 +237,20 @@
                             c1.table_name, c1.column_name,
                             c2.table_name, c2.column_name,
                             c4.delete_rule
-                       FROM user_tab_columns c1
-                         JOIN user_cons_columns c3
+                       FROM all_tab_columns c1
+                         JOIN all_cons_columns c3
                            ON c1.table_name = c3.table_name
+                              AND c3.owner='~A'
                               AND c1.column_name = c3.column_name
-                         JOIN user_constraints c4
+                         JOIN all_constraints c4
                            ON c3.constraint_name = c4.constraint_name
-                         JOIN user_cons_columns c2
+                              AND c4.owner='~:*~A'
+                         JOIN all_cons_columns c2
                            ON c4.r_constraint_name = c2.constraint_name
+                              AND c2.owner='~:*~A'
                               AND c3.position = c2.position
-                     WHERE c1.table_name='~A'
+                     WHERE c1.owner='~:*~A'
+                           AND c1.table_name='~A'
                            AND c4.constraint_type = 'R'"
+		(database-effective-schema database)
 		(string-downcase table-name)))))
