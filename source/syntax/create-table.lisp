@@ -87,11 +87,8 @@
     nil
     :type list)
    (default-value
-    :type t)
-   (oid-default-statement		;always delayed as alter table
-    nil
-    :type (or null sql-add-oid-column-default)
-    :accessor oid-default-statement-of))
+    :type sql-syntax-node
+    :documentation "May be an sql literal or an sql expression AST node. Note: expressions as default values are not supported on all backends."))
   (:documentation "An SQL column specification.")
   (:format-sql-syntax-node
    (format-sql-identifier name)
@@ -99,20 +96,12 @@
      (format-char " ")
      (format-sql-syntax-node type))
    (when (slot-boundp -self- 'default-value)
-     (format-string " DEFAULT ")
-     (format-sql-literal default-value))
+     (format-string " DEFAULT (")
+     (format-sql-syntax-node default-value)
+     (format-string ")"))
    (mapc (lambda (constraint)
 	   (unless (delay-constraint-until-alter-table-p constraint)
 	     (format-sql-syntax-node constraint)))
 	 constraints))
   (:format-sql-identifier
    (format-sql-identifier name)))
-
-(def syntax-node sql-add-oid-column-default (sql-ddl-statement)
-  ((table-name
-    :type sql-identifier*)
-   (column-name
-    :type sql-identifier*)
-   (class-id
-    :type integer))
-  (:documentation "An SQL ALTER TABLE statement to add a sequence-provided default value to the oid column."))
