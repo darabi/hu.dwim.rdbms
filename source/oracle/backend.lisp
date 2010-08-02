@@ -8,7 +8,7 @@
 
 (cffi:define-foreign-library (oracle-oci :search-path #P"/usr/lib/oracle/xe/app/oracle/product/10.2.0/client/lib/")
   (:unix "libocixe.so")
-  (:windows "libocixe.dll")
+  (:windows (:or "ocixe.dll" "oci.dll"))
   (t (:default "libocixe")))
 
 ;;;;;;
