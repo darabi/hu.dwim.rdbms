@@ -71,7 +71,7 @@
 (def function connect (transaction)
   (assert (cl:null (environment-handle-pointer transaction)))
   (cffi:load-foreign-library 'oracle-oci)
-  (bind (((&key datasource user-name (password "")) (connection-specification-of (database-of transaction))))
+  (bind (((&key datasource user-name (password "") schema) (connection-specification-of (database-of transaction))))
     (macrolet ((alloc (&rest whats)
                  `(progn
                    ,@(loop for what :in whats
@@ -130,7 +130,13 @@
             (return-from connecting))
           (unless (cffi:null-pointer-p (session-handle-of transaction))
             (oci-call (oci:handle-free (session-handle-of transaction) oci:+htype-session+))
-            (setf (session-handle-of transaction) null)))))
+            (setf (session-handle-of transaction) null)))
+    (when schema
+      (setf (session-schema transaction) schema)
+      (execute-command (database-of transaction)
+		       transaction
+		       (format nil "ALTER SESSION SET CURRENT_SCHEMA=~A"
+			       schema)))))
 
 (def macro ignore-errors* (&body body)
   `(block nil
