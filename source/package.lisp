@@ -81,13 +81,10 @@
            #:sql-foreign-key-constraint
            #:sql-add-foreign-key-constraint-action
            #:constraints-of
-           #:delay-constraint-until-alter-table-p
-           #:with-table-export-context
            #:constraint-to-action
            #:list-table-foreign-keys
            #:database-list-table-foreign-keys
            #:sql-drop-constraint-action
-	   #:sql-add-oid-column-default
            #:foreign-key-descriptor
            #:drop-foreign-key
            #:drop-table-foreign-keys
