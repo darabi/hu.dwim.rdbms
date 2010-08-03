@@ -78,15 +78,15 @@
 (def function calculate-rdbms-name-with-utf-8-length-limit (name limit &key prefix)
   "Cuts off the end of names that are too long and appends the hash of the original name."
   (assert (>= limit 8))
-  (let ((name-as-string (string+ prefix (string-downcase name))))
+  (bind ((name-as-string (string+ prefix (string-downcase name))))
     (iter (for char :in-sequence "+*\\/-~%")
           (nsubstitute #\_ char name-as-string :test #'char=))
-    (let ((name-as-bytes (string-to-octets name-as-string :encoding :utf-8)))
+    (bind ((name-as-bytes (string-to-octets name-as-string :encoding :utf-8)))
       (when (> (length name-as-bytes)
                limit)
-        (let ((hash
-               (ironclad:byte-array-to-hex-string
-                (ironclad:digest-sequence :crc32 name-as-bytes))))
+        (bind ((hash (ironclad:byte-array-to-hex-string
+                      (ironclad:digest-sequence :crc32 name-as-bytes))))
+          ;; drop chars one-by-one because we have no idea about their UTF-8 length
           (iter (while (> (length name-as-bytes)
                           (- limit 8)))
                 (setf name-as-string (subseq name-as-string 0 (1- (length name-as-string))))

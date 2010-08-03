@@ -477,9 +477,10 @@
         (format-sql-identifier (name-of x) database))))
 
 ;; TODO THL class for each operator for easier dispatch?
-(def method format-sql-syntax-node ((x sql-unary-operator) (database oracle))
-  (with-slots (name expression) x
+(def method format-sql-syntax-node ((node sql-unary-operator) (database oracle))
+  (bind (((:read-only-slots name expression) node))
     (cond
+      ;; TODO WTF? clean up operator representation
       ((equal "@" name)
        (format-string "ABS(")
        (format-sql-syntax-node expression database)
@@ -501,8 +502,9 @@
 
 ;; TODO THL class for each operator for easier dispatch?
 (def method format-sql-syntax-node ((x sql-binary-operator) (database oracle))
-  (with-slots (name left right) x
+  (bind (((:read-only-slots name left right) x))
     (cond
+      ;; TODO WTF? clean up operator representation
       ((equal "&" name)
        (format-string "BITAND(")
        (format-sql-syntax-node left database)

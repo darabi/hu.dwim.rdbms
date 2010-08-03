@@ -56,6 +56,7 @@
     (#.oci:+no-data+
      (simple-rdbms-error "OCI No data found"))
     (#.oci:+success-with-info+
+     ;; TODO warn or notify somehow?
      #+nil(simple-rdbms-error "Internal error: unexpected oci:+success-with-info+")
      result)
     (#.oci:+invalid-handle+
@@ -87,7 +88,6 @@
     (oci-error "OCI error in initialization stage, too early to query the actual error"))
   (cffi:with-foreign-objects ((error-code 'oci:sb-4))
     (cffi:with-foreign-pointer (error-buffer oci:+error-maxmsg-size+)
-
       (oci:error-get (error-handle-of *transaction*) 1
                      (cffi:null-pointer)
                      error-code

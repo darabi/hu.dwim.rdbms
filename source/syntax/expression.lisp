@@ -338,6 +338,7 @@
 ;;;;;;
 ;;; false expression
 
+;; TODO delme and move to perec
 (def syntax-node sql-false-expression (sql-query-expression)
   ()
   (:format-sql-syntax-node

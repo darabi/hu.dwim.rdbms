@@ -6,6 +6,8 @@
 
 (in-package :hu.dwim.rdbms)
 
+;; Standard SQL syntax nodes based on http://savage.net.au/SQL/sql-2003-2.bnf.html
+
 ;;;;;;
 ;;; Syntax node
 

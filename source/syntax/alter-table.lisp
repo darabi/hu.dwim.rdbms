@@ -67,8 +67,8 @@
   ((source-columns :type list)
    (target-columns :type list)
    (target-table :type string)
-   (delete-rule :type foreign-key-action)
-   (update-rule :type foreign-key-action))
+   (delete-rule :type sql-foreign-key-action)
+   (update-rule :type sql-foreign-key-action))
   (:format-sql-syntax-node
    (call-next-method)
    (format-string "FOREIGN KEY (")
@@ -85,6 +85,7 @@
    (format-sql-syntax-node (make-instance 'sql-foreign-key-action
 					  :event :update
 					  :action update-rule))
+   ;; TODO these should most probably be boolean parameters...
    (format-string  " DEFERRABLE INITIALLY IMMEDIATE")))
 
 (def syntax-node sql-drop-constraint-action (sql-syntax-node)
@@ -104,16 +105,14 @@
 ;; constraint.lisp and those in alter-table.lisp.  Here's a conversion
 ;; routine:
 
-(defgeneric constraint-to-action (constraint table-name))
+(def generic constraint-to-action (constraint table-name))
 
-(defmethod constraint-to-action
-    ((constraint sql-primary-key-constraint) table-name)
+(def method constraint-to-action ((constraint sql-primary-key-constraint) table-name)
   (declare (ignore table-name))
   (make-instance 'sql-add-primary-key-constraint-action
 		 :columns (list (name-of constraint))))
 
-(defmethod constraint-to-action
-    ((constraint sql-foreign-key-constraint) table-name)
+(def method constraint-to-action ((constraint sql-foreign-key-constraint) table-name)
   (assert (name-of constraint))
   ;; Note that SQL-FOREIGN-KEY-CONSTRAINT is a named class, and its NAME
   ;; is the column name, but SQL-ADD-FOREIGN-KEY-CONSTRAINT-ACTION has a

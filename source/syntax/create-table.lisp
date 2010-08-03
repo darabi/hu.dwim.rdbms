@@ -64,7 +64,7 @@
   ((type
     :type sql-type)
    (constraints
-    nil
+    '()
     :type list)
    (default-value
     :type sql-syntax-node

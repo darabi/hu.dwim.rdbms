@@ -166,7 +166,7 @@
        (eq (delete-rule-of descriptor) (delete-rule-of constraint))))
 
 (defun update-existing-table-foreign-keys (table-name columns)
-  (let* ((table-fkeys (list-table-foreign-keys table-name))
+  (bind ((table-fkeys (list-table-foreign-keys table-name))
 	 (add-actions (mapcar (lambda (c)
 				(constraint-to-action c table-name))
 			      (collect-column-foreign-keys columns))))

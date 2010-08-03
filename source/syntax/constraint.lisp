@@ -17,8 +17,8 @@
 (def syntax-node sql-foreign-key-constraint (sql-constraint-with-tablespace)
   ((target-table :type string)
    (target-column :type string)
-   (delete-rule :type foreign-key-action)
-   (update-rule :type foreign-key-action))
+   (delete-rule :type sql-foreign-key-action)
+   (update-rule :type sql-foreign-key-action))
   (:format-sql-syntax-node
    (format-string " REFERENCES ")
    (format-sql-identifier target-table)
@@ -34,7 +34,7 @@
 					  :action update-rule))))
 
 (def syntax-node sql-foreign-key-action (sql-syntax-node)
-  ((action :type foreign-key-action)
+  ((action :type sql-foreign-key-action)
    (event :type (member :delete :update)))
   (:format-sql-syntax-node
    (format-string
