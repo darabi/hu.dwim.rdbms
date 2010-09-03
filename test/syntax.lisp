@@ -217,27 +217,27 @@
   (sql-create-table :name "a"
                     :columns (list (sql-column :name "a"
                                                :type (sql-integer-type))))
-  ((oracle "CREATE TABLE \"a\" (\"a\" NUMBER)")
+  ((oracle "CREATE TABLE \"a\" (\"a\" NUMBER(*,0))")
    (t "CREATE TABLE a (a NUMERIC)"))
 
   (sql-create-table :temporary :drop
                     :name "a"
                     :columns (list (sql-column :name "a"
                                                :type (sql-integer-type))))
-  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"a\" (\"a\" NUMBER) ON COMMIT DROP")
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"a\" (\"a\" NUMBER(*,0)) ON COMMIT DROP")
    (t "CREATE GLOBAL TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")))
 
 (def ast-dialect-test test/syntax/format/alter-table
   (sql-alter-table :name "a"
                    :actions (list (sql-add-column-action :name "a"
                                                          :type (sql-integer-type))))
-  ((oracle "ALTER TABLE \"a\" ADD (\"a\" NUMBER)")
+  ((oracle "ALTER TABLE \"a\" ADD (\"a\" NUMBER(*,0))")
    (t "ALTER TABLE a ADD a NUMERIC"))
 
   (sql-alter-table :name "a"
                    :actions (list (sql-alter-column-type-action :name "a"
                                                                 :type (sql-integer-type))))
-  ((oracle "ALTER TABLE \"a\" MODIFY (\"a\" NUMBER)")
+  ((oracle "ALTER TABLE \"a\" MODIFY (\"a\" NUMBER(*,0))")
    (t "ALTER TABLE a ALTER COLUMN a TYPE NUMERIC"))
 
   (sql-alter-table :name "a"
