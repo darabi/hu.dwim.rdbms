@@ -67,12 +67,12 @@
    (t "SELECT foo.column, bar FROM test_table test_table_alias"))
 
   '(create table (:temporary :drop) test_table ((col1 varchar) ("col2" (integer 32))))
-  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col1\" VARCHAR2, \"col2\" NUMBER(10)) ON COMMIT DROP")
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col1\" VARCHAR2, \"col2\" NUMBER(10,0)) ON COMMIT DROP")
    (postgresql "CREATE GLOBAL TEMPORARY TABLE test_table (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP")
    (sqlite "CREATE GLOBAL TEMPORARY TABLE test_table (col1 CHARACTER VARYING, col2 INTEGER) ON COMMIT DROP"))
 
   '(create table (:temporary :delete-rows) test_table (("col2" (integer 32))))
-  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col2\" NUMBER(10)) ON COMMIT DELETE ROWS")
+  ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col2\" NUMBER(10,0)) ON COMMIT DELETE ROWS")
    (postgresql "CREATE GLOBAL TEMPORARY TABLE test_table (col2 INT) ON COMMIT DELETE ROWS")
    (sqlite "CREATE GLOBAL TEMPORARY TABLE test_table (col2 INTEGER) ON COMMIT DELETE ROWS")))
 
