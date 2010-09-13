@@ -171,10 +171,12 @@
            (when *transaction*
              (unwind-protect
                   (unless body-finished?
-                    (handler-case
-                        (rollback-transaction *database* *transaction*)
-                      (serious-condition (condition)
-                        (rdbms.warn "Ignoring error while trying to rollback transaction in a failed WITH-TRANSACTION block: ~A" condition))))
+                    (block try-to-rollback
+                      (with-layered-error-handlers ((lambda (error &key &allow-other-keys)
+                                                      (rdbms.error (build-backtrace-string error :message "Error while trying to rollback transaction in a failed WITH-TRANSACTION block")))
+                                                    (lambda (&key &allow-other-keys)
+                                                      (return-from try-to-rollback)))
+                        (rollback-transaction *database* *transaction*))))
                (cleanup-transaction *transaction*))))))))
 
 (def method (setf terminal-action-of) :before (new-value (transaction transaction))
