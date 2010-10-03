@@ -174,7 +174,8 @@
                     (block try-to-rollback
                       (with-layered-error-handlers ((lambda (error &key &allow-other-keys)
                                                       (rdbms.error (build-backtrace-string error :message "Error while trying to rollback transaction in a failed WITH-TRANSACTION block")))
-                                                    (lambda (&key &allow-other-keys)
+                                                    (lambda (reason &key &allow-other-keys)
+                                                      (declare (ignore reason))
                                                       (return-from try-to-rollback)))
                         (rollback-transaction *database* *transaction*))))
                (cleanup-transaction *transaction*))))))))
