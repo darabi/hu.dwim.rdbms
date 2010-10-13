@@ -42,6 +42,7 @@
          ((<= bit-size 64)
           (format-string "DOUBLE PRECISION")))))
 
+;; FIXME so, is this signed or not? bit-size needs to be interpreted in the light of that... probably it should behave like cl:integer with upper/lower bounds and bit-size should be dropped altogether...
 (def syntax-node sql-integer-type (sql-bit-sized-type)
   ()
   (:format-sql-syntax-node

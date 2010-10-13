@@ -124,8 +124,8 @@
   (unless (or database (boundp '*database*))
     (error "Cannot start transaction because database was not provided, either use WITH-DATABASE or provide a database to WITH-TRANSACTION*"))
   (bind ((*database* (or database *database*))
-         (*transaction* nil)
-         (body-finished? #f)
+         (*transaction*)
+         (body-finished?)
          (*transaction-creator*
           (let ((db *database*)
                 (ta default-terminal-action)
@@ -161,7 +161,7 @@
                           (mark-transaction-for-rollback-only)
                           (values)))
                     (setf body-finished? #t)
-                    ;; TODO user code may run after this point, which may call MARK-TRANSACTION-FOR-ROLLBACK-ONLY and stuff like that, which should fail...
+                    ;; TODO user code may run after this point, which may try to call MARK-TRANSACTION-FOR-ROLLBACK-ONLY and stuff like that, which should fail because it's too late for that...
                     ;; current example: perec::check-slot-value-type
                     (ecase (terminal-action-of *transaction*)
                       ((:commit :marked-for-commit-only)
