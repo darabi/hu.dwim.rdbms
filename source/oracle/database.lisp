@@ -76,7 +76,7 @@
   ((oci-error-message nil)
    (oci-error-code nil))
   (:report (lambda (condition stream)
-	     (format stream "OCI error: ~@[[~A~]]: ~@[~A~]"
+	     (format stream "OCI error: ~@[[~A]~]: ~@[~A~]"
                      (oci-error-code-of condition)
                      (oci-error-message-of condition)))))
 
