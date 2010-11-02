@@ -173,7 +173,7 @@
                   (unless body-finished?
                     (block try-to-rollback
                       (with-layered-error-handlers ((lambda (error &key &allow-other-keys)
-                                                      (rdbms.error (build-backtrace-string error :message "Error while trying to rollback transaction in a failed WITH-TRANSACTION block")))
+                                                      (rdbms.error (build-error-log-message :error-condition error :message "Error while trying to rollback transaction in a failed WITH-TRANSACTION block")))
                                                     (lambda (reason &key &allow-other-keys)
                                                       (declare (ignore reason))
                                                       (return-from try-to-rollback)))
