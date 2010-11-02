@@ -91,8 +91,7 @@
                           (- limit 8)))
                 (setf name-as-string (subseq name-as-string 0 (1- (length name-as-string))))
                 (setf name-as-bytes (string-to-octets name-as-string :encoding :utf-8)))
-          (setf name-as-string
-                (string+ name-as-string (format nil "~8,'0X" hash)))))
+          (setf name-as-string (string+ name-as-string hash))))
       name-as-string)))
 
 (def (function e) enable-ddl-query-cache (database)
