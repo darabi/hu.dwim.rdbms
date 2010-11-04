@@ -84,18 +84,8 @@
     ,@args))
 
 (def function oci-string-to-lisp (pointer &optional size)
-  #+nil
   (cffi:foreign-string-to-lisp pointer :count size
-                               :encoding (connection-encoding-of (database-of *transaction*)))
-  ;; the above doesn't work, because babel thinks the encoding is
-  ;; invalid and returns question marks only.  Perhaps Babel doesn't
-  ;; understand the endianness?  Need to investigate.
-  (coerce (iter (for i from 0 by 2)
-		(when size (while (< i size)))
-		(let ((code (cffi:mem-ref pointer :short i)))
-		  (until (zerop code))
-		  (collect (code-char code))))
-	  'string))
+                               :encoding (connection-encoding-of (database-of *transaction*))))
 
 (def function oci-char-width ()
   (cffi::null-terminator-len (connection-encoding-of (database-of *transaction*)))) ;; FIXME using internal fn
