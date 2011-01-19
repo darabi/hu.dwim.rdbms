@@ -414,4 +414,6 @@ to avoid re-indexing a possibly large table, if nothing has changed."
 	    (list-table-indices (table-name-of index))
 	    :key #'name-of
 	    :test #'string-equal)
-    (execute-ddl index)))
+    (execute-ddl index)
+    (dolist (x (triggers-of index))
+      (execute-ddl x))))
