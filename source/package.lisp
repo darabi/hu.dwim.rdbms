@@ -89,10 +89,7 @@
            #:drop-foreign-key
            #:drop-table-foreign-keys
            #:*signal-non-destructive-alter-table-commands*
-	   #:oid-default-statement-of
-
-           ;; TODO what is this? delme?
-           #:backend-type)
+	   #:oid-default-statement-of)
   (:readtable-setup
    (hu.dwim.util:enable-standard-hu.dwim-syntaxes)
    (hu.dwim.syntax-sugar:enable-lambda-with-bang-args-syntax)))
