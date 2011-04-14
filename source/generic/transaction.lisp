@@ -337,6 +337,14 @@
   (:method (transaction event)
     (values)))
 
+(def function %generate-log-description-for-command (command binding-types binding-values)
+  (format nil "~@<~@;~{~A~^, ~}~%~A~@:>"
+          (iter (for i :upfrom 1)
+                (for type :in-vector binding-types)
+                (for value :in-vector binding-values)
+                (collect (format nil "$~A = ~A as ~A" i value (format-sql-to-string type))))
+          command))
+
 (def generic execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
   (:method (database transaction command &key &allow-other-keys)
     (error "Default method should not be reached"))
@@ -352,17 +360,18 @@
              (*print-circle* #f))
         (if (zerop (length binding-types))
             (sql.dribble "~A" command)
-            (sql.dribble "~@<~@;~{~A~^, ~}~%~A~@:>" (iter (for i :upfrom 1)
-                                                          (for type :in-vector binding-types)
-                                                          (for value :in-vector binding-values)
-                                                          (collect (format nil "$~A = ~A as ~A" i value (format-sql-to-string type))))
-                         command)))))
+            (sql.dribble (%generate-log-description-for-command command binding-types binding-values))))))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
     (when (break-on-next-command-p *transaction*)
       (setf (break-on-next-command-p *transaction*) #f)
       (cerror "Continue transaction" "Break requested on rdbms command ~S" command))
     (apply #'call-next-method database transaction command :result-type result-type args))
+
+  (:method :around (database transaction (command string) &key binding-types binding-values &allow-other-keys)
+    (with-error-log-decorator (make-error-log-decorator
+                                (format t "~%Current SQL command:~%~S" (%generate-log-description-for-command command binding-types binding-values)))
+      (call-next-method)))
 
   (:method :after (database transaction (command string) &key &allow-other-keys)
     (let ((command-counter (command-counter-of transaction)))
