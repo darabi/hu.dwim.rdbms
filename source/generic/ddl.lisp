@@ -417,3 +417,11 @@ to avoid re-indexing a possibly large table, if nothing has changed."
     (execute-ddl index)
     (dolist (x (triggers-of index))
       (execute-ddl x))))
+
+(def (function e) update-composite-unique-constraint-using-ddl (ddl)
+  (unless ;; FIXME: also check that the ddl definition matches!
+      (find (name-of ddl)
+            (list-table-indices (table-of ddl)) ;; TODO THL is that good enough?
+            :key #'name-of
+            :test #'string-equal)
+    (execute-ddl ddl)))
