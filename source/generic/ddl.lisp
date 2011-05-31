@@ -425,3 +425,15 @@ to avoid re-indexing a possibly large table, if nothing has changed."
             :key #'name-of
             :test #'string-equal)
     (execute-ddl ddl)))
+
+(def (function e) update-check-constraint-using-ddl (ddl)
+  (unless ;; FIXME: also check that the ddl definition matches!
+      (find (name-of ddl)
+            (list-table-check-constraints (table-of ddl)) ;; TODO THL is that good enough?
+            :test #'string-equal)
+    (execute-ddl ddl)))
+
+(def (function e) list-table-check-constraints (name)
+  (database-list-table-check-constraints name *database*))
+
+(def generic database-list-table-check-constraints (name database))
