@@ -25,8 +25,7 @@
                              (:file "package")
                              (:module "generic"
                               :depends-on ("conditions" "logger" "variables")
-                              :components ((:file "cursor" :depends-on ("transaction"))
-                                           (:file "database")
+                              :components ((:file "database")
                                            (:file "ddl" :depends-on ("transaction"))
                                            (:file "dml" :depends-on ("transaction"))
                                            (:file "transaction" :depends-on ("database"))
