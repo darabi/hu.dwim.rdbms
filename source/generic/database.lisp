@@ -11,7 +11,8 @@
 
 (def (class* e) database ()
   ((connection-specification
-    :documentation "Backend specific connection data, usually a plist of args passed to the connect function.")
+    :documentation "Backend specific connection data, usually a plist of args passed to the connect function."
+    :export :accessor)
    (default-result-type
     'vector
     :type (member vector list cursor))
