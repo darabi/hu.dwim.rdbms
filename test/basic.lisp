@@ -41,6 +41,24 @@
       (ignore-errors
         (execute-ddl [drop table test_table])))))
 
+(def test test/basic/basic-binding-with-string ()
+  (bind ((unicode-text "éáúóüőű"))
+    (unwind-protect
+         (with-transaction
+           (execute-ddl [create table test_table ((name (varchar 50)))])
+           (execute "INSERT INTO test_table (name) VALUES ($1::CHARACTER VARYING)"
+                    ;; TODO binding-types don't really have much effect, doesn't do type checking on the values, etc
+                    :binding-types (vector (sql-character-varying-type))
+                    :binding-values (vector unicode-text))
+           (is (string= (first-elt (first-elt (execute [select * test_table]))) unicode-text)))
+      (ignore-errors
+        (execute-ddl [drop table test_table])))))
+
+(with-transaction
+        (execute "INSERT INTO test_table (name) VALUES ($1::CHARACTER VARYING)"
+                 :binding-types (vector (sql-character-varying-type))
+                 :binding-values (vector "alma")))
+
 (def test test/basic/binding ()
   (bind ((columns (compile-sexp-sql-columns
                    `((a (integer 32))
