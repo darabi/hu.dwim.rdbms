@@ -16,9 +16,12 @@
           (call-next-method)))
 
 (def book user-guide (:title "User guide")
-  (chapter (:title "Introduction")
+  (chapter (:title "Overview")
     (chapter (:title "What is hu.dwim.rdbms")
-      )
+      (paragraph ()
+        "A library to connect to various RDBMS systems.")
+      (paragraph ()
+        "There's at lease one known fork, which has a more developed Oracle (OCI) support at " (hu.dwim.uri:parse-uri "http://src.knowledgetools.de/tomas/porting/")))
     (chapter (:title "Why not something else?")
       ))
   (chapter (:title "Supported Platforms")
@@ -37,6 +40,8 @@ createuser -d -r -l -P test")
       "dpkg -i oracle-xe-universal_10.2.0.1-1.0_i386.deb
 
 rlwrap sqlplus / as sysdba
+
+CREATE USER \"hu.dwim.rdbms.test\" IDENTIFIED BY \"engedjbe\";
 
 When reinstalling an \"rm /etc/default/oracle-xe\" may ease things a lot."))
   (chapter (:title "Tutorial")
