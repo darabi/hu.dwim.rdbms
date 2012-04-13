@@ -54,11 +54,6 @@
       (ignore-errors
         (execute-ddl [drop table test_table])))))
 
-(with-transaction
-        (execute "INSERT INTO test_table (name) VALUES ($1::CHARACTER VARYING)"
-                 :binding-types (vector (sql-character-varying-type))
-                 :binding-values (vector "alma")))
-
 (def test test/basic/binding ()
   (bind ((columns (compile-sexp-sql-columns
                    `((a (integer 32))
