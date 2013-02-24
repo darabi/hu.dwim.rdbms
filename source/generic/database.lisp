@@ -22,8 +22,10 @@
    (encoding
     :utf-8
     :type (member :utf-8 :us-ascii))
+   ;; TODO think through this ddl-query-cache thing...
    (ddl-query-cache
     nil
+    :documentation "A cache to speed up querying the metadata of the database (its schema)."
     :type (or hash-table null))))
 
 (def (constant e) +database-command-line-options+
@@ -62,7 +64,8 @@
 (def (macro e) with-database (database &body forms)
   "Evaluates FORMS within the dynamic scope of DATABASE."
   `(let ((*database* ,database))
-    ,@forms))
+     (assert (typep *database* 'database) () "~S was called with something that is not typep 'database: ~A" 'with-database *database*)
+     ,@forms))
 
 ;;;;;;
 ;;; RDBMS names

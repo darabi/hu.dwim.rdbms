@@ -7,7 +7,10 @@
 (in-package :hu.dwim.rdbms)
 
 ;;;;;;
-;;; Create, drop and alter table
+;;; Create, drop and alter table primitives (they don't signal for schema change)
+
+;; TODO reorganize to have the primitives first, and the signalling schema laters at the end separated
+;; TODO drop constraint-to-action ?
 
 (def (function e) create-table (name columns &key temporary)
   (execute-ddl (make-instance 'sql-create-table :temporary temporary :name name :columns columns)))
@@ -76,7 +79,7 @@
   (invoke-restart (find-restart 'continue-with-schema-change condition)))
 
 (def (with-macro e) with-confirmed-destructive-schema-changes ()
-  (handler-bind ((unconfirmed-destructive-schema-change #'continue-with-schema-change))
+  (handler-bind ((unconfirmed-destructive-schema-change 'continue-with-schema-change))
     (-body-)))
 
 (def (function e) update-table (name columns)

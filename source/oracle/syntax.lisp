@@ -233,6 +233,7 @@
          (*binding-types* (make-array 16 :adjustable t :fill-pointer 0))
          (*binding-values* (make-array 16 :adjustable t :fill-pointer 0))
          (*database* database))
+    ;; TODO is it debug output?!
     (print (get-output-stream-string *sql-stream*))
     (print *command-elements*)
     (print *binding-variables*)

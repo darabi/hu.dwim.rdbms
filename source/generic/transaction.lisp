@@ -350,6 +350,7 @@
     (error "Default method should not be reached"))
 
   (:method :before (database transaction command &key binding-types binding-values &allow-other-keys)
+    (declare (ignorable binding-values))
     (unless (begin-was-executed-p transaction)
       (setf (begin-was-executed-p transaction) #t)
       (begin-transaction database transaction))
