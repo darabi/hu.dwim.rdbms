@@ -4,12 +4,9 @@
 ;;;
 ;;; See LICENCE for details.
 
-(load-system :hu.dwim.asdf)
-
-(in-package :hu.dwim.asdf)
-
 (defsystem :hu.dwim.rdbms.all
-  :class hu.dwim.system
+  :defsystem-depends-on (:hu.dwim.asdf)
+  :class "hu.dwim.asdf:hu.dwim.system"
   :package-name :hu.dwim.rdbms
   :description "All backends for hu.dwim.rdbms."
   :depends-on (:hu.dwim.rdbms.oracle

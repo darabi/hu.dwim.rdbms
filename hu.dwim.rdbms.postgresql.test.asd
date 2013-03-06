@@ -4,12 +4,9 @@
 ;;;
 ;;; See LICENCE for details.
 
-(load-system :hu.dwim.asdf)
-
-(in-package :hu.dwim.asdf)
-
 (defsystem :hu.dwim.rdbms.postgresql.test
-  :class hu.dwim.test-system
+  :defsystem-depends-on (:hu.dwim.asdf)
+  :class "hu.dwim.asdf:hu.dwim.test-system"
   :package-name :hu.dwim.rdbms.test
   :test-name "TEST/POSTGRESQL"
   :depends-on (:hu.dwim.rdbms.postgresql
