@@ -23,7 +23,7 @@
                                            (:file "type" :depends-on ("database"))
                                            (:file "backend" :depends-on ("cffi-util"))))))))
 
-(defmethod perform :after ((op develop-op) (system (eql (find-system :hu.dwim.rdbms.oracle))))
+(defmethod perform :after ((op hu.dwim.asdf:develop-op) (system (eql (find-system :hu.dwim.rdbms.oracle))))
   (let ((database-variable (read-from-string "hu.dwim.rdbms::*database*")))
     (unless (boundp database-variable)
       (setf (symbol-value database-variable)
