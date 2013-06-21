@@ -150,10 +150,11 @@
      (make-instance 'sql-index
                     :name (first column)
                     :table-name name
+                    :columns (database-list-index-columns (first-elt column) database)
                     :unique (equal "UNIQUE" (second column))))
    (execute
     (format nil "select index_name, uniqueness from all_indexes where table_name = '~A' and owner='~A'"
-            name
+            (string-downcase name)
 	    (database-effective-schema database))
     :result-type 'list)))
 
@@ -172,7 +173,7 @@
    (lambda (column) (make-instance 'sql-constraint :name (first column)))
    (execute
     (format nil "select constraint_name from all_constraints where constraint_type='P' and table_name='~A' and owner='~A'"
-            name
+            (string-downcase name)
 	    (database-effective-schema database))
     :result-type 'list)))
 
@@ -254,3 +255,9 @@
                            AND c4.constraint_type = 'R'"
 		(database-effective-schema database)
 		(string-downcase table-name)))))
+
+(def method database-list-index-columns (name (database oracle))
+  (map 'list #'first-elt
+       (execute
+        (format nil "select column_name from dba_ind_columns where index_name = '~A' order by column_position"
+                (string-downcase name)))))

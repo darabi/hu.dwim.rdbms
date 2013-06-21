@@ -153,6 +153,30 @@
     (ignore-errors
       (execute-ddl [drop table test_table]))))
 
+(def test test/basic/index ()
+  (unwind-protect
+       (let ((columns (compile-sexp-sql-columns
+                       `((a (integer 32))
+                         (b (varchar 50)))))
+             (index))
+         (create-table 'test_table columns)
+         (with-transaction
+           (create-index 'test_table_idx1 'test_table '(a b) :unique #f)
+           (setf index (elt (list-table-indices 'test_table) 0))
+           (is (string= "test_table_idx1" (name-of index)))
+           (is (string= "b" (second (hu.dwim.rdbms::columns-of index))))
+           (is (string= "b" (elt (list-index-columns 'test_table_idx1) 1)))
+           (drop-index 'test_table_idx1)
+           (not (list-table-indices 'test_table))
+           ;; unique
+           (create-index 'test_table_idx1 'test_table '(a b) :unique #t)
+           (execute [insert test_table (a b) (1 "value")])
+           (signals (or rdbms-error simple-error)
+             (execute [insert test_table (a b) (1 "value")]))))
+    (ignore-errors
+      (execute-ddl [drop table test_table]))))
+
+
 ;; TODO THL this test must be independent of what backend i'm using right now
 (def test test/basic/expand-sql-ast/binding ()
   (unwind-protect

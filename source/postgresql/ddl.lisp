@@ -37,12 +37,37 @@
 
 (def method database-list-table-indices (name (database postgresql))
   (map 'list
-       (lambda (column)
+       (lambda (row)
          (make-instance 'sql-index
-                        :name (first-elt column)
-                        :table-name name))
+                        :name (first-elt row)
+                        :table-name name
+                        :columns (database-list-index-columns (first-elt row) database)
+                        :unique (elt row 1)))
        (execute
-        (format nil "select indexname from pg_indexes where tablename = '~A'"
+        (format nil "select distinct i.relname as index_name,
+                            ix.indisunique
+                       from pg_class t, pg_class i, pg_index ix, pg_attribute a
+                       where t.oid = ix.indrelid
+                         and i.oid = ix.indexrelid
+                         and a.attrelid = t.oid
+                         and a.attnum = ANY(ix.indkey)
+                         and t.relkind = 'r'
+                         and t.relname = '~A'
+                       order by i.relname;"
+                (string-downcase name)))))
+
+(def method database-list-index-columns (name (database postgresql))
+  (map 'list
+       #'first-elt
+       (execute
+        (format nil "select a.attname as column_name
+                       from pg_class t, pg_class i, pg_index ix, pg_attribute a
+                       where t.oid = ix.indrelid
+                         and i.oid = ix.indexrelid
+                         and a.attrelid = t.oid
+                         and a.attnum = ANY(ix.indkey)
+                         and t.relkind = 'r'
+                         and i.relname = '~A';"
                 (string-downcase name)))))
 
 (def method database-list-dependent-views (table column (database postgresql))
