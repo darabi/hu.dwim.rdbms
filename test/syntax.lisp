@@ -69,12 +69,12 @@
   '(create table (:temporary :drop) test_table ((col1 varchar) ("col2" (integer 32))))
   ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col1\" VARCHAR2, \"col2\" NUMBER(10,0)) ON COMMIT DROP")
    (postgresql "CREATE GLOBAL TEMPORARY TABLE test_table (col1 CHARACTER VARYING, col2 INT) ON COMMIT DROP")
-   (sqlite "CREATE GLOBAL TEMPORARY TABLE test_table (col1 CHARACTER VARYING, col2 INTEGER) ON COMMIT DROP"))
+   (sqlite "CREATE TEMPORARY TABLE test_table (col1 CHARACTER VARYING, col2 INTEGER) ON COMMIT DROP"))
 
   '(create table (:temporary :delete-rows) test_table (("col2" (integer 32))))
   ((oracle "CREATE GLOBAL TEMPORARY TABLE \"test_table\" (\"col2\" NUMBER(10,0)) ON COMMIT DELETE ROWS")
    (postgresql "CREATE GLOBAL TEMPORARY TABLE test_table (col2 INT) ON COMMIT DELETE ROWS")
-   (sqlite "CREATE GLOBAL TEMPORARY TABLE test_table (col2 INTEGER) ON COMMIT DELETE ROWS")))
+   (sqlite "CREATE TEMPORARY TABLE test_table (col2 INTEGER) ON COMMIT DELETE ROWS")))
 
 (def reader-dialect-test test/syntax/sql-reader
   [select "bar" table]
@@ -97,6 +97,7 @@
                         ,(sql-binding-variable :name 'dynamic-binding
                                                :type (sql-character-varying-type)))])
   ((oracle "INSERT INTO \"t\" (\"col1\", \"col2\", \"col3\", \"col4\") VALUES (42, :1, :2)") ;; TODO THL and the type spec ars?
+   (sqlite "INSERT INTO t (col1, col2, col3, col4) VALUES (42, :1, :2)")
    (postgresql "INSERT INTO t (col1, col2, col3, col4) VALUES (42, $1::CHARACTER VARYING, $2::CHARACTER VARYING)")))
 
 ;; TODO THL this test must be independent of what backend i'm using right now
@@ -218,6 +219,7 @@
                     :columns (list (sql-column :name "a"
                                                :type (sql-integer-type))))
   ((oracle "CREATE TABLE \"a\" (\"a\" NUMBER(*,0))")
+   (sqlite "CREATE TABLE a (a INTEGER)")
    (t "CREATE TABLE a (a NUMERIC)"))
 
   (sql-create-table :temporary :drop
@@ -225,6 +227,7 @@
                     :columns (list (sql-column :name "a"
                                                :type (sql-integer-type))))
   ((oracle "CREATE GLOBAL TEMPORARY TABLE \"a\" (\"a\" NUMBER(*,0)) ON COMMIT DROP")
+   (sqlite "CREATE TEMPORARY TABLE a (a INTEGER) ON COMMIT DROP")
    (t "CREATE GLOBAL TEMPORARY TABLE a (a NUMERIC) ON COMMIT DROP")))
 
 (def ast-dialect-test test/syntax/format/alter-table
@@ -232,12 +235,14 @@
                    :actions (list (sql-add-column-action :name "a"
                                                          :type (sql-integer-type))))
   ((oracle "ALTER TABLE \"a\" ADD (\"a\" NUMBER(*,0))")
+   (sqlite "ALTER TABLE a ADD (a INTEGER)")
    (t "ALTER TABLE a ADD a NUMERIC"))
 
   (sql-alter-table :name "a"
                    :actions (list (sql-alter-column-type-action :name "a"
                                                                 :type (sql-integer-type))))
   ((oracle "ALTER TABLE \"a\" MODIFY (\"a\" NUMBER(*,0))")
+   (sqlite "ALTER TABLE a ALTER COLUMN a TYPE INTEGER")
    (t "ALTER TABLE a ALTER COLUMN a TYPE NUMERIC"))
 
   (sql-alter-table :name "a"

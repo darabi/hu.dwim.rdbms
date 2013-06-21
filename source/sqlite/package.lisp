@@ -16,6 +16,10 @@
         :hu.dwim.util
         :local-time)
   (:shadowing-import-from #:hu.dwim.rdbms
+                          #:as
+                          #:columns
+                          #:name
+                          #:temporary
                           #:type
                           #:type-of)
 

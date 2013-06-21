@@ -6,6 +6,26 @@
 
 (in-package :hu.dwim.rdbms.sqlite)
 
+(def method format-sql-syntax-node ((-self- sql-create-table) (database sqlite))
+  (with-slots (temporary name columns as) -self-
+    (format-string "CREATE")
+    (when temporary
+      (format-string " TEMPORARY"))
+    (format-string " TABLE ")
+    (format-sql-identifier name database)
+    (format-string " (")
+    (format-comma-separated-list columns database)
+    (format-char ")")
+    (when (and temporary (not (eq temporary #t)) (not as))
+      (format-string " ON COMMIT ")
+      (format-string (ecase temporary
+                       (:drop "DROP")
+                       (:preserve-rows "PRESERVE ROWS")
+                       (:delete-rows "DELETE ROWS"))))
+    (when as
+      (format-string " AS ")
+      (format-sql-syntax-node as database))))
+
 ;;;;;;
 ;;; Literals
 
