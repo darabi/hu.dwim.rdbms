@@ -307,8 +307,8 @@
                               :columns columns
                               :unique unique)))
 
-(def (function e) drop-index (name)
-  (execute-ddl (make-instance 'sql-drop-index :name name)))
+(def (function e) drop-index (name &key ignore-missing)
+  (execute-ddl (make-instance 'sql-drop-index :name name :ignore-missing ignore-missing)))
 
 (def (function e) update-index (name table-name columns &key (unique #f))
   ;; TODO: where clause for unique
