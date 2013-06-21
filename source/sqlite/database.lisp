@@ -36,7 +36,7 @@
 
 (def function process-error-code (error-code error-message message &rest args)
   (unless (= hu.dwim.rdbms.sqlite.cffi:+sqlite-ok+ error-code)
-    (apply 'error (string+ message "~%Error Code: ~A, Error Message: ~A")
+    (apply 'simple-rdbms-error (string+ message "~%Error Code: ~A, Error Message: ~A")
            (append args (list error-code error-message)))))
 
 (def function ensure-connected (tr)
@@ -62,20 +62,20 @@
       (hu.dwim.rdbms.sqlite.cffi:sqlite-3-prepare-v-2 (connection-pointer-of tr) foreign-command -1 foreign-statement-pointer (cffi:null-pointer))
       (bind ((foreign-statement (cffi:mem-ref foreign-statement-pointer :pointer)))
         (unwind-protect
-             (execute-prepared-statment foreign-statement binding-types binding-values result-type)
+             (execute-prepared-statment foreign-statement binding-types binding-values result-type tr)
           (hu.dwim.rdbms.sqlite.cffi:sqlite-3-finalize foreign-statement))))))
 
 (def method execute-command ((db sqlite) (tr sqlite-transaction) (prepared-statement sqlite-prepared-statement) &key binding-types binding-values result-type &allow-other-keys)
   (bind ((foreign-statement (statement-pointer-of prepared-statement)))
     (hu.dwim.rdbms.sqlite.cffi:sqlite-3-reset foreign-statement)
-    (hu.dwim.rdbms.sqlite.cffi:sqlite-3-clear-bindings foreign-statement) 
-    (execute-prepared-statment foreign-statement binding-types binding-values result-type)))
+    (hu.dwim.rdbms.sqlite.cffi:sqlite-3-clear-bindings foreign-statement)
+    (execute-prepared-statment foreign-statement binding-types binding-values result-type tr)))
 
 (def method cleanup-transaction :after ((tr sqlite-transaction))
   (awhen (connection-pointer-of tr)
     (process-error-code (hu.dwim.rdbms.sqlite.cffi:sqlite-3-close it) nil "Error during closing database")))
 
-(def function execute-prepared-statment (foreign-statement binding-types binding-values result-type)
+(def function execute-prepared-statment (foreign-statement binding-types binding-values result-type transaction)
   (prog1-bind result
       (ecase result-type
         (vector (make-array 8 :adjustable t :fill-pointer 0))
@@ -118,7 +118,7 @@
           (for step = (hu.dwim.rdbms.sqlite.cffi:sqlite-3-step foreign-statement))
           (until (eq step hu.dwim.rdbms.sqlite.cffi:+sqlite-done+))
           (unless (eq step hu.dwim.rdbms.sqlite.cffi:+sqlite-row+)
-            (error "Error during stepping: ~A" step))
+            (process-error transaction "Error executing statement"))
           (for row = (ecase result-type
                        (vector (make-array column-count))
                        (list nil)))

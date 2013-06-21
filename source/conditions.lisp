@@ -12,7 +12,7 @@
 (def condition* translated-rdbms-error (rdbms-error)
   ((original-error)))
 
-(def (condition* e) simple-rdbms-error (simple-error)
+(def (condition* e) simple-rdbms-error (simple-error rdbms-error)
   ())
 
 (def function simple-rdbms-error (message &rest format-arguments)
