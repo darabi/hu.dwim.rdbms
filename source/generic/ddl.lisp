@@ -321,7 +321,7 @@ to avoid re-indexing a possibly large table, if nothing has changed."
                                        (string-downcase (name-of o2)))
                                (equal c (mapcar #'string-downcase (columns-of o2)))
                                (eq unique (unique-p o2))))))
-    (drop-index name)
+    (drop-index name :ignore-missing #t)
     (create-index name table-name columns :unique unique)))
 
 (def (function e) list-table-indices (name)
