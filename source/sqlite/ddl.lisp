@@ -20,11 +20,12 @@
   (map 'list
        (lambda (column)
          (make-instance 'sql-index
-                        :name (first-elt column)
-                        :columns (database-list-index-columns (first-elt column) database)
-                        :table-name name))
+                        :name (elt column 1)
+                        :columns (database-list-index-columns (elt column 1) database)
+                        :table-name name
+                        :unique (eql 1 (elt column 2))))
        (execute
-        (format nil "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = '~A'"
+        (format nil "PRAGMA index_list('~A')"
                 (string-downcase name)))))
 
 (def method database-list-index-columns (name (database sqlite))

@@ -20,6 +20,7 @@
                 #:*database*
                 #:*sql-stream*
                 #:*transaction*
+                #:columns-of
                 #:compile-sexp-sql
                 #:compile-sexp-sql-binding-variable
                 #:compile-sexp-sql-column
@@ -29,12 +30,14 @@
                 #:connection-specification-of
                 #:eval-always
                 #:expand-sql-ast-into-lambda-form
+                #:name-of
                 #:rdbms.debug
                 #:rdbms.dribble
                 #:rdbms.error
                 #:rdbms.info
                 #:rdbms.warn
                 #:rebind
+                #:unique-p
                 #:value-of
                 #:with-transaction*)
 
