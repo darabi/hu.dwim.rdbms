@@ -164,8 +164,17 @@
            (create-index 'test_table_idx1 'test_table '(a b) :unique #f)
            (setf index (elt (list-table-indices 'test_table) 0))
            (is (string= "test_table_idx1" (name-of index)))
+           ;; order of columns
            (is (string= "b" (second (columns-of index))))
            (is (string= "b" (elt (list-index-columns 'test_table_idx1) 1)))
+           ;; update
+           ;; don't update the index if it remains identical
+           (not (update-index 'test_table_idx1 'test_table '(a b) :unique #f))
+           ;; but create a new one (with one column) if not
+           (update-index 'test_table_idx1 'test_table '(a) :unique #f)
+           (setf index (elt (list-table-indices 'test_table) 0))
+           (is (eq 1 (length (columns-of index))))
+           ;; drop
            (drop-index 'test_table_idx1)
            (not (list-table-indices 'test_table))
            ;; unique
@@ -173,7 +182,7 @@
            (setf index (elt (list-table-indices 'test_table) 0))
            (is (unique-p index))
            (execute [insert test_table (a b) (1 "value")])
-           (signals (or rdbms-error simple-error)
+           (signals (or rdbms-error error)
              (execute [insert test_table (a b) (1 "value")]))))
     (ignore-errors
       (execute-ddl [drop table test_table]))))

@@ -311,12 +311,17 @@
   (execute-ddl (make-instance 'sql-drop-index :name name :ignore-missing ignore-missing)))
 
 (def (function e) update-index (name table-name columns &key (unique #f))
-  ;; TODO: where clause for unique
+  "Drops and recreates the given index if the arguments columns or
+unique differ from the existing columns/uniqueness; the rationale is
+to avoid re-indexing a possibly large table, if nothing has changed."
   (unless (find name (list-table-indices table-name)
-                :key 'name-of
-                :test (lambda (o1 o2)
-                        (equalp (string-downcase o1)
-                                (string-downcase o2))))
+                :test (lambda (index-name o2)
+                        (let ((c (mapcar #'string-downcase columns)))
+                          (and (equalp (string-downcase index-name)
+                                       (string-downcase (name-of o2)))
+                               (equal c (mapcar #'string-downcase (columns-of o2)))
+                               (eq unique (unique-p o2))))))
+    (drop-index name)
     (create-index name table-name columns :unique unique)))
 
 (def (function e) list-table-indices (name)
