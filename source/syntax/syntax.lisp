@@ -96,6 +96,7 @@
 
   (:method ((literal sql-literal) database)
     (format-sql-literal (if (and (null (value-of literal))
+                                 ;; FIXME this causes a style-warning because sql-boolean-type is defined in types.lisp, which depends on this file.
                                  (not (typep (type-of literal) 'sql-boolean-type)))
                             :null
                             (value-of literal))

@@ -114,6 +114,7 @@
   (iter outer
 	(for column in columns)
 	(iter (for constraint in (constraints-of column))
+              ;; FIXME a style-warning because SQL-FOREIGN-KEY-CONSTRAINT is defined in something we are a dependency of
 	      (when (typep constraint 'sql-foreign-key-constraint)
 		(in outer (collect constraint))))))
 

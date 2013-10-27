@@ -159,6 +159,7 @@
              (stringp element))
            (constant-variable-p (element)
              (or (null element)
+                 ;; FIXME a style-warning because SQL-UNQUOTE is defined in something we are a dependency of (see multiple instances in this file)
                  (not (typep element 'sql-unquote))))
            (constant-type-p (element)
              (not (typep element 'sql-unquote)))

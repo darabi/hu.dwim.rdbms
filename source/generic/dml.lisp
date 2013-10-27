@@ -9,8 +9,10 @@
 (def function sql-literal-values-for (columns values)
   (map 'list (lambda (column value)
                (if (or (typep value 'sql-literal)
+                       ;; FIXME a style-warning because SQL-COLUMN is defined in something we are a dependency of
                        (not (typep column 'sql-column)))
                    value
+                   ;; FIXME a style-warning because SQL-LITERAL is defined in something we are a dependency of
                    (make-instance 'sql-literal
                                   :value value
                                   :type (type-of column))))
