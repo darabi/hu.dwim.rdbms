@@ -16,7 +16,6 @@
                :hu.dwim.util
                :hu.dwim.util/error-handling
                :hu.dwim.walker
-               :sexp2sql
                :ironclad
                :local-time)
   :components ((:module "source"
