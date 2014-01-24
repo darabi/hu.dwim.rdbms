@@ -136,11 +136,14 @@
   -1.23e+9)
 
 (def test test/type/ratio ()
-  ;; we test here that ratio's precision is lost only up to double-float
   (with-transaction
     (unwind-protect
          (progn
            (execute-ddl (sql (create table test_table ((a (sql-unquote (compile-sexp-sql-type '(float 64)) nil))))))
+           ;; make sure that postmodern is configured in a way that doesn't silently distort ratios into floats when
+           ;; inserting them into the database.
+           ;; NOTE: this is not the default with the official postmodern codebase. as of this writing,
+           ;; error signalling is disabled by default.
            (signals error (execute (sql (insert test_table (a) ((sql-unquote (sql-literal :value 1/3 :type (compile-sexp-sql-type '(float 64))) nil))))))
            (execute (sql (delete test_table))))
       (ignore-errors (execute-ddl (sql (drop table test_table)))))))
