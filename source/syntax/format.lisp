@@ -136,6 +136,10 @@
 ;; TODO: if sql-quote is added this should return a lambda returning
 ;; the syntax-node unaltered unless it is an sql-quote in which case
 ;; it can be process
+
+;; FIXME this got bitrotten... the whole quasi-quoted sql
+;; generation should be rebased on hu.dwim.quasi-quote, which
+;; in turn should be cleaned up...
 (def function expand-sql-ast-into-lambda-form (syntax-node &key database (toplevel #t))
   (bind ((*print-pretty* #f)
          (*print-circle* #f)
