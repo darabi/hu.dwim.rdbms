@@ -14,7 +14,7 @@
   :components ((:module "test"
                 :components ((:file "sqlite")))))
 
-(defmethod call-in-system-environment ((operation load-op) (system (eql (find-system :hu.dwim.rdbms.sqlite.test))) function)
+(defmethod hu.dwim.asdf::call-in-system-environment ((operation load-op) (system (eql (find-system :hu.dwim.rdbms.sqlite.test))) function)
   (progv
       (list (read-from-string "hu.dwim.rdbms:*database*"))
       (list (eval (read-from-string "(make-instance 'hu.dwim.rdbms.sqlite:sqlite)")))
