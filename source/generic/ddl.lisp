@@ -317,7 +317,12 @@ unique differ from the existing columns/uniqueness; the rationale is
 to avoid re-indexing a possibly large table, if nothing has changed."
   (unless (find name (list-table-indices table-name)
                 :test (lambda (index-name o2)
-                        (let ((c (mapcar (compose #'string-downcase #'name-of) columns)))
+                        (let ((c (mapcar (lambda (column)
+                                           (let ((column-name (etypecase column
+                                                                (sql-column (name-of column))
+                                                                ((or symbol string) column))))
+                                             (string-downcase column-name)))
+                                         columns)))
                           (and (equalp (string-downcase index-name)
                                        (string-downcase (name-of o2)))
                                (equal c (mapcar #'string-downcase (columns-of o2)))
