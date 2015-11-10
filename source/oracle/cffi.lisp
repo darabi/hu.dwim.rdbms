@@ -1,6 +1,5 @@
 ;;; WARNING: This is a generated file, editing it is not advised!
 (in-package :common-lisp-user)
-(asdf:operate 'asdf:load-op :verrazano-runtime)
 (defpackage :hu.dwim.rdbms.oracle.cffi (:use :cffi) (:nicknames :oci)
             (:export "+DIRPATH-EXPR-REF-TBLNAME+" "+DIRPATH-EXPR-SQL+" "+DIRPATH-EXPR-OBJ-CONSTR+"
              "+DIRPATH-DATASAVE-PARTIAL+" "+DIRPATH-DATASAVE-FINISH+" "+DIRPATH-DATASAVE-SAVEONLY+"

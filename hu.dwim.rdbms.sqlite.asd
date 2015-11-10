@@ -9,8 +9,7 @@
   :class "hu.dwim.asdf:hu.dwim.system"
   :package-name :hu.dwim.rdbms
   :description "Sqlite backend for hu.dwim.rdbms."
-  :depends-on (:hu.dwim.rdbms
-               :verrazano-runtime)
+  :depends-on (:hu.dwim.rdbms)
   :components ((:module "source"
                 :components ((:module "sqlite"
                               :components ((:file "package")

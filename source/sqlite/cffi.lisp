@@ -1,6 +1,5 @@
 ;;; WARNING: This is a generated file, editing it is not advised!
 (in-package :common-lisp-user)
-(asdf:operate 'asdf:load-op :verrazano-runtime)
 (defpackage :hu.dwim.rdbms.sqlite.cffi (:use :cffi)
             (:export "+SQLITE-INDEX-CONSTRAINT-MATCH+" "+SQLITE-INDEX-CONSTRAINT-GE+"
              "+SQLITE-INDEX-CONSTRAINT-LT+" "+SQLITE-INDEX-CONSTRAINT-LE+"
