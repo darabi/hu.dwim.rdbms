@@ -13,7 +13,7 @@
                :hu.dwim.logger
                :hu.dwim.syntax-sugar+hu.dwim.walker
                :hu.dwim.util
-               :hu.dwim.util.error-handling
+               :hu.dwim.util/error-handling
                :hu.dwim.walker
                :ironclad
                :local-time)
