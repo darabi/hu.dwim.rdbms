@@ -11,7 +11,8 @@
   :depends-on (:babel
                :hu.dwim.defclass-star+hu.dwim.def
                :hu.dwim.logger
-               :hu.dwim.syntax-sugar+hu.dwim.walker
+               :hu.dwim.syntax-sugar
+               :hu.dwim.syntax-sugar/lambda-with-bang-args
                :hu.dwim.util
                :hu.dwim.util/error-handling
                :hu.dwim.walker
