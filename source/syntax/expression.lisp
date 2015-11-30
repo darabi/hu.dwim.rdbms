@@ -239,8 +239,8 @@
 ;;; Pattern matching
 
 (def syntax-node sql-like (sql-expression)
-  ((string :type  sql-expression :accessor string-of)
-   (pattern :type sql-expression)
+  ((string :type  (or sql-expression sql-column-alias) :accessor string-of)
+   (pattern :type (or sql-expression sql-literal))
    (case-sensitive-p #t :type boolean))
   (:format-sql-syntax-node
    (if case-sensitive-p
