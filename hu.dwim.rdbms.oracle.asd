@@ -9,7 +9,8 @@
   :class "hu.dwim.asdf:hu.dwim.system"
   :package-name :hu.dwim.rdbms
   :description "Oracle backend for hu.dwim.rdbms."
-  :depends-on (:hu.dwim.rdbms)
+  :depends-on (:cffi
+               :hu.dwim.rdbms)
   :components ((:module "source"
                 :components ((:module "oracle"
                               :components ((:file "package")
