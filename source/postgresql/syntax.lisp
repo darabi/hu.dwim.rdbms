@@ -19,6 +19,7 @@
 	      "ALTER TABLE ~A ALTER COLUMN ~A SET DEFAULT ((NEXTVAL('_instance_id') << ~D) | ~D)"
 	      table-name
 	      column-name
+              ;; FIXME: this creates an inacceptable dependency on perec
 	      hu.dwim.perec::+oid-class-id-bit-size+
 	      class-id)))
 
