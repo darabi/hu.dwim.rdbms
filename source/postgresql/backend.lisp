@@ -72,6 +72,7 @@
                          (sql-date-type
                           (etypecase value
 			    (string value)
+                            (local-time:timestamp (local-time:format-rfc3339-timestring nil value :omit-time-part #t :timezone local-time:+utc-zone+))
 			    (cdate (cdate-to-iso-string value))))
                          ((or sql-timestamp-type
                               sql-time-type)

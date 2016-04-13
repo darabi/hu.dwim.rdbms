@@ -71,3 +71,22 @@
 
 (def (function e) cdate-from-universal (universal-time)
   (local-time-to-cdate (local-time:universal-to-timestamp universal-time)))
+
+;; TODO: we have many timestamp= comparisons of date/datetime objects in tests which were originally
+;; intended to work with local-time timestamps.
+;; This kludge is to make those tests pass the easiest possible way (by using h.d.rdbms:date=
+;; The correct solution would be to work on local-time to correctly support
+;; dates (without time of day).
+(def (generic e) date= (a b))
+
+(defmethod date= ((a local-time:timestamp) (b local-time:timestamp))
+  (local-time:timestamp= a b))
+
+(defmethod date= ((a cdate) (b local-time:timestamp))
+  (local-time:timestamp= (cdate-local-time a) b))
+
+(defmethod date= ((a local-time:timestamp) (b cdate))
+  (local-time:timestamp= a (cdate-local-time b)))
+
+(defmethod date= ((a cdate) (b cdate))
+  (cdate= a b))
