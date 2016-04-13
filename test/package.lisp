@@ -30,6 +30,7 @@
                 #:connection-specification-of
                 #:eval-always
                 #:expand-sql-ast-into-lambda-form
+                #:expand-sql-ast-into-lambda-form-cached
                 #:name-of
                 #:rdbms.debug
                 #:rdbms.dribble
