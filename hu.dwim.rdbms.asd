@@ -17,7 +17,8 @@
                :hu.dwim.util/error-handling
                :hu.dwim.walker
                :ironclad
-               :local-time)
+               :local-time
+               :simple-date)
   :components ((:module "source"
                 :components ((:file "conditions" :depends-on ("package"))
                              (:file "logger" :depends-on ("package"))
