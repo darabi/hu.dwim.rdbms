@@ -496,7 +496,7 @@
 	     (concatenate 'string table-name "_t"))
 	    table-name
 	    column-name
-	    hu.dwim.perec::+oid-class-id-bit-size+
+	    +oid-class-id-bit-size+
 	    class-id
 	    column-name
 	    column-name)))
@@ -705,7 +705,7 @@
 
 (defun the-unquoted-lexical-variable (x) ;; TODO THL the perec:: symbols here?!
   (assert (typep x 'sql-unquote))
-  (let ((y (rfind-if 'hu.dwim.perec::lexical-variable-p (form-of x))))
+  (let ((y (rfind-if 'lexical-variable-p (form-of x))))
     (assert y)
     y))
 

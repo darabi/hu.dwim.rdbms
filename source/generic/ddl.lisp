@@ -337,7 +337,7 @@
   (execute-ddl (make-instance 'sql-create-index
                               :name name
                               :table-name table-name
-                              :columns columns
+                              :columns (mapcar (lambda (c) (make-instance 'sql-identifier :name c)) columns)
                               :unique unique)))
 
 (def (function e) drop-index (name &key ignore-missing)

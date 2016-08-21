@@ -48,5 +48,6 @@
                                            (:file "sexp" :depends-on ("syntax" "expression"))
                                            (:file "syntax" :depends-on ("format"))
                                            (:file "type" :depends-on ("syntax"))
-                                           (:file "update" :depends-on ("syntax"))))
+                                           (:file "update" :depends-on ("syntax"))
+                                           (:file "perec-integration")))
                              (:file "variables" :depends-on ("package"))))))

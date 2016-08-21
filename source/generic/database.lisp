@@ -6,6 +6,19 @@
 
 (in-package :hu.dwim.rdbms)
 
+;; FIXME: this is a hack to avoid undefined types warnings because of forward references
+(defclass sql-boolean-type () ())
+(defclass sql-column () ())
+(defclass sql-column-alias () ())
+(defclass sql-constraint () ())
+(defclass sql-foreign-key-constraint () ())
+(defclass sql-full-text-search-query () ())
+(defclass sql-index-operation () ())
+(defclass sql-literal () ())
+(defclass sql-select () ())
+(defclass sql-subquery () ())
+(defclass sql-unquote () ())
+
 ;;;;;;
 ;;; Database
 
@@ -66,6 +79,9 @@
   `(let ((*database* ,database))
      (assert (typep *database* 'database) () "~S was called with something that is not typep 'database: ~A" 'with-database *database*)
      ,@forms))
+
+(def (generic e) backend-type (database)
+  (:documentation "Returns a keyword which uniquely identifies the database backend"))
 
 ;;;;;;
 ;;; RDBMS names

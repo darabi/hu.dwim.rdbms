@@ -38,6 +38,7 @@
 ;; unconditionally:
 (defun %shorten-columns (node)
   (etypecase node
+    (sql-identifier)
     (sql-literal)
     (sql-fragment) ;; allow sexp2sql
     (sql-unary-operator

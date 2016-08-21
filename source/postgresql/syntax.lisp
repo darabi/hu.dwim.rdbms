@@ -19,8 +19,7 @@
 	      "ALTER TABLE ~A ALTER COLUMN ~A SET DEFAULT ((NEXTVAL('_instance_id') << ~D) | ~D)"
 	      table-name
 	      column-name
-              ;; FIXME: this creates an inacceptable dependency on perec
-	      hu.dwim.perec::+oid-class-id-bit-size+
+	      +oid-class-id-bit-size+
 	      class-id)))
 
 (def method format-sql-literal ((literal vector) (database postgresql))
@@ -109,12 +108,12 @@
   (assert (typep x 'sql-unquote))
   (let ((form (form-of x)))
     (unless (and (listp form)
-		 (eq (car form) 'hu.dwim.perec::value->sql-literal))
+		 (eq (car form) 'value->sql-literal))
       (error "sql-test does not support the argument ~A" form))
     (destructuring-bind (var type args)
 	(cdr form)
       (declare (ignore type args))
-      (unless (typep var 'hu.dwim.perec::lexical-variable)
+      (unless (lexical-variable-p var)
 	(error "sql-test does not support the variable ~A" var))
       var)))
 

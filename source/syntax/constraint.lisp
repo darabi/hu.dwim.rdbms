@@ -83,7 +83,7 @@
    (format-string " ADD CONSTRAINT ")
    (format-sql-identifier name)
    (format-string " UNIQUE (")
-   (format-separated-list columns ", " (lambda (x db)
+   (format-separated-list columns ", " (lambda (x)
                                          (format-sql-identifier (column-of x))))
    (format-string  ") ")))
 
