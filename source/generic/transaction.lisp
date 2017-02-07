@@ -364,13 +364,14 @@
   (:method (transaction event)
     (values)))
 
-(def function %generate-log-description-for-command (command binding-types binding-values)
-  (format nil "~@<~@;~{~A~^, ~}~%~A~@:>"
+(def function %generate-log-description-for-command (command binding-types binding-values transaction)
+  (format nil "~@<~@;~{~A~^, ~}~%~A (TX: ~A)~@:>"
           (iter (for i :upfrom 1)
                 (for type :in-vector binding-types)
                 (for value :in-vector binding-values)
                 (collect (format nil "$~A = ~A as ~A" i value (format-sql-to-string type))))
-          command))
+          command
+          transaction))
 
 (def generic execute-command (database transaction command &key visitor bindings result-type &allow-other-keys)
   (:method (database transaction command &key &allow-other-keys)
@@ -387,8 +388,8 @@
              (*print-pretty* #f)
              (*print-circle* #f))
         (if (zerop (length binding-types))
-            (sql.dribble "~A" command)
-            (sql.dribble (%generate-log-description-for-command command binding-types binding-values))))))
+            (sql.dribble "~A (TX: ~A)" command transaction)
+            (sql.dribble (%generate-log-description-for-command command binding-types binding-values transaction))))))
 
   (:method :around (database transaction command &rest args &key (result-type (default-result-type-of transaction)) &allow-other-keys)
     (when (break-on-next-command-p *transaction*)

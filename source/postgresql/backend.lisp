@@ -35,7 +35,7 @@
   ;; ... override date reading using SIMPLE-DATE first, then going to CDATE:
   (cl-postgres:set-sql-datetime-readers
    :date (lambda (days)
-	   (simple-date-to-cdate (postgres-days-to-simple-date days)))
+           (simple-date-to-cdate (postgres-days-to-simple-date days)))
    :table table))
 
 (set-rdbms-cl-postgres-readers)
@@ -71,9 +71,9 @@
                        (etypecase type
                          (sql-date-type
                           (etypecase value
-			    (string value)
+                            (string value)
                             (local-time:timestamp (local-time:format-rfc3339-timestring nil value :omit-time-part #t :timezone local-time:+utc-zone+))
-			    (cdate (cdate-to-iso-string value))))
+                            (cdate (cdate-to-iso-string value))))
                          ((or sql-timestamp-type
                               sql-time-type)
                           (if (stringp value)
@@ -127,7 +127,7 @@
       (call-next-method)))
 
 (def method execute-command ((db postgresql) (tr postgresql-transaction) (command string)
-                            &rest args)
+                             &rest args)
   (let ((connection (connection-of tr))
         (statement-name "")) ; unnamed prepared statement
     (cl-postgres:prepare-query connection statement-name command)
@@ -157,7 +157,7 @@
                                   (list database user-name password host port)))))))
            (rdbms.debug "Successfully opened Postgresql connection ~A for transaction ~A in database ~A"
                         it tr db)
-	   (call-post-connect-hook tr)))))
+           (call-post-connect-hook tr)))))
 
 (def method cleanup-transaction :after ((tr postgresql-transaction))
   (awhen (slot-value tr 'connection)
