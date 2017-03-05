@@ -38,8 +38,6 @@
            (simple-date-to-cdate (postgres-days-to-simple-date days)))
    :table table))
 
-(set-rdbms-cl-postgres-readers)
-
 (def (function e) simple-date-to-cdate (simple-date)
   (multiple-value-bind (y m d)
       (simple-date:decode-date simple-date)

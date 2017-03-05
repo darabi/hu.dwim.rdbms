@@ -14,6 +14,8 @@
         :hu.dwim.rdbms
         :hu.dwim.syntax-sugar
         :hu.dwim.util)
+  (:import-from #:cl-postgres
+                #:*silently-truncate-rationals*)
   (:shadowing-import-from #:hu.dwim.rdbms
                           #:type
                           #:type-of)
