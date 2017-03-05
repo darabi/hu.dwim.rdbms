@@ -161,7 +161,7 @@
   (date= (local-time:parse-datestring "0001-01-01"))
   (date= (local-time:parse-datestring "2000-01-01"))
   (date= (local-time:parse-datestring "3000-01-01"))
-  (signals error (local-time:parse-timestring "2000-01-01T01:01:01Z")))
+  (signals error (local-time:parse-datestring "2000-01-01T01:01:01Z")))
 
 (def type-test test/type/time time
   (eq :null :null)
