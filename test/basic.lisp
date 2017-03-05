@@ -197,7 +197,7 @@
          (is (length= 1 (execute
                          (compile
                           nil
-                          (expand-sql-ast-into-lambda-form-cached
+                          (expand-sql-ast-into-lambda-form
                            (sql-select :columns '(a)
                                        :tables '(test_table)
                                        :where (sql-= (sql-identifier :name 'a)
@@ -206,7 +206,7 @@
          (is (length= 1 (execute
                          (compile
                           nil
-                          (expand-sql-ast-into-lambda-form-cached
+                          (expand-sql-ast-into-lambda-form
                            (sql-select :columns '(a)
                                        :tables '(test_table)
                                        :where (sql-= (sql-identifier :name 'a)
