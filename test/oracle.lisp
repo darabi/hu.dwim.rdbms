@@ -7,13 +7,15 @@
 (in-package :hu.dwim.rdbms.test)
 
 (def special-variable *oracle-database* (make-instance 'hu.dwim.rdbms.oracle:oracle
-                                                       :connection-specification '(:datasource "(ADDRESS =
-                                                                                                  (PROTOCOL = TCP)
-                                                                                                  (HOST = localhost)
-                                                                                                  (PORT = 1521))"
+                                                       :connection-specification '(:datasource "(DESCRIPTION=
+                                                                                                  (ADDRESS =
+                                                                                                    (PROTOCOL = TCP)
+                                                                                                    (HOST = LOCALHOST)
+                                                                                                    (PORT = 1521))
+                                                                                                  (CONNECT_DATA =
+                                                                                                    (SERVICE_NAME = xe.oracle.docker)))"
                                                                                    :user-name "hu.dwim.rdbms.test"
                                                                                    :password "engedjbe")))
-
 
 (def test (test/oracle :in test) ()
   (with-database *oracle-database*
