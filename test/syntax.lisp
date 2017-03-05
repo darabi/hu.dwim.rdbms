@@ -102,37 +102,36 @@
 
 ;; TODO THL this test must be independent of what backend i'm using right now
 (def syntax-test test/syntax/expand-sql-ast/unquote/1 postgresql (&optional (n 3))
-  ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
-  (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
-                           (apply 'string+
-                                  (iter (for i :from 1 :to n)
-                                        (unless (first-iteration-p)
-                                          (collect " OR "))
-                                        (collect "t.b"))))))
-    ;; advanced use of the reader: the criteria is generated into a variable.
-    ;; which means that it could even be the input of this function.
-    (bind ((criteria [or ,@(iter (repeat (1- n))
-                                 (collect (sql-column-alias :table 't :column 'b)))
-                         ,(sql-column-alias :table 't :column 'b)]))
-      (is (string= expected
-                   (funcall [select (a b) t ,criteria]))))
+     ;; "SELECT a, b FROM t WHERE (t.b OR t.b OR t.b)"
+     (bind ((expected (format nil "SELECT a, b FROM t WHERE (~A)"
+                              (apply 'string+
+                                     (iter (for i :from 1 :to n)
+                                           (unless (first-iteration-p)
+                                             (collect " OR "))
+                                           (collect "t.b"))))))
+       ;; advanced use of the reader: the criteria is generated into a variable.
+       ;; which means that it could even be the input of this function.
+       (bind ((criteria [or ,@(iter (repeat (1- n))
+                                    (collect (sql-column-alias :table 't :column 'b)))
+                            ,(sql-column-alias :table 't :column 'b)]))
+         (is (string= expected
+                      (funcall [select (a b) t ,criteria]))))
 
-    ;; building the AST by hand
-    (bind ((criteria (sql-unquote
-                       :form
-                       `(apply 'sql-or
-                               (iter (repeat ,n)
-                                     (collect ,(sql-column-alias :table 't :column 'b)))))))
-      (with-expected-failures
-        (is (string=
-             expected
-             (funcall
-              (compile
-               nil
-               (hu.dwim.rdbms::expand-sql-ast-into-lambda-form-cached
-                (sql-select :columns '(a b)
-                            :tables '(t)
-                            :where criteria))))))))))
+       ;; building the AST by hand
+       (bind ((criteria (sql-unquote
+                          :form
+                          `(apply 'sql-or
+                                  (iter (repeat ,n)
+                                        (collect ,(sql-column-alias :table 't :column 'b)))))))
+         (is (string=
+              expected
+              (funcall
+               (compile
+                nil
+                (expand-sql-ast-into-lambda-form
+                 (sql-select :columns '(a b)
+                             :tables '(t)
+                             :where criteria)))))))))
 
 ;; TODO THL this test must be independent of what backend i'm using right now
 (def syntax-test test/syntax/expand-sql-ast/unquote/2 postgresql (&optional (n 3))
