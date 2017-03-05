@@ -42,11 +42,15 @@
         (execute-ddl [drop table test_table])))))
 
 (def test test/basic/basic-binding-with-string ()
-  (bind ((unicode-text "éáúóüőű"))
+  (bind ((unicode-text "éáúóüőű")
+         (dbname (symbol-name (type-of *database*)))
+         (qry (if (equal dbname "ORACLE")
+                  "INSERT INTO \"test_table\" (\"name\") VALUES (?1)"
+                  "INSERT INTO test_table (name) VALUES ($1::CHARACTER VARYING)")))
     (unwind-protect
          (with-transaction
            (execute-ddl [create table test_table ((name (varchar 50)))])
-           (execute "INSERT INTO test_table (name) VALUES ($1::CHARACTER VARYING)"
+           (execute qry
                     ;; TODO binding-types don't really have much effect, doesn't do type checking on the values, etc
                     :binding-types (vector (sql-character-varying-type))
                     :binding-values (vector unicode-text))
