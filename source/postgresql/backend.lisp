@@ -146,3 +146,14 @@
 
 (def method backend-release-savepoint (name (db postgresql))
   (execute (format nil "RELEASE SAVEPOINT ~a" name)))
+
+(def method call-in-transaction :around ((db postgresql) transaction function)
+  ;; When a rational number is passed into a query (as per
+  ;; to-sql-string), but it can not be expressed within 38 decimal
+  ;; digits (for example 1/3), it will be truncated, and lose some
+  ;; precision. Set this variable to nil to suppress that behaviour and
+  ;; raise an error instead.
+  ;;
+  ;; cf. https://marijnhaverbeke.nl/postmodern/cl-postgres.html
+  (let ((cl-postgres:*silently-truncate-rationals* nil))
+    (call-next-method)))
