@@ -18,4 +18,4 @@
 (def (special-variable e) *implicit-transaction-default-terminal-action* :rollback
   "Specifies the default terminal action for implicit transactions.")
 
-(def special-variable *signal-non-destructive-alter-table-commands* *load-as-production?*)
+(def special-variable *signal-non-destructive-alter-table-commands* (production-only t))
