@@ -16,7 +16,7 @@
     :accessor values-of)
    (where
     nil
-    :type sql-expression))
+    :type (or null sql-expression)))
   (:documentation "An SQL UPDATE statement.")
   (:format-sql-syntax-node
    (format-string "UPDATE ")

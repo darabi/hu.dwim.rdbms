@@ -18,13 +18,13 @@
     :type (list sql-table-reference))
    (where
     nil
-    :type sql-expression)
+    :type (or null sql-expression))
    (group-by
     nil
     :type (list sql-expression))
    (having
     nil
-    :type sql-expression)
+    :type (or null sql-expression))
    (order-by
     nil
     :type list)                         ; TODO: element type
@@ -36,7 +36,7 @@
     :type (or null integer))
    (for
     nil
-    :type (member :update :share)
+    :type (or null (member :update :share))
     :accessor for-of)
    (wait
     #t
@@ -109,7 +109,7 @@
     :type (or sql-table-reference list))
    (on
     nil
-    :type sql-expression)
+    :type (or null sql-expression))
    (using
     nil
     :type (list sql-identifier*)))

@@ -7,7 +7,7 @@
 (def syntax-node sql-constraint-with-tablespace (sql-constraint)
   ((tablespace
     nil
-    :type string)))
+    :type (or null string))))
 
 (def syntax-node sql-primary-key-constraint (sql-constraint-with-tablespace)
   ()
